@@ -11,7 +11,7 @@ export function terminalTitle(machine: string, via: "enrolled" | "ssh"): string 
 
 /** The options the owner RPC route is verified with, so the shell is reached the same way: keys only, bounded connect, no forwarding. */
 export function sshTerminalArgv(alias: string): string[] {
-  return ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", "-o", "ServerAliveInterval=15", "-o", "ClearAllForwardings=yes", "-o", "ForwardAgent=no", "-o", "ForwardX11=no", alias];
+  return ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", "-o", "ServerAliveInterval=15", "-o", "ClearAllForwardings=yes", "-o", "ForwardAgent=no", "-o", "ForwardX11=no", "--", alias];
 }
 
 /** An enrolled host that is provably the machine, else ssh to the always-on Mac once its route is authenticated, from this Mac's proven host. */

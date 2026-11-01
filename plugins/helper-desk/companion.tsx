@@ -17,6 +17,7 @@ import { CoachBot, type CoachControl, type Look, type StateId } from "./coach/Co
 import { coachColourStyle, useMascotChoice } from "./mascotchoice";
 import { COLOR_BY_ID } from "./coach/bloub/skins";
 import { Mascot, PALETTE, type MascotState } from "./mascots";
+import { useMascotsOff } from "./mascotgate";
 import { useCoachState, type LeadMode } from "./coachstate";
 import {
   clamp,
@@ -544,11 +545,12 @@ export function CoachCompanion({ mode }: { mode: LeadMode }) {
 
   const face = faceFor(base, mood, reaction);
   const choice = useMascotChoice();
+  const mascotsOff = useMascotsOff();
   return (
     <div ref={outerRef} className={`hd-companion hd-companion-${mode}${mood === "watch" ? " hd-companion-watch" : ""}`} style={coachColourStyle(choice.colour)} data-coach-face={face} aria-hidden="true">
       <div className="hd-companion-bob">
         <div ref={squashRef} className="hd-companion-squash">
-          {choice.coach ? (
+          {choice.coach && !mascotsOff ? (
             <Mascot seed="coach" character={choice.coach} colour={coachTint(choice.colour)} state={mascotStateForFace(face)} size={SIZE} />
           ) : (
             <CoachBot size={SIZE} state={face} control={control} shape={choice.shape ?? undefined} />

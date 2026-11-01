@@ -9,6 +9,8 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { z } from "zod";
 import { teamSchema } from "./team";
+import { loadProfile } from "./profile/load";
+import { picksOff } from "./lib/picks";
 import { createTeam } from "./teamserver";
 import {
   agentProgress,
@@ -52,6 +54,8 @@ export const rpcContract = defineRpcContract({
   history: { input: z.object({ threadId: threadIdSchema }), output: historySchema },
   overview: { input: z.null(), output: railOverviewSchema },
   team: { input: z.object({ threadId: threadIdSchema }), output: teamSchema },
+  // The Helper Desk features switched off in the Console's setup picker; carries nothing else of the profile.
+  picks: { input: z.null(), output: z.object({ picksOff: z.array(z.string()) }) },
 });
 
 const EVENT_TYPES = [
@@ -643,6 +647,8 @@ export default function plugin(bb: BbPluginApi) {
     history: ({ threadId }) => history(threadId),
     overview: () => overview(),
     team: ({ threadId }) => crew.team(threadId),
+    // Read afresh (the loader caches by modification time), so a tick saved in Setup applies without a reload.
+    picks: () => ({ picksOff: picksOff(loadProfile().profile) }),
   });
 
   // Tell open panels to refetch when a watched thread moves. Signals carry no content.

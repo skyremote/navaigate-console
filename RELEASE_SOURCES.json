@@ -3,32 +3,39 @@
   "release": "1.12.0",
   "plugins": [
     {
+      "folder": "plugins/console",
+      "pluginId": "navaigate-skin",
+      "sourceRepo": "navaigate-console",
+      "branch": "navaigate/community-release-integrated-20261101",
+      "commit": "593731aa5fadaab0a86f53d3de8a7b1879980cf5"
+    },
+    {
       "folder": "plugins/fleet",
       "pluginId": "fleet",
       "sourceRepo": "navaigate-bb-mods",
       "branch": "navaigate/community-release-fleet-20261101",
-      "commit": "ea6c1d978a408e09907edd241748d8030c63d706"
+      "commit": "c3678c264a2cac9a91583b4fc289cc1636f15f21"
     },
     {
       "folder": "plugins/helper-desk",
       "pluginId": "helper-desk",
       "sourceRepo": "navaigate-bb-mods",
       "branch": "navaigate/community-release-hd-20261101",
-      "commit": "aec5dd2f0a41781fb6f5c305a741e2cf65b95ed2"
+      "commit": "c270154b2fbbf8055a7f55b7dec6ec3e234f4e81"
     },
     {
       "folder": "plugins/navmotion-skin",
       "pluginId": "navmotion-skin",
       "sourceRepo": "bb-plugin-navmotion-skin",
       "branch": "navaigate/community-release-20261101",
-      "commit": "cb4e1d7003f38122661d2b9b212a9eaf3d33c483"
+      "commit": "cd918c0bb3eed92b899acb3c665d2c8b37f0c960"
     },
     {
       "folder": "plugins/prompt-stack",
       "pluginId": "prompt-stack",
       "sourceRepo": "bb-plugin-prompt-stack",
       "branch": "navaigate/community-release-20261101",
-      "commit": "665188fc8a6f75a57e3af03ef968a2433688e196"
+      "commit": "aa92a654c5da562ba92e218a6f4efd2dd0345073"
     }
   ],
   "vendored": [

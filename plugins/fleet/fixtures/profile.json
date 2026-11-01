@@ -19,7 +19,7 @@
       "id": "studio",
       "label": "Studio",
       "role": "always-on",
-      "sshAlias": "studio",
+      "sshAlias": "studio-ssh",
       "hostnames": [
         "studio-host"
       ]

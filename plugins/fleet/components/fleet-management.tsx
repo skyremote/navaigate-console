@@ -17,6 +17,7 @@ import { useVisiblePoll } from "../lib/visible-poll";
 import { NewProjectForm } from "./new-project-form";
 import { pickReusableTerminal, planTerminal, terminalTitle } from "../owner/terminal";
 import { LoadMetricsPanel } from "./load-metrics-panel";
+import { useFeatureOff } from "./picks-context";
 import { AppUpdateButton, ChannelSelect, PinControl } from "./channel-controls";
 import { channelChangeMessage, channelFor, policyForChannel, updateGate, type UpdateChannel } from "../owner/update-policy";
 import { OWNER_AGE_TICK_MS, ago, createOwnerRefresher, readAge, routeChip, type OwnerRefresher } from "./owner-refresh";
@@ -52,6 +53,7 @@ function intentId(machine: string, version: string): string {
 
 function UpdatesMatrix() {
   const rpc = useRpc<Contract>();
+  const channelsOff = useFeatureOff("F78");
   const [matrix, setMatrix] = useState<UpdateMatrix | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -115,9 +117,9 @@ function UpdatesMatrix() {
           <div className="fm-muted" style={{ marginBottom: 6 }}>
             Staging: {matrix.policy.testMachine ? `${matrix.policy.testMachine} first` : "off"} · Other machines update only after the nightly host runs that version
           </div>
-          <PinControl pinned={matrix.policy.pinnedVersion} busy={busy !== null} onSave={changePin} />
+          {channelsOff ? null : <PinControl pinned={matrix.policy.pinnedVersion} busy={busy !== null} onSave={changePin} />}
           <table className="fm-table">
-            <thead><tr><th>Machine</th><th>Channel</th><th>bb</th><th>Update</th><th>Providers</th></tr></thead>
+            <thead><tr><th>Machine</th>{channelsOff ? null : <th>Channel</th>}<th>bb</th><th>Update</th><th>Providers</th></tr></thead>
             <tbody>
               {matrix.rows.map((row) => {
                 const app = row.status?.app ?? null;
@@ -125,7 +127,7 @@ function UpdatesMatrix() {
                 return (
                   <tr key={row.machine}>
                     <td><b>{row.machine}</b><div className="fm-muted">{row.route === "self" ? "this bb" : row.route === "ssh" ? "via SSH" : "no route"}</div></td>
-                    <td><ChannelSelect machine={row.machine} channel={channelFor(matrix.policy, row.machine)} busy={busy !== null} nightlyDisabled={row.route === "none"} onChange={changeChannel} /></td>
+                    {channelsOff ? null : <td><ChannelSelect machine={row.machine} channel={channelFor(matrix.policy, row.machine)} busy={busy !== null} nightlyDisabled={row.route === "none"} onChange={changeChannel} /></td>}
                     <td>
                       {app ? <>{app.current}<div className="fm-muted">{app.runningThreadCount} running · {app.desktopUpdateSupported ? "desktop relay" : app.support}{app.exactApply ? " · exact" : ""}</div></> : <span className="fm-muted">{row.reason ?? row.status?.appError ?? "unknown"}</span>}
                     </td>
@@ -199,8 +201,9 @@ function OwnerCard({ machine, label, localMachine, threads }: { machine: Machine
   const sdk = useSdk();
   const navigate = useBbNavigate();
   const { detail, fetchedAt, error, now, load } = useOwnerDetail(machine);
+  const off = { mcpToggle: useFeatureOff("F07"), terminal: useFeatureOff("F18"), simulator: useFeatureOff("F21"), browser: useFeatureOff("F22"), routes: useFeatureOff("F23"), mcpEndpoint: useFeatureOff("F25"), ignored: useFeatureOff("F29"), newProject: useFeatureOff("F65") };
 
-  const plan = detail ? planTerminal({ machine, localMachine, binding: detail.binding, sshAlias: detail.terminal.sshAlias, sshVerified: detail.terminal.sshVerified, localHostId: detail.terminal.localHostId }) : null;
+  const plan = detail && !off.terminal ? planTerminal({ machine, localMachine, binding: detail.binding, sshAlias: detail.terminal.sshAlias, sshVerified: detail.terminal.sshVerified, localHostId: detail.terminal.localHostId }) : null;
   const openTerminal = async () => {
     if (plan === null || plan.kind === "none") return;
     const via = plan.kind === "ssh" ? "ssh" : "enrolled";
@@ -229,10 +232,10 @@ function OwnerCard({ machine, label, localMachine, threads }: { machine: Machine
     <div className="fm-card">
       <div className="fm-row" style={{ justifyContent: "space-between" }}>
         <h3>{label}{detail.owner?.appVersion ? ` · bb ${detail.owner.appVersion}` : ""}</h3>
-        <span className="fm-muted">route: {detail.activeRoute}{detail.owner ? ` · updated ${ago(detail.owner.publishedAt, now)}` : ""}</span>
+        {off.routes ? null : <span className="fm-muted">route: {detail.activeRoute}{detail.owner ? ` · updated ${ago(detail.owner.publishedAt, now)}` : ""}</span>}
       </div>
       <div>
-        {detail.routes.map((route) => {
+        {off.routes ? null : detail.routes.map((route) => {
           const chip = routeChip(route, now);
           return <span key={route.kind} className={`fm-chip ${chip.tone}`} title={route.detail ?? undefined}>{chip.label}</span>;
         })}
@@ -246,7 +249,7 @@ function OwnerCard({ machine, label, localMachine, threads }: { machine: Machine
           <span className="fm-chip">{caps.platform.os}/{caps.platform.arch}</span>
           <span className={`fm-chip ${caps.gui === "present" ? "ok" : ""}`}>GUI {caps.gui}</span>
           <span className={`fm-chip ${caps.xcode.verified ? "ok" : ""}`}>{caps.xcode.verified ? `Xcode ${caps.xcode.version}` : "no Xcode"}</span>
-          {caps.simulators.available ? <span className="fm-chip">{caps.simulators.booted} simulator(s){caps.simulators.tapControl ? "" : " · taps unsupported (no idb)"}</span> : null}
+          {caps.simulators.available && !off.simulator ? <span className="fm-chip">{caps.simulators.booted} simulator(s){caps.simulators.tapControl ? "" : " · taps unsupported (no idb)"}</span> : null}
         </div>
       ) : <div className="fm-muted">Capabilities unknown (owner Fleet too old or unreachable)</div>}
       {detail.providers ? (
@@ -259,11 +262,11 @@ function OwnerCard({ machine, label, localMachine, threads }: { machine: Machine
         </div>
       ) : null}
       <div className="fm-row">
-        {detail.mcp ? (
+        {detail.mcp && !(off.mcpToggle && off.mcpEndpoint) ? (
           <>
             <span className="fm-muted">MCP: {detail.mcp.installed ? (detail.mcp.enabled ? "on" : "off") : "not installed"}</span>
-            {detail.mcp.endpoint ? <button type="button" className="fm-btn" onClick={() => void experimental_copyToClipboard({ text: detail.mcp!.endpoint! }).then(() => toast.success(`${label} MCP endpoint copied`))}>Copy MCP endpoint</button> : null}
-            {machine === localMachine && detail.mcp.installed ? <button type="button" className="fm-btn" onClick={() => void toggleMcp()}>{detail.mcp.enabled ? "Turn MCP off" : "Turn MCP on"}</button> : null}
+            {detail.mcp.endpoint && !off.mcpEndpoint ? <button type="button" className="fm-btn" onClick={() => void experimental_copyToClipboard({ text: detail.mcp!.endpoint! }).then(() => toast.success(`${label} MCP endpoint copied`))}>Copy MCP endpoint</button> : null}
+            {machine === localMachine && detail.mcp.installed && !off.mcpToggle ? <button type="button" className="fm-btn" onClick={() => void toggleMcp()}>{detail.mcp.enabled ? "Turn MCP off" : "Turn MCP on"}</button> : null}
           </>
         ) : null}
         {plan?.kind === "enrolled" || plan?.kind === "ssh" ? (
@@ -271,10 +274,10 @@ function OwnerCard({ machine, label, localMachine, threads }: { machine: Machine
         ) : plan && machine !== localMachine ? <span className="fm-muted" title={detail.binding.reason ?? undefined}>Terminal: {plan.reason}</span> : null}
         {detail.owner?.url && machine !== localMachine ? <button type="button" className="fm-btn" onClick={() => navigate.openUrl(detail.owner!.url!)}>Open {label} bb</button> : null}
       </div>
-      {detail.owner ? <NewProjectForm machine={machine} label={label} projects={detail.projects} onChanged={load} /> : <div className="fm-muted">New project on {label}: there is no authenticated route to {label}, so nothing can be created there from here</div>}
-      <SimulatorViewer machine={machine} />
-      {detail.owner ? <BrowserPanel machine={machine} threads={threads} /> : null}
-      {detail.owner && machine !== localMachine && threads.length ? <TransferPanel machine={machine} threads={threads} /> : null}
+      {off.newProject ? null : detail.owner ? <NewProjectForm machine={machine} label={label} projects={detail.projects} onChanged={load} /> : <div className="fm-muted">New project on {label}: there is no authenticated route to {label}, so nothing can be created there from here</div>}
+      {off.simulator ? null : <SimulatorViewer machine={machine} />}
+      {detail.owner && !off.browser ? <BrowserPanel machine={machine} threads={threads} /> : null}
+      {detail.owner && machine !== localMachine && threads.length && !off.ignored ? <TransferPanel machine={machine} threads={threads} /> : null}
       {detail.editorLinks.length ? (
         <div className="fm-row">
           {detail.editorLinks.slice(0, 8).map((link) => (
@@ -610,11 +613,13 @@ function TransferPanel({ machine, threads }: { machine: Machine; threads: OwnerT
 }
 
 export function FleetManagement({ localMachine, machines, threadsByMachine = {} }: { localMachine: string; machines: FleetMachineEntry[]; threadsByMachine?: Record<string, OwnerThread[]> }) {
+  const updatesOff = useFeatureOff("F26");
+  const metricsOff = useFeatureOff("F77");
   return (
     <div className="fm">
       <style>{STYLE}</style>
-      <UpdatesMatrix />
-      <LoadMetricsPanel />
+      {updatesOff ? null : <UpdatesMatrix />}
+      {metricsOff ? null : <LoadMetricsPanel />}
       {machines.map((machine) => <OwnerCard key={machine.id} machine={machine.id} label={machine.label} localMachine={localMachine} threads={threadsByMachine[machine.id] ?? []} />)}
     </div>
   );

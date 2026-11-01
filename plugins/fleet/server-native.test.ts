@@ -4,8 +4,11 @@ import { commandAad, EXECUTION_FEATURE, SEALED_COMMAND_PLACEHOLDER, SEALED_CONTR
 import { mirrorControlInput } from "./mirror/control";
 import { generateMirrorKeyPair, open as openSealed } from "./mirror/crypto";
 import Database from "better-sqlite3";
-import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { createHash, randomUUID } from "node:crypto";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { hostname, tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
 
 const SYSTEM_TOOLS = vi.hoisted(() => ["/usr/bin/top ", "/usr/bin/vm_stat", "/bin/df ", "/usr/bin/pmset ", "/usr/sbin/sysctl -n hw.ncpu", "/usr/sbin/sysctl -n vm.loadavg", "/usr/sbin/sysctl -n kern.memorystatus_vm_pressure_level", "/usr/sbin/sysctl -n vm.swapusage"]);
 
@@ -51,7 +54,7 @@ vi.mock("./mirror/service", () => ({ createMirror: (deps: { forwardControl: (req
 } }));
 vi.mock("node:fs", async (importOriginal) => {
   const fs = await importOriginal<typeof import("node:fs")>();
-  return { ...fs, readFileSync: (...args: Parameters<typeof fs.readFileSync>) => String(args[0]).endsWith("/.ssh/config") ? "Host studio\n  HostName fixture.invalid\n" : String(args[0]).endsWith("/mirror-key.json") && state.mirrorJwk ? JSON.stringify(state.mirrorJwk) : fs.readFileSync(...args) };
+  return { ...fs, readFileSync: (...args: Parameters<typeof fs.readFileSync>) => String(args[0]).endsWith("/.ssh/config") ? "Host studio-ssh\n  HostName fixture.invalid\n" : String(args[0]).endsWith("/mirror-key.json") && state.mirrorJwk ? JSON.stringify(state.mirrorJwk) : fs.readFileSync(...args) };
 });
 vi.mock("node:child_process", async (importOriginal) => {
   const original = await importOriginal<typeof import("node:child_process")>();
@@ -504,14 +507,14 @@ describe("native Fleet execution contract", () => {
     state.sshSnapshot = { ...remoteM1(), projects: [{ id: "proj_studio", name: "Repo", kind: "standard", path: "/Users/tester/Repo" }, { id: "proj_space", name: "My Repo", kind: "standard", path: "/Users/tester/My Repo" }] } as unknown as Record<string, unknown>;
     const f = await host();
     const detail = await f.harness.behavior.callRpc("owner_detail_get", { machine: "studio" });
-    expect(detail).toMatchObject({ activeRoute: "ssh", editorLinks: [{ projectId: "proj_studio", url: "vscode://vscode-remote/ssh-remote+studio/Users/tester/Repo" }, { projectId: "proj_space", url: "vscode://vscode-remote/ssh-remote+studio/Users/tester/My%20Repo" }] });
+    expect(detail).toMatchObject({ activeRoute: "ssh", editorLinks: [{ projectId: "proj_studio", url: "vscode://vscode-remote/ssh-remote+studio-ssh/Users/tester/Repo" }, { projectId: "proj_space", url: "vscode://vscode-remote/ssh-remote+studio-ssh/Users/tester/My%20Repo" }] });
   });
 
   it("opens the studio owner thread's real project folder in the editor from a mirror copy", async () => {
     state.sshSnapshot = remoteM1() as unknown as Record<string, unknown>;
     state.mirrorJwk = generateMirrorKeyPair().privateKey.export({ format: "jwk" }) as typeof state.mirrorJwk;
     const f = await host();
-    expect(await f.harness.behavior.callRpc("mirror_owner_editor", { threadId: "thr_copy" })).toEqual({ available: true, machine: "studio", path: "/Users/tester/Documents/GitHub/My Repo", url: "vscode://vscode-remote/ssh-remote+studio/Users/tester/Documents/GitHub/My%20Repo" });
+    expect(await f.harness.behavior.callRpc("mirror_owner_editor", { threadId: "thr_copy" })).toEqual({ available: true, machine: "studio", path: "/Users/tester/Documents/GitHub/My Repo", url: "vscode://vscode-remote/ssh-remote+studio-ssh/Users/tester/Documents/GitHub/My%20Repo" });
     expect(await f.harness.behavior.callRpc("mirror_owner_editor", { threadId: "thr_plain" })).toMatchObject({ available: false });
   });
 
@@ -1123,7 +1126,7 @@ describe("project creation target and terminal facts (F65, F18)", () => {
     state.sshSnapshot = remoteM1() as unknown as Record<string, unknown>;
     const f = await host();
     const detail = await f.harness.behavior.callRpc("owner_detail_get", { machine: "studio" });
-    expect(detail.terminal).toEqual({ sshAlias: "studio", sshVerified: true, localHostId: null });
+    expect(detail.terminal).toEqual({ sshAlias: "studio-ssh", sshVerified: true, localHostId: null });
     const own = await f.harness.behavior.callRpc("owner_detail_get", { machine: "laptop" });
     expect(own.terminal.sshAlias).toBeNull();
   });
@@ -1156,10 +1159,10 @@ describe("account on thread cards and the verified SSH route (F03, F18)", () => 
   const listed = (id: string) => makeThreadResponse({ id, projectId: "proj_native", status: "idle", title: id, updatedAt: Date.now(), visibility: "visible", archivedAt: null } as never);
 
   it("publishes the account each of this Mac's chats last ran on, and only for those chats", async () => {
-    state.threadAccounts = { threads: { thr_a: { accountId: "pool-1", label: "daniel", email: "daniel@example.com", harness: "claude" } } };
+    state.threadAccounts = { threads: { thr_a: { accountId: "pool-1", label: "sam", email: "sam@example.com", harness: "claude" } } };
     const f = await host({ list: async () => [listed("thr_a"), listed("thr_b")] });
     const snapshot = await f.harness.behavior.callRpc("snapshot_get", null) as Snapshot;
-    expect(snapshot.threads.find((t) => t.id === "thr_a")?.account).toEqual({ label: "daniel", email: "daniel@example.com", harness: "claude" });
+    expect(snapshot.threads.find((t) => t.id === "thr_a")?.account).toEqual({ label: "sam", email: "sam@example.com", harness: "claude" });
     expect(snapshot.threads.find((t) => t.id === "thr_b")?.account).toBeUndefined();
     expect(JSON.stringify(snapshot)).not.toContain("pool-1");
   });
@@ -1184,7 +1187,7 @@ describe("account on thread cards and the verified SSH route (F03, F18)", () => 
     const f = await host();
     const detail = await f.harness.behavior.callRpc("owner_detail_get", { machine: "studio" });
     expect(detail.routes.find((route: { kind: string }) => route.kind === "ssh")).toMatchObject({ state: "unavailable" });
-    expect(detail.terminal).toMatchObject({ sshAlias: "studio", sshVerified: false });
+    expect(detail.terminal).toMatchObject({ sshAlias: "studio-ssh", sshVerified: false });
   });
 });
 
@@ -1216,14 +1219,102 @@ describe("Fleet on the profile", () => {
     const f = await host();
     const profile = await f.harness.behavior.callRpc("profile_get", null);
     expect(profile.machines.map((machine: { id: string; label: string }) => [machine.id, machine.label])).toEqual([["laptop", "Laptop"], ["studio", "Studio"], ["work", "Work"]]);
-    expect(profile.workloads).toEqual([{ id: "client-a", label: "Client A", machine: "work", match: [] }]);
+    expect(profile.machines[2]).toEqual({ id: "work", label: "Work", role: "restricted", restricted: true });
+    expect(Object.keys(profile).sort()).toEqual(["machines", "picksOff", "setupDone"]);
+    expect(profile.picksOff).toEqual([]);
   });
 
-  it("uses the profile's first machine when the setting is blank and no hostname matches, and the setting still wins", async () => {
+  /** A community profile whose picks switch the named Fleet features off; ticked-off ids are false, the rest absent. */
+  const withPicks = async (off: string[], body: () => Promise<void>) => {
+    const dir = mkdtempSync(join(tmpdir(), "fleet-picks-"));
+    const path = join(dir, "profile.json");
+    const base = JSON.parse(readFileSync(fileURLToPath(new URL("./fixtures/profile.json", import.meta.url)), "utf8")) as Record<string, unknown>;
+    writeFileSync(path, JSON.stringify({ ...base, edition: "community", features: { preset: null, picks: Object.fromEntries(off.map((id) => [id, false])) } }));
+    try { await withProfile(path, body); } finally { rmSync(dir, { recursive: true, force: true }); }
+  };
+
+  it("sends the browser the Fleet features switched off, and nothing else of the picks", async () => {
+    await withPicks(["F07", "F18", "F99"], async () => {
+      const f = await host();
+      expect((await f.harness.behavior.callRpc("profile_get", null)).picksOff).toEqual(["F07", "F18"]);
+    });
+  });
+
+  it("refuses MCP control, the simulator, the browser, updates and a new project with a plain message while their features are off", async () => {
+    await withPicks(["F07", "F21", "F22", "F26", "F78", "F65", "F29", "F06"], async () => {
+      const f = await host();
+      const call = (method: string, input: unknown) => f.harness.behavior.callRpc(method as never, input as never);
+      await expect(call("mcp_enable", { enabled: true })).rejects.toThrow("MCP on/off is switched off");
+      await expect(call("simulator_forward", { machine: "laptop", call: { method: "simulator_list", input: null } })).rejects.toThrow("Simulators is switched off");
+      await expect(call("browser_forward", { machine: "laptop", call: { method: "owner_browser_instances", input: null } })).rejects.toThrow("Browser is switched off");
+      await expect(call("update_dispatch", { v: 1, machine: "studio", intentId: "fleet-studio-0481-abc123", fromVersion: "0.48.0", targetVersion: "0.48.1", mode: "native" })).rejects.toThrow("Versions and updates is switched off");
+      await expect(call("provider_update_dispatch", { v: 1, machine: "studio", requestId: "fleet-studio-codex-abc123", provider: "codex", expectedFromVersion: null })).rejects.toThrow("Versions and updates is switched off");
+      await expect(call("updates_policy_set", { testMachine: null, pinnedVersion: null })).rejects.toThrow("Update channels and Pin version is switched off");
+      await expect(call("project_prepare", { target: { serverId: "srv_a", machineKey: "laptop", hostId: "host_laptop", projectId: null, environmentId: null }, requestId: randomUUID(), prepare: { mode: "create_project", path: "/tmp/demo", name: "demo", expectedRemoteUrl: null } })).rejects.toThrow("New project on a machine is switched off");
+      await expect(call("transfer_candidates", { projectId: "prj_none" })).rejects.toThrow("Ignored files transfer is switched off");
+      await expect(call("thread_tell", { machine: "studio", threadId: "thr_abc123", message: "hi" })).rejects.toThrow("Tell and Ask is switched off");
+    });
+  });
+
+  it("starts and serves the board with machines enrolment switched off, ignoring a saved host alias", async () => {
+    await withPicks(["F82"], async () => {
+      const f = await host({}, false, "laptop", { hostAliases: JSON.stringify({ "laptop-host": "studio" }) });
+      const board = await f.harness.behavior.callRpc("board_get", null);
+      expect(board.me.machineKey).toBe("laptop");
+      expect(board.columns.map((column: { key: string }) => column.key)).toContain("laptop");
+    });
+  });
+
+  it("hides the terminal from the owner detail while the terminal is off, and shows it again when it is on", async () => {
+    state.sshSnapshot = null;
+    await withPicks(["F18"], async () => {
+      const f = await host();
+      const detail = await f.harness.behavior.callRpc("owner_detail_get", { machine: "studio" });
+      expect(detail.terminal).toEqual({ sshAlias: null, sshVerified: false, localHostId: null });
+    });
+    await withPicks([], async () => {
+      const f = await host();
+      expect((await f.harness.behavior.callRpc("owner_detail_get", { machine: "studio" })).terminal.sshAlias).toBe("studio-ssh");
+    });
+  });
+
+  it("with several machines and an unmatched hostname, uses the raw hostname and never another machine's key; the setting still wins", async () => {
     const fromHost = await host({}, false, "studio", { machineKey: "" });
-    expect((await fromHost.harness.behavior.callRpc("board_get", null)).me.machineKey).toBe("laptop");
+    expect((await fromHost.harness.behavior.callRpc("board_get", null)).me.machineKey).toBe(hostname());
     const fromSetting = await host({}, false, "studio");
     expect((await fromSetting.harness.behavior.callRpc("board_get", null)).me.machineKey).toBe("studio");
+    const folded = await host({}, false, "studio", { machineKey: "STUDIO" });
+    expect((await folded.harness.behavior.callRpc("board_get", null)).me.machineKey).toBe("studio");
+  });
+
+  describe("fails closed when the identity or the profile is wrong", () => {
+    const refuses = async (f: Awaited<ReturnType<typeof host>>, reason: RegExp) => {
+      await expect(f.harness.behavior.callRpc("work_start", { machine: "laptop", prompt: "Read", requestId: "job-closed-0001" })).rejects.toThrow(reason);
+      await expect(f.harness.behavior.callRpc("work_attachments_put", { v: 1, requestId: "00000000-0000-4000-8000-000000000009", files: [{ name: "a.txt", type: "localFile", mimeType: "text/plain", sha256: "0".repeat(64), contentBase64: "YQ==" }] })).rejects.toThrow(reason);
+      await expect(f.harness.behavior.callRpc("transfer_manifest_build", { projectId: "proj_native", paths: ["a.txt"] })).rejects.toThrow(reason);
+      expect(f.spawned).toHaveLength(0);
+      expect((await f.harness.behavior.callRpc("board_get", null)).error).toMatch(reason);
+    };
+
+    it("refuses starts, attachments and transfers, and shows why on the board, when the machine key is not in a several-machine profile", async () => {
+      await refuses(await host({}, false, "ghost"), /machine key "ghost" is not a machine in the profile/);
+    });
+
+    it("refuses when the profile has errors, even though the machine key setting names a real machine", async () => {
+      await withProfile(fileURLToPath(new URL("./fixtures/profile-broken.json", import.meta.url)), async () => {
+        await refuses(await host({}, false, "work"), /profile has errors/);
+      });
+    });
+
+    it("refuses a restricted machine's key set against the community defaults, but not the community default key", async () => {
+      await withProfile("/nonexistent/community-profile.json", async () => {
+        await refuses(await host({}, false, "work"), /machine key "work" is not a machine in the profile/);
+        const fine = await host({}, false, "this-mac", { machineKey: "this-mac" });
+        expect((await fine.harness.behavior.callRpc("board_get", null)).error).toBeNull();
+        await fine.harness.behavior.callRpc("work_start", { machine: "this-mac", prompt: "Read", requestId: "job-open-00001" });
+        expect(fine.spawned).toHaveLength(1);
+      });
+    });
   });
 
   it("gives the always-on machine no direct route to itself", async () => {

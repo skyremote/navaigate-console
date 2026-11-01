@@ -1,0 +1,252 @@
+{
+ "capturedAt": 1793561855931,
+ "source": "bb fleet status --json and bb thread get, 1 Nov 2026 20:37 CET, ids, titles, urls and paths removed",
+ "now": 1793561855931,
+ "board": {
+  "serverId": "sky",
+  "serverKey": "laptop",
+  "columns": [
+   {
+    "key": "laptop",
+    "label": "laptop home",
+    "serverId": "sky",
+    "online": true,
+    "lastSeenAt": 1793561837965,
+    "threads": [
+     {
+      "id": "thr_ghost_m5",
+      "title": "Old running chat on Laptop",
+      "state": "running",
+      "machine": "laptop",
+      "projectName": "Project",
+      "providerId": "claude-code",
+      "updatedAt": 1793443637769,
+      "url": null,
+      "via": "local-m5"
+     },
+     {
+      "id": "thr_root",
+      "title": "Main chat",
+      "state": "running",
+      "machine": "laptop",
+      "projectName": "Project",
+      "providerId": "codex",
+      "updatedAt": 1793441751082,
+      "url": null,
+      "via": "local-m5"
+     },
+     {
+      "id": "thr_root",
+      "title": "Main chat",
+      "state": "idle",
+      "machine": "laptop",
+      "projectName": "Project",
+      "providerId": "codex",
+      "updatedAt": 1793528615246,
+      "url": "https://host.example/projects/proj_01/threads/thr_root",
+      "via": "sky"
+     },
+     {
+      "id": "thr_04",
+      "title": "Chat 4",
+      "state": "idle",
+      "machine": "laptop",
+      "projectName": "Project",
+      "providerId": "claude-code",
+      "updatedAt": 1793560438822,
+      "url": "https://host.example/projects/proj_01/threads/thr_04",
+      "via": "sky"
+     },
+     {
+      "id": "thr_05",
+      "title": "Chat 5",
+      "state": "idle",
+      "machine": "laptop",
+      "projectName": "Project",
+      "providerId": "claude-code",
+      "updatedAt": 1793542918397,
+      "url": "https://host.example/projects/proj_01/threads/thr_05",
+      "via": "sky"
+     },
+     {
+      "id": "thr_06",
+      "title": "Chat 6",
+      "state": "idle",
+      "machine": "laptop",
+      "projectName": "Project",
+      "providerId": "claude-code",
+      "updatedAt": 1793540338385,
+      "url": "https://host.example/projects/proj_01/threads/thr_06",
+      "via": "sky"
+     },
+     {
+      "id": "thr_root",
+      "title": "Main chat",
+      "state": "idle",
+      "machine": "laptop",
+      "projectName": "Project",
+      "providerId": "codex",
+      "updatedAt": 1793528615246,
+      "url": "https://host.example/projects/proj_01/threads/thr_root",
+      "via": "sky"
+     }
+    ]
+   },
+   {
+    "key": "studio",
+    "label": "Studio home",
+    "serverId": "macbookm1",
+    "online": true,
+    "lastSeenAt": 1793561849568,
+    "threads": [
+     {
+      "id": "thr_ghost_m1",
+      "title": "Old running chat on Studio",
+      "state": "running",
+      "machine": "studio",
+      "projectName": "Project",
+      "providerId": "claude-code",
+      "updatedAt": 1793443220354,
+      "url": null,
+      "via": "local-m5"
+     },
+     {
+      "id": "thr_09",
+      "title": "Chat 9",
+      "state": "idle",
+      "machine": "studio",
+      "projectName": "Project",
+      "providerId": "claude-code",
+      "updatedAt": 1793543710250,
+      "url": "https://host.example/projects/proj_01/threads/thr_09",
+      "via": "macbookm1"
+     },
+     {
+      "id": "thr_10",
+      "title": "Chat 10",
+      "state": "idle",
+      "machine": "studio",
+      "projectName": "Project",
+      "providerId": "claude-code",
+      "updatedAt": 1793543501621,
+      "url": "https://host.example/projects/proj_01/threads/thr_10",
+      "via": "macbookm1"
+     }
+    ]
+   },
+   {
+    "key": "work",
+    "label": "work Client",
+    "serverId": "sky-m4",
+    "online": false,
+    "lastSeenAt": 1793034268140,
+    "threads": [
+     {
+      "id": "thr_11",
+      "title": "Chat 11",
+      "state": "idle",
+      "machine": "work",
+      "projectName": "Project",
+      "providerId": "claude-code",
+      "updatedAt": 1793033583721,
+      "url": "https://host.example/projects/proj_01/threads/thr_11",
+      "via": "sky-m4"
+     },
+     {
+      "id": "thr_12",
+      "title": "Chat 12",
+      "state": "idle",
+      "machine": "work",
+      "projectName": "Project",
+      "providerId": "claude-code",
+      "updatedAt": 1793033089661,
+      "url": "https://host.example/projects/proj_01/threads/thr_12",
+      "via": "sky-m4"
+     }
+    ]
+   }
+  ]
+ },
+ "sidebar": [
+  {
+   "id": "thr_root",
+   "title": "Main chat",
+   "updatedAt": 1793528615246,
+   "providerId": "codex"
+  },
+  {
+   "id": "thr_a",
+   "title": "Chat A",
+   "updatedAt": 1793560415931,
+   "providerId": "claude-code"
+  },
+  {
+   "id": "thr_b",
+   "title": "Chat B",
+   "updatedAt": 1793542775931,
+   "providerId": "claude-code"
+  },
+  {
+   "id": "thr_c",
+   "title": "Chat C",
+   "updatedAt": 1793540255931,
+   "providerId": "claude-code"
+  },
+  {
+   "id": "thr_d",
+   "title": "Chat D",
+   "updatedAt": 1793538455931,
+   "providerId": "claude-code"
+  },
+  {
+   "id": "thr_e",
+   "title": "Chat E",
+   "updatedAt": 1793529455931,
+   "providerId": "claude-code"
+  },
+  {
+   "id": "thr_f",
+   "title": "Chat F",
+   "updatedAt": 1793523695931,
+   "providerId": "claude-code"
+  }
+ ],
+ "index": {
+  "conversations": [
+   {
+    "rootThreadId": "thr_root",
+    "activeThreadId": "thr_member",
+    "memberIds": [
+     "thr_root",
+     "thr_member"
+    ],
+    "members": [
+     {
+      "id": "thr_root",
+      "projectId": "proj_01",
+      "providerId": "codex",
+      "status": "idle",
+      "isHidden": false,
+      "isArchived": false,
+      "hasPendingInteraction": false,
+      "model": null,
+      "reasoningLevel": null,
+      "updatedAt": 1793528615246
+     },
+     {
+      "id": "thr_member",
+      "projectId": "proj_01",
+      "providerId": "claude-code",
+      "status": "active",
+      "isHidden": true,
+      "isArchived": false,
+      "hasPendingInteraction": false,
+      "model": "claude-sonnet-5-5",
+      "reasoningLevel": "high",
+      "updatedAt": 1793561622083
+     }
+    ]
+   }
+  ]
+ }
+}

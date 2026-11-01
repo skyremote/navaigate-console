@@ -1,0 +1,762 @@
+{
+ "capturedAt": "2026-11-01",
+ "source": "Fleet 382cdd5 and Console 7be4896 on the live app, ids and paths removed",
+ "board": {
+  "me": {
+   "serverId": "srv-m5",
+   "machineKey": "laptop",
+   "label": "laptop home",
+   "joined": true,
+   "brain": true,
+   "backendHealthy": true,
+   "lastSuccessfulSyncAt": 1793542966826
+  },
+  "columns": [
+   {
+    "key": "laptop",
+    "label": "laptop home",
+    "serverId": "srv-m5",
+    "url": "https://srv-01.example.invalid",
+    "online": true,
+    "local": true,
+    "lastSeenAt": 1793542965692,
+    "capabilities": [
+     "NAS"
+    ],
+    "threads": [
+     {
+      "id": "thr_01",
+      "title": "Thread Laptop-1",
+      "state": "running",
+      "machine": "laptop",
+      "projectId": "proj_01",
+      "projectName": "Project",
+      "providerId": "claude-code",
+      "parentThreadId": null,
+      "createdAt": 1793443625074,
+      "updatedAt": 1793443637769,
+      "url": null,
+      "model": "claude-sonnet-5-5",
+      "reasoningLevel": "high",
+      "pinned": false,
+      "sectionName": null,
+      "via": "local-m5"
+     },
+     {
+      "id": "thr_02",
+      "title": "Thread Laptop-2",
+      "state": "running",
+      "machine": "laptop",
+      "projectId": "proj_01",
+      "projectName": "Project",
+      "providerId": "codex",
+      "parentThreadId": null,
+      "createdAt": 1793373752349,
+      "updatedAt": 1793441751082,
+      "url": null,
+      "model": "gpt-6.1-sol",
+      "reasoningLevel": "max",
+      "pinned": false,
+      "sectionName": null,
+      "via": "local-m5"
+     }
+    ],
+    "counts": {
+     "running": 2,
+     "needsYou": 0,
+     "queued": 0
+    },
+    "mirror": true,
+    "ownerStatus": "live",
+    "ownerOnline": true,
+    "enrolledOnline": true,
+    "ownerHostId": "host_01",
+    "resources": {
+     "observedAt": 1793542966654,
+     "cpuCount": 18,
+     "cpuUtilization": 0.26363828215680063,
+     "totalMemoryBytes": 51539607552,
+     "availableMemoryBytes": 31439160607
+    },
+    "system": {
+     "cpuPercent": 25.5,
+     "cores": 18,
+     "loadAvg": [
+      6.66,
+      7.05,
+      9.02
+     ],
+     "memUsedBytes": 34744107008,
+     "memTotalBytes": 51539607552,
+     "memPressure": "normal",
+     "swapUsedBytes": 13004177408,
+     "diskFreeBytes": 279976620032,
+     "diskTotalBytes": 1995165736960,
+     "keepAwake": [
+      "Amphetamine"
+     ]
+    }
+   },
+   {
+    "key": "studio",
+    "label": "Studio home",
+    "serverId": "srv-m1",
+    "url": "https://srv-02.example.invalid",
+    "online": true,
+    "local": true,
+    "lastSeenAt": 1793542986204,
+    "capabilities": [
+     "NAS"
+    ],
+    "threads": [
+     {
+      "id": "thr_03",
+      "title": "Thread Studio-1",
+      "state": "error",
+      "machine": "studio",
+      "projectId": "proj_02",
+      "projectName": "Project",
+      "providerId": "codex",
+      "parentThreadId": null,
+      "createdAt": 1793395147266,
+      "updatedAt": 1793395544061,
+      "url": "https://srv-02.example.invalid/projects/proj_02/threads/thr_03",
+      "model": "gpt-6.1-sol",
+      "reasoningLevel": "high",
+      "pinned": false,
+      "sectionName": null,
+      "via": "srv-m1"
+     },
+     {
+      "id": "thr_04",
+      "title": "Thread Studio-2",
+      "state": "running",
+      "machine": "studio",
+      "projectId": "proj_03",
+      "projectName": "Project",
+      "providerId": "claude-code",
+      "parentThreadId": null,
+      "createdAt": 1793440723935,
+      "updatedAt": 1793443220354,
+      "url": null,
+      "model": "haiku",
+      "reasoningLevel": "medium",
+      "pinned": false,
+      "sectionName": null,
+      "via": "local-m5"
+     }
+    ],
+    "counts": {
+     "running": 1,
+     "needsYou": 0,
+     "queued": 0
+    },
+    "mirror": true,
+    "ownerStatus": "live",
+    "ownerOnline": true,
+    "enrolledOnline": true,
+    "ownerHostId": "host_02",
+    "resources": {
+     "observedAt": 1793542986610,
+     "cpuCount": 10,
+     "cpuUtilization": 0.36143598088070783,
+     "totalMemoryBytes": 34359738368,
+     "availableMemoryBytes": 30236569764
+    },
+    "system": {
+     "cpuPercent": 45.7,
+     "cores": 10,
+     "loadAvg": [
+      5.31,
+      6.05,
+      6.42
+     ],
+     "memUsedBytes": 17897832448,
+     "memTotalBytes": 34359738368,
+     "memPressure": "normal",
+     "swapUsedBytes": 0,
+     "diskFreeBytes": 381883170816,
+     "diskTotalBytes": 994662584320,
+     "keepAwake": [
+      "caffeinate",
+      "Amphetamine",
+      "screensharingd"
+     ]
+    }
+   },
+   {
+    "key": "work",
+    "label": "Work build host",
+    "serverId": "srv-m4",
+    "url": "https://srv-03.example.invalid",
+    "online": false,
+    "local": false,
+    "lastSeenAt": 1793034268140,
+    "capabilities": [
+     "VPN",
+     "Snowflake"
+    ],
+    "threads": [
+     {
+      "id": "thr_05",
+      "title": "Thread Work-1",
+      "state": "idle",
+      "machine": "work",
+      "projectId": "proj_04",
+      "projectName": "Project",
+      "providerId": "claude-code",
+      "parentThreadId": null,
+      "createdAt": 1790493622843,
+      "updatedAt": 1793033583721,
+      "url": "https://srv-03.example.invalid/projects/proj_04/threads/thr_05",
+      "model": "claude-opus-5-5",
+      "reasoningLevel": "max",
+      "pinned": true,
+      "sectionName": null,
+      "via": "srv-m4"
+     },
+     {
+      "id": "thr_06",
+      "title": "Thread Work-2",
+      "state": "idle",
+      "machine": "work",
+      "projectId": "proj_05",
+      "projectName": "Project",
+      "providerId": "claude-code",
+      "parentThreadId": null,
+      "createdAt": 1792967668608,
+      "updatedAt": 1793033089661,
+      "url": "https://srv-03.example.invalid/threads/thr_06",
+      "model": "claude-sonnet-5-5",
+      "reasoningLevel": "medium",
+      "pinned": false,
+      "sectionName": null,
+      "via": "srv-m4"
+     }
+    ],
+    "counts": {
+     "running": 0,
+     "needsYou": 0,
+     "queued": 0
+    },
+    "mirror": true,
+    "ownerStatus": "stale",
+    "ownerOnline": false,
+    "enrolledOnline": false,
+    "ownerHostId": null,
+    "resources": null,
+    "system": null
+   }
+  ],
+  "commands": [
+   {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "targetServer": "srv-m1",
+    "targetMachine": "studio",
+    "title": "[fleet:sealed-command:v1]",
+    "status": "started",
+    "threadUrl": "https://srv-02.example.invalid/projects/proj_06/threads/thr_07",
+    "error": null,
+    "createdAt": 1793524220609
+   }
+  ],
+  "error": null,
+  "transport": {
+   "broker": "healthy",
+   "lastSuccessfulSyncAt": 1793542966826,
+   "directM1": "ready",
+   "directM1Error": null
+  },
+  "at": 1793542991400
+ },
+ "ownerDetail": {
+  "laptop": {
+   "machine": "laptop",
+   "owner": {
+    "serverId": "srv-m5",
+    "hostId": "host_01",
+    "url": "https://srv-01.example.invalid",
+    "appVersion": "0.48.1",
+    "publishedAt": 1793543014664
+   },
+   "routes": [
+    {
+     "kind": "self",
+     "state": "healthy",
+     "detail": null,
+     "lastOkAt": 1793543015652
+    },
+    {
+     "kind": "connect",
+     "state": "healthy",
+     "detail": "https://srv-01.example.invalid",
+     "lastOkAt": null
+    }
+   ],
+   "activeRoute": "self",
+   "capabilities": {
+    "v": 1,
+    "observedAt": 1793542551736,
+    "platform": {
+     "os": "darwin",
+     "arch": "arm64",
+     "release": "27.0.0"
+    },
+    "hardwareId": "bbhw1:hw_01",
+    "gui": "present",
+    "xcode": {
+     "verified": true,
+     "version": "27.1"
+    },
+    "simulators": {
+     "available": true,
+     "booted": 0,
+     "tapControl": false
+    }
+   },
+   "providers": [
+    {
+     "id": "codex",
+     "available": true,
+     "observedAt": 1793543015642,
+     "displayName": "Codex",
+     "auth": "ready",
+     "planLabel": null
+    },
+    {
+     "id": "claude-code",
+     "available": true,
+     "observedAt": 1793543015642,
+     "displayName": "Claude Code",
+     "auth": "ready",
+     "planLabel": "Max (20x)"
+    },
+    {
+     "id": "acp-cursor",
+     "available": true,
+     "observedAt": 1793543015642,
+     "displayName": "Cursor",
+     "auth": "ready",
+     "planLabel": null
+    },
+    {
+     "id": "acp-opencode",
+     "available": true,
+     "observedAt": 1793543015642,
+     "displayName": "opencode",
+     "auth": "ready",
+     "planLabel": null
+    },
+    {
+     "id": "acp-hermes-agent",
+     "available": true,
+     "observedAt": 1793543015642,
+     "displayName": "Hermes Agent",
+     "auth": "ready",
+     "planLabel": null
+    }
+   ],
+   "mcp": {
+    "installed": true,
+    "enabled": false,
+    "endpoint": null
+   },
+   "editorLinks": [],
+   "binding": {
+    "machine": "laptop",
+    "ownerServerId": "srv-m5",
+    "ownerHardwareId": "bbhw1:hw_01",
+    "enrolledHostId": "host_01",
+    "enrolledHardwareId": "bbhw1:hw_01",
+    "verified": true,
+    "reason": null
+   },
+   "projects": [],
+   "terminal": {
+    "sshAlias": null,
+    "sshVerified": true,
+    "localHostId": "host_01"
+   }
+  },
+  "studio": {
+   "machine": "studio",
+   "owner": {
+    "serverId": "srv-m1",
+    "hostId": "host_02",
+    "url": "https://srv-02.example.invalid",
+    "appVersion": "0.48.1",
+    "publishedAt": 1793543007242
+   },
+   "routes": [
+    {
+     "kind": "ssh",
+     "state": "healthy",
+     "detail": "m1 alias, authenticated snapshot",
+     "lastOkAt": 1793543007707
+    },
+    {
+     "kind": "broker",
+     "state": "healthy",
+     "detail": null,
+     "lastOkAt": 1793542974592
+    },
+    {
+     "kind": "connect",
+     "state": "healthy",
+     "detail": "https://srv-02.example.invalid",
+     "lastOkAt": null
+    }
+   ],
+   "activeRoute": "ssh",
+   "capabilities": {
+    "v": 1,
+    "observedAt": 1793542964715,
+    "platform": {
+     "os": "darwin",
+     "arch": "arm64",
+     "release": "25.2.0"
+    },
+    "hardwareId": "bbhw1:hw_02",
+    "gui": "present",
+    "xcode": {
+     "verified": true,
+     "version": "26.5"
+    },
+    "simulators": {
+     "available": true,
+     "booted": 0,
+     "tapControl": false
+    }
+   },
+   "providers": [
+    {
+     "id": "codex",
+     "available": true,
+     "observedAt": 1793543007650,
+     "displayName": "Codex",
+     "auth": "ready",
+     "planLabel": null
+    },
+    {
+     "id": "claude-code",
+     "available": true,
+     "observedAt": 1793543007650,
+     "displayName": "Claude Code",
+     "auth": "ready",
+     "planLabel": null
+    },
+    {
+     "id": "acp-cursor",
+     "available": true,
+     "observedAt": 1793543007650,
+     "displayName": "Cursor",
+     "auth": "ready",
+     "planLabel": null
+    },
+    {
+     "id": "acp-opencode",
+     "available": true,
+     "observedAt": 1793543007650,
+     "displayName": "opencode",
+     "auth": "ready",
+     "planLabel": null
+    }
+   ],
+   "mcp": {
+    "installed": true,
+    "enabled": false,
+    "endpoint": null
+   },
+   "editorLinks": [],
+   "binding": {
+    "machine": "studio",
+    "ownerServerId": "srv-m1",
+    "ownerHardwareId": "bbhw1:hw_02",
+    "enrolledHostId": "host_03",
+    "enrolledHardwareId": "bbhw1:hw_02",
+    "verified": true,
+    "reason": null
+   },
+   "projects": [],
+   "terminal": {
+    "sshAlias": "m1",
+    "sshVerified": true,
+    "localHostId": "host_01"
+   }
+  },
+  "work": {
+   "machine": "work",
+   "owner": null,
+   "routes": [
+    {
+     "kind": "ssh",
+     "state": "unconfigured",
+     "detail": "No SSH alias for this machine",
+     "lastOkAt": null
+    },
+    {
+     "kind": "broker",
+     "state": "unavailable",
+     "detail": null,
+     "lastOkAt": 1793034268140
+    },
+    {
+     "kind": "connect",
+     "state": "healthy",
+     "detail": "https://srv-03.example.invalid",
+     "lastOkAt": null
+    }
+   ],
+   "activeRoute": "none",
+   "capabilities": null,
+   "providers": null,
+   "mcp": null,
+   "editorLinks": [],
+   "binding": {
+    "machine": "work",
+    "ownerServerId": null,
+    "ownerHardwareId": null,
+    "enrolledHostId": null,
+    "enrolledHardwareId": null,
+    "verified": false,
+    "reason": "The independent owner did not report a hardware identity"
+   },
+   "projects": [],
+   "terminal": {
+    "sshAlias": null,
+    "sshVerified": false,
+    "localHostId": "host_01"
+   }
+  }
+ },
+ "usage": {
+  "studio": {
+   "state": "ok",
+   "reason": null,
+   "snapshot": {
+    "ownerServerId": "srv-m1",
+    "hostId": "host_02",
+    "observedAt": 1793543036040,
+    "providers": [
+     {
+      "providerId": "codex",
+      "status": "ok",
+      "subscriptionId": "bbsub1:sub_01",
+      "identity": "verified",
+      "planLabel": "Pro",
+      "windows": [
+       {
+        "label": "Weekly limit",
+        "usedPercent": 66,
+        "resetsAt": "2026-11-04T07:40:06.000Z"
+       }
+      ],
+      "method": "bb.system.usageLimits",
+      "observationId": "00000000-0000-4000-8000-000000000002"
+     },
+     {
+      "providerId": "claude-code",
+      "status": "error",
+      "subscriptionId": null,
+      "identity": "unknown",
+      "planLabel": null,
+      "windows": [],
+      "method": "bb.system.usageLimits",
+      "observationId": "00000000-0000-4000-8000-000000000003"
+     },
+     {
+      "providerId": "acp-cursor",
+      "status": "ok",
+      "subscriptionId": null,
+      "identity": "unknown",
+      "planLabel": "Super",
+      "windows": [
+       {
+        "label": "Plan usage",
+        "usedPercent": 4,
+        "resetsAt": "2026-11-07T10:56:50.979Z"
+       }
+      ],
+      "method": "bb.system.usageLimits",
+      "observationId": "00000000-0000-4000-8000-000000000004"
+     },
+     {
+      "providerId": "acp-opencode",
+      "status": "unavailable",
+      "subscriptionId": null,
+      "identity": "unknown",
+      "planLabel": null,
+      "windows": [],
+      "method": "bb.system.usageLimits",
+      "observationId": "00000000-0000-4000-8000-000000000005"
+     }
+    ]
+   }
+  }
+ },
+ "route": {
+  "studio": {
+   "machine": "studio",
+   "serverId": "srv-m1",
+   "hostId": "host_02",
+   "mode": "manual",
+   "reason": "Selected Studio's independent owner explicitly",
+   "warnings": [],
+   "candidates": [
+    {
+     "machine": "studio",
+     "serverId": "srv-m1",
+     "hostId": "host_02",
+     "eligible": true,
+     "reasons": [],
+     "score": null
+    }
+   ]
+  },
+  "auto": {
+   "machine": "studio",
+   "serverId": "srv-m1",
+   "hostId": "host_02",
+   "mode": "auto",
+   "reason": "Selected Studio's independent owner from fresh eligible CPU/RAM capacity",
+   "warnings": [],
+   "candidates": [
+    {
+     "machine": "laptop",
+     "serverId": "srv-m5",
+     "hostId": "host_01",
+     "eligible": true,
+     "reasons": [],
+     "score": 4.839817799622643
+    },
+    {
+     "machine": "studio",
+     "serverId": "srv-m1",
+     "hostId": "host_02",
+     "eligible": true,
+     "reasons": [],
+     "score": 5.491390013524335
+    },
+    {
+     "machine": "work",
+     "serverId": "srv-m4",
+     "hostId": null,
+     "eligible": false,
+     "reasons": [
+      "The owning server snapshot is stale or its clock is invalid",
+      "The owner needs sealed-relay-v1 and its existing mirror key before new broker jobs can be sent; plaintext downgrade is disabled",
+      "Work requires an explicitly restricted workload",
+      "CPU/RAM telemetry is unknown"
+     ],
+     "score": null
+    }
+   ]
+  }
+ },
+ "ownerInbox": {
+  "v": 1,
+  "ownerServerId": "srv-m1",
+  "hostId": "host_01",
+  "observedAt": 1793543000000,
+  "rows": [
+   {
+    "threadId": "thr_08",
+    "policy": {
+     "autoMerge": false,
+     "requiredPrUrls": [],
+     "requiredPrEnvironments": {},
+     "acceptancePending": true,
+     "inactiveAfterMs": null
+    },
+    "title": "Chat 1",
+    "hostId": "host_01",
+    "environmentId": "env_01",
+    "status": "stashed",
+    "question": null,
+    "updatedAt": 1791292151523,
+    "pinned": false,
+    "wakeAt": null
+   },
+   {
+    "threadId": "thr_09",
+    "policy": {
+     "autoMerge": false,
+     "requiredPrUrls": [],
+     "requiredPrEnvironments": {},
+     "acceptancePending": true,
+     "inactiveAfterMs": null
+    },
+    "title": "Chat 2",
+    "hostId": "host_01",
+    "environmentId": "env_02",
+    "status": "accepted",
+    "question": null,
+    "updatedAt": 1793034056141,
+    "pinned": false,
+    "wakeAt": null
+   },
+   {
+    "threadId": "thr_10",
+    "policy": {
+     "autoMerge": false,
+     "requiredPrUrls": [],
+     "requiredPrEnvironments": {},
+     "acceptancePending": true,
+     "inactiveAfterMs": null
+    },
+    "title": "Chat 3",
+    "hostId": "host_01",
+    "environmentId": "env_03",
+    "status": "accepted",
+    "question": null,
+    "updatedAt": 1793002710359,
+    "pinned": false,
+    "wakeAt": null,
+    "pr": {
+     "number": 1,
+     "url": "https://github.example.invalid/pull/1",
+     "state": "open",
+     "checks": "none",
+     "failedCount": 0
+    }
+   },
+   {
+    "threadId": "thr_11",
+    "policy": {
+     "autoMerge": false,
+     "requiredPrUrls": [],
+     "requiredPrEnvironments": {},
+     "acceptancePending": true,
+     "inactiveAfterMs": null
+    },
+    "title": "Chat 4",
+    "hostId": "host_01",
+    "environmentId": "env_04",
+    "status": "reviewable",
+    "question": null,
+    "updatedAt": 1793540338385,
+    "pinned": false,
+    "wakeAt": null
+   },
+   {
+    "threadId": "thr_02",
+    "policy": {
+     "autoMerge": false,
+     "requiredPrUrls": [],
+     "requiredPrEnvironments": {},
+     "acceptancePending": true,
+     "inactiveAfterMs": null
+    },
+    "title": "Chat 5",
+    "hostId": "host_01",
+    "environmentId": "env_04",
+    "status": "failed",
+    "question": null,
+    "updatedAt": 1793528615246,
+    "pinned": false,
+    "wakeAt": null
+   }
+  ],
+  "truncated": false
+ }
+}

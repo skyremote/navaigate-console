@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "edition": "community",
+  "machines": [
+    { "id": "laptop", "label": "Laptop", "role": "laptop" },
+    { "id": "work", "label": "Work", "role": "restricted", "restricted": true, "workloads": ["client-a"] }
+  ],
+  "workloads": [{ "id": "client-a", "label": "Client A", "machine": "no-such-machine", "match": [] }]
+}

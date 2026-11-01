@@ -7,6 +7,7 @@ import { animationById, type AnimationId } from "./avatars/animations";
 import { useMascotChoice } from "./mascotchoice";
 import { N_ID, PALETTE, type MascotState } from "./mascots3d/catalog";
 import { NavN } from "./avatars/NavN";
+import { useMascotsOff } from "./mascotgate";
 
 export { PALETTE, hashId };
 export type { MascotState };
@@ -37,14 +38,25 @@ export interface MascotProps {
   automatic?: string;
 }
 
+/** What a card wears when the mascots are switched off: one small still mark, no animation and no choice. It keeps the state class so the card chrome still reads the state. */
+function StillMark({ state, size, fresh, label }: { state: MascotState; size: number; fresh: boolean; label?: string }) {
+  return (
+    <span className={`hd-botwrap hd-mode-${fresh ? "fresh" : state}`} role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
+      <span className={`hd-m hd-m-${state} hd-m-still`} data-mascot="still" style={{ ["--hd-ms" as string]: `${size}px` }} />
+    </span>
+  );
+}
+
 /** An avatar for one agent. `seed` is the agent's id (thread id for a lead). */
 export function Mascot(props: MascotProps) {
   const choice = useMascotChoice();
+  const mascotsOff = useMascotsOff();
   const { seed, state, size = 32, fresh = false, label } = props;
   const forced = animationById(props.character)?.id;
   const own = animationById(choice.picks[seed])?.id;
   const wearsN = props.character === N_ID || (!forced && !own && props.automatic === N_ID);
   const animation = wearsN ? N_ID : (forced ?? animationFor(seed, { pick: own, set: choice.set }));
+  if (mascotsOff) return <StillMark state={state} size={size} fresh={fresh} label={label} />;
   return (
     <span className={`hd-botwrap hd-mode-${fresh ? "fresh" : state}`} role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
       {fresh && (

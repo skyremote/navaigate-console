@@ -12,7 +12,7 @@ One board for every Mac running bb. The machines, their order and their roles co
   - `bb fleet result <command-id> [--wait] [--timeout 20m]`: the answer of the thread a `bb fleet start` created, including threads started before the upgrade (within the last 7 days).
   - `start` and `ask` accept `--provider <id> --model <id> --reasoning-level <id> --service-tier <id>`, `--workload <id>` (`general`, or a workload id from the profile), `--nas`, `--unattended` and repeatable `--require-capability <name>`. A model/reasoning/tier requires its provider. Put `--` before prompt text containing flags.
   - Add `--json` for data. Waits default to 20 minutes and stop at 60 (bb gives a plugin command 65 minutes). Exit codes: 0 done, 1 error, 2 timed out.
-- **How machines talk:** each bb publishes a snapshot to the brain's Turso database (`fleet_servers`) every 30s and polls every 10s for work (`fleet_commands`) and messages (`fleet_messages`). Commands persist the complete selection in `fleet_command_options`; controls use `fleet_message_controls`. Credentials come from `~/.config/navaigate/brain.env` (the brain's own file) and stay server-side. When the broker is unavailable, the existing authenticated SSH alias of the profile's always-on machine (`sshAlias`) can carry bounded JSON RPC on stdin to that machine's own bb, including snapshots, new jobs, mirror events and controls. This creates no credentials, services or network configuration. A restricted machine requires a separately verified owner transport; account/server visibility alone does not provide one.
+- **How machines talk:** each bb publishes a snapshot to the brain's Turso database (`fleet_servers`) every 30s and polls every 10s for work (`fleet_commands`) and messages (`fleet_messages`). Commands persist the complete selection in `fleet_command_options`; controls use `fleet_message_controls`. Credentials come from the brain's own env file (by default `~/.config/navaigate/brain.env`; see the brain self-host kit) and stay server-side. When the broker is unavailable, the existing authenticated SSH alias of the profile's always-on machine (`sshAlias`) can carry bounded JSON RPC on stdin to that machine's own bb, including snapshots, new jobs, mirror events and controls. This creates no credentials, services or network configuration. A restricted machine requires a separately verified owner transport; account/server visibility alone does not provide one.
 - **Local shortcut:** when the target is this bb (or the thread lives in this bb), `ask`, `tell` and `output` use the local `bb thread` commands directly, with no brain round trip.
 - **Per-machine settings** (Settings > Plugins > Fleet, or `bb plugin config fleet set <key> <value>`): `joinFleet` (off by default), `machineKey`, `machineLabel`, `capabilities`, `defaultProject`, `hostAliases`, `mirrorEnvironment`.
 - **Mirror:** a chat on another Mac opens as a hidden local copy drawn by bb's own chat view. With the control relay wired, replies, steering and interrupts use durable identities and owner receipts. The skin calls `mirror_open({machine, threadId, localProjectId?}) -> {localThreadId}`. Explicit local placement uses an existing ready checkout in that project, and cannot reuse a sibling project's copy. See "Mirror" below.
@@ -38,9 +38,20 @@ The destination supplies its own actual host id and project, then native provisi
 
 The `work_start` result is `{outcome: "started"|"sent", threadId, url, commandId, requestId, route}`. `started` has an owner thread; `sent` means the broker durably accepted a command. `route` contains actual `machine`, `serverId`, `hostId`, mode, reasons, warnings and per-candidate eligibility. `command_get({commandId})` is a sender-scoped read-only receipt returning `{status, machine, threadId, url, error}`; statuses are `pending`, `starting`, `started`, `failed` or `unknown`. `work_receipt({requestId})` reads the local durable result. Receipt checks never reissue a job. Reusing an id with changed input fails; interrupted/unknown mutations are not retried automatically.
 
+## Connecting Fleet to your own brain
+
+Fleet needs two Macs and a brain both can reach over HTTPS. With the brain self-host kit, put the database behind its HTTPS address (the kit's Caddyfile does this) and write `~/.config/navaigate/brain.env` on each Mac:
+
+```sh
+TURSO_DATABASE_URL=https://db.example.com
+TURSO_AUTH_TOKEN=<the kit's read-write token, keys/rw.jwt>
+```
+
+Fleet refuses plain `http://` addresses, so a database that only listens on `127.0.0.1` works for one Mac's scripts but not for Fleet. Keep the file readable only by you (`chmod 600`); it is never committed and the Console profile never holds the token.
+
 ## Schema
 
-`fleet_servers` and `fleet_commands` are in `navaigate-aios/migrations/0006_fleet.sql`. The plugin creates the two relay tables itself at start (`CREATE TABLE IF NOT EXISTS`), so no migration is needed:
+The plugin creates every table it uses at start (`CREATE TABLE IF NOT EXISTS`), so a fresh self-hosted brain needs no migration, and a brain that already has `fleet_servers` and `fleet_commands` is left as it is. The relay tables are:
 
 ```sql
 -- A message for a thread on another machine. The target's Fleet claims it

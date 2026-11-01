@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createThreadAccounts } from "./thread-accounts";
 
-const claude = { accountId: "pool-1", label: "daniel", email: "daniel@example.com", harness: "claude" };
+const claude = { accountId: "pool-1", label: "sam", email: "sam@example.com", harness: "claude" };
 const codex = { accountId: "pool-2", label: "NavAIgate", email: null, harness: "codex" };
 
 function clock(start = 1_000_000) {
@@ -12,7 +12,7 @@ function clock(start = 1_000_000) {
 describe("createThreadAccounts", () => {
   it("returns the label, email and harness per chat and drops the internal pool id", async () => {
     const accounts = createThreadAccounts({ read: async () => ({ threads: { a: claude, b: codex } }) });
-    expect((await accounts.get()).get("a")).toEqual({ label: "daniel", email: "daniel@example.com", harness: "claude" });
+    expect((await accounts.get()).get("a")).toEqual({ label: "sam", email: "sam@example.com", harness: "claude" });
     expect((await accounts.get()).get("b")).toEqual({ label: "NavAIgate", email: null, harness: "codex" });
   });
 
@@ -52,7 +52,7 @@ describe("createThreadAccounts", () => {
     const accounts = createThreadAccounts({ read, ttlMs: 60_000, now: time.now });
     await accounts.get();
     time.advance(61_000);
-    expect((await accounts.get()).get("a")?.label).toBe("daniel");
+    expect((await accounts.get()).get("a")?.label).toBe("sam");
     await accounts.get();
     expect(read).toHaveBeenCalledTimes(2);
   });
@@ -60,7 +60,7 @@ describe("createThreadAccounts", () => {
   it("marks a chat with the account that is current when its entry is looked up", async () => {
     const accounts = createThreadAccounts({ read: async () => ({ threads: { a: claude } }) });
     const marked = await accounts.mark([{ id: "a", title: "x" }, { id: "z", title: "y" }]);
-    expect(marked[0]).toEqual({ id: "a", title: "x", account: { label: "daniel", email: "daniel@example.com", harness: "claude" } });
+    expect(marked[0]).toEqual({ id: "a", title: "x", account: { label: "sam", email: "sam@example.com", harness: "claude" } });
     expect("account" in marked[1]!).toBe(false);
   });
 });

@@ -70,11 +70,23 @@ describe("profile schema", () => {
     expect(resolveProfile({ machines: [{ id: "a", label: "A" }, { id: "a", label: "B" }] }).errors[0]).toMatch(/duplicate/);
   });
 
-  it("finds this machine explicitly, by hostname, then first", () => {
+  it("finds this machine explicitly, by hostname, by a whole-word id, and never guesses", () => {
     const p = resolveProfile(twoMacs).profile;
-    expect(thisMachine(p, "SAMS-LAPTOP.local").id).toBe("laptop");
-    expect(thisMachine(p, "somewhere-else").id).toBe("laptop");
-    expect(thisMachine({ ...p, thisMachine: "studio" }, "sams-laptop").id).toBe("studio");
+    expect(thisMachine(p, "SAMS-LAPTOP.local")?.id).toBe("laptop");
+    expect(thisMachine(p, "the-studio-mac")?.id).toBe("studio");
+    expect(thisMachine(p, "studios")).toBeNull();
+    expect(thisMachine(p, "somewhere-else")).toBeNull();
+    expect(thisMachine(p, null)).toBeNull();
+    expect(thisMachine({ ...p, thisMachine: "studio" }, "sams-laptop")?.id).toBe("studio");
+    expect(thisMachine(COMMUNITY_DEFAULTS, "anything")?.id).toBe("this-mac");
+  });
+
+  it("rejects references to unknown machines and unsafe SSH aliases", () => {
+    expect(resolveProfile({ ...twoMacs, thisMachine: "nope" }).errors[0]).toMatch(/thisMachine: unknown machine nope/);
+    expect(resolveProfile({ ...twoMacs, workloads: [{ id: "x", label: "X", machine: "gone", match: [] }] }).errors[0]).toMatch(/workloads.x.machine: unknown machine gone/);
+    const bad = resolveProfile({ machines: [{ id: "a", label: "A", role: "always-on", sshAlias: "-oProxyCommand=x" }] });
+    expect(bad.source).toBe("defaults");
+    expect(bad.errors.join(" ")).toMatch(/plain SSH Host alias/);
   });
 
   it("uses the saved pick, else the picker default", () => {
@@ -100,6 +112,10 @@ describe("profile file", () => {
     expect(loadProfile(file).source).toBe("defaults");
     const saved = saveProfile(resolveProfile(twoMacs).profile, file);
     expect(statSync(file).mode & 0o777).toBe(0o600);
+    expect(loadProfile(file).profile).toEqual(saved);
+    const dup = { ...saved, machines: [saved.machines[0]!, saved.machines[0]!] };
+    expect(() => saveProfile(dup, file)).toThrow(/profile not saved: machines: duplicate id/);
+    expect(() => saveProfile({ ...saved, thisMachine: "gone" }, file)).toThrow(/unknown machine gone/);
     expect(loadProfile(file).profile).toEqual(saved);
     writeFileSync(file, "{ not json");
     const broken = loadProfile(file);

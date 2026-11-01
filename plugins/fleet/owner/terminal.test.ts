@@ -10,7 +10,7 @@ describe("planTerminal", () => {
   });
 
   it("opens ssh to the independent studio from this Mac's own host when no enrolled host is proven", () => {
-    expect(planTerminal({ machine: "studio", localMachine: "laptop", binding: unverified, sshAlias: "studio", sshVerified: true, localHostId: "host_laptop" })).toEqual({ kind: "ssh", hostId: "host_laptop", alias: "studio", argv: ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", "-o", "ServerAliveInterval=15", "-o", "ClearAllForwardings=yes", "-o", "ForwardAgent=no", "-o", "ForwardX11=no", "studio"] });
+    expect(planTerminal({ machine: "studio", localMachine: "laptop", binding: unverified, sshAlias: "studio", sshVerified: true, localHostId: "host_laptop" })).toEqual({ kind: "ssh", hostId: "host_laptop", alias: "studio", argv: ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", "-o", "ServerAliveInterval=15", "-o", "ClearAllForwardings=yes", "-o", "ForwardAgent=no", "-o", "ForwardX11=no", "--", "studio"] });
   });
 
   it("says why there is no terminal when this Mac's own host is not proven", () => {

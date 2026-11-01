@@ -6,14 +6,14 @@ import { ThreadCard, accountTitle } from "./thread-card";
 
 const thread = { id: "thr_1", title: "Fix the build", state: "running" as const, projectName: "NavAIgate" };
 const props = { thread, via: null, age: "2m ago", onOpen: () => undefined };
-const account = { label: "daniel", email: "daniel@example.com", harness: "claude" as const };
+const account = { label: "sam", email: "sam@example.com", harness: "claude" as const };
 
 describe("ThreadCard account (F03)", () => {
   it("shows the account the chat runs on, with the email on hover", () => {
     const html = renderToStaticMarkup(createElement(ThreadCard, { ...props, thread: { ...thread, account } }));
     expect(html).toContain('data-nav-part="account"');
-    expect(html).toContain(">daniel<");
-    expect(html).toContain("Runs on the daniel@example.com account");
+    expect(html).toContain(">sam<");
+    expect(html).toContain("Runs on the sam@example.com account");
   });
 
   it("falls back to the label when the email is not known", () => {

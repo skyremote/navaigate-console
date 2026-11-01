@@ -13,6 +13,8 @@ import { FleetManagement, type FleetMachineEntry } from "./components/fleet-mana
 import { RelayActions } from "./components/relay-actions";
 import { SentFromHere } from "./components/sent-from-here";
 import { StartBox, type StartMode } from "./components/start-box";
+import { PicksOffContext } from "./components/picks-context";
+import { isOff } from "./lib/picks";
 import { ThreadCard } from "./components/thread-card";
 import { BOARD_MAX_STALE_MS, rpcFlight } from "./lib/rpc-flight";
 import { reachOf } from "./lib/reach";
@@ -122,23 +124,28 @@ function useBoard() {
   return { rpc, board, error, refetch };
 }
 
-/** The machines (id and label, in the owner's order) from the server's resolved profile. */
-function useProfileMachines(rpc: ReturnType<typeof useBoard>["rpc"], fallback: FleetMachineEntry[]): FleetMachineEntry[] {
+/** The machines (id and label, in the owner's order) and the features switched off, from the server's resolved profile. picksOff is null until the server has answered. */
+function useProfileMachines(rpc: ReturnType<typeof useBoard>["rpc"], fallback: FleetMachineEntry[]): { machines: FleetMachineEntry[]; picksOff: string[] | null } {
   const [machines, setMachines] = useState<FleetMachineEntry[] | null>(null);
+  const [picksOff, setPicksOff] = useState<string[] | null>(null);
   useEffect(() => {
     let live = true;
     rpc.call("profile_get", null).then(
-      (profile) => { if (live) setMachines(profile.machines.map((machine) => ({ id: machine.id, label: machine.label }))); },
-      () => undefined,
+      (profile) => {
+        if (!live) return;
+        setMachines(profile.machines.map((machine) => ({ id: machine.id, label: machine.label })));
+        setPicksOff(profile.picksOff);
+      },
+      () => { if (live) setPicksOff([]); },
     );
     return () => { live = false; };
   }, [rpc]);
-  return machines ?? fallback;
+  return { machines: machines ?? fallback, picksOff };
 }
 
 function FleetPage() {
   const { rpc, board, error, refetch } = useBoard();
-  const machines = useProfileMachines(rpc, board ? board.columns.map((column) => ({ id: column.key, label: column.label })) : []);
+  const { machines, picksOff } = useProfileMachines(rpc, board ? board.columns.map((column) => ({ id: column.key, label: column.label })) : []);
   const navigate = useBbNavigate();
   const [, tick] = useState(0);
   useEffect(() => {
@@ -176,7 +183,7 @@ function FleetPage() {
     }
   };
 
-  if (board === null) {
+  if (board === null || picksOff === null) {
     return (
       <div className="fleet">
         <style>{STYLE}</style>
@@ -194,7 +201,9 @@ function FleetPage() {
     { running: 0, needsYou: 0, online: 0 },
   );
 
+  const tellOff = isOff(picksOff, "F06");
   return (
+    <PicksOffContext.Provider value={picksOff}>
     <div className="fleet">
       <style>{STYLE}</style>
       <div className="fleet-top">
@@ -215,7 +224,7 @@ function FleetPage() {
         <div className="fleet-note">
           {board.me.brain
             ? "This bb shows only its own machines. To see and start work on the other Macs, switch on Join the fleet under Settings, Plugins, Fleet."
-            : "This Mac has no brain connection, so it shows only itself. Connect a brain in the Console setup to see and reach other Macs."}
+            : "This Mac has no brain connection, so it shows only itself. Fleet reads its brain connection from its own file, ~/.config/navaigate/brain.env; add it there to see and reach other Macs."}
         </div>
       ) : null}
 
@@ -262,14 +271,14 @@ function FleetPage() {
                   return (
                     <div key={key} className="fleet-card-wrap">
                       <ThreadCard thread={t} via={t.via !== column.serverId && column.serverId !== null ? t.via : null} age={ago(t.updatedAt)} onOpen={open} />
-                      {reach !== null ? (
+                      {reach !== null && !tellOff ? (
                         <div className="fleet-card-tools">
                           <button type="button" className="fleet-mini" aria-expanded={tellOpen === key} aria-label={`Tell ${column.label} about ${t.title}`} onClick={() => setTellOpen(tellOpen === key ? null : key)}>
                             Tell
                           </button>
                         </div>
                       ) : null}
-                      {tellOpen === key ? (
+                      {tellOpen === key && !tellOff ? (
                         <div className="fleet-card-panel">
                           <RelayActions machine={column.key} threadId={t.id} threadTitle={t.title} onSent={() => setReceiptsKey((n) => n + 1)} />
                         </div>
@@ -278,7 +287,7 @@ function FleetPage() {
                   );
                 })}
               </div>
-              {reach !== null ? <StartBox column={column} reach={reach} onStart={(p, mode) => start(column, p, mode)} /> : null}
+              {reach !== null ? <StartBox column={column} reach={reach} allowAsk={!tellOff} onStart={(p, mode) => start(column, p, mode)} /> : null}
             </section>
           );
         })}
@@ -288,6 +297,7 @@ function FleetPage() {
 
       <SentFromHere commands={board.commands} refreshKey={receiptsKey} watchId={watchId} onOpen={(url) => navigate.openUrl(url)} />
     </div>
+    </PicksOffContext.Provider>
   );
 }
 

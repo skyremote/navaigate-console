@@ -54,6 +54,7 @@ import { N_ID } from "./mascots3d/catalog";
 import { MascotChooser, MascotTrigger, MascotsTabLink, useMascotMenu } from "./mascotpicker";
 import { coachColourStyle, useMascotChoice } from "./mascotchoice";
 import { MascotsTab } from "./mascotstab";
+import { useMascotGate, useMascotsOff } from "./mascotgate";
 import { useIsCompactViewport } from "./components/ui/hooks/use-compact-viewport";
 
 export { PALETTE };
@@ -618,9 +619,13 @@ function HistoryTab({ threadId, active, batchKey }: { threadId: string; active: 
 // ---------- Panel ----------
 
 export function DeskPanel({ threadId }: { threadId: string }) {
+  useMascotGate();
+  const mascotsOff = useMascotsOff();
   const settings = useHideSettings();
   const { data, error } = useDesk(threadId);
-  const [tab, setTab] = useState<Tab>(() => desiredTab.get(threadId) ?? "live");
+  const [chosenTab, setTab] = useState<Tab>(() => desiredTab.get(threadId) ?? "live");
+  // The Mascots tab is gone while the mascots are switched off; a remembered choice of it falls back to Live.
+  const tab: Tab = chosenTab === "mascots" && mascotsOff ? "live" : chosenTab;
   const rootRef = useRef<HTMLDivElement>(null);
   const onScreen = useOnScreen(rootRef);
   useEffect(() => {
@@ -650,7 +655,7 @@ export function DeskPanel({ threadId }: { threadId: string }) {
         </button>
         <button type="button" role="tab" aria-selected={tab === "history"} onClick={() => choose("history")}>History</button>
         <button type="button" role="tab" aria-selected={tab === "team"} onClick={() => choose("team")}>Team</button>
-        <button type="button" role="tab" aria-selected={tab === "mascots"} onClick={() => choose("mascots")}>Mascots</button>
+        {mascotsOff ? null : <button type="button" role="tab" aria-selected={tab === "mascots"} onClick={() => choose("mascots")}>Mascots</button>}
       </div>
       <MascotsTabLink.Provider value={() => choose("mascots")}>
       {tab === "live" ? (
@@ -1006,6 +1011,7 @@ function usePendingDeskOpen(threadId: string | null) {
 }
 
 function AgentsRailPage() {
+  useMascotGate();
   const rpc = useRpc<typeof rpcContract>();
   const rpcRef = useRef(rpc);
   rpcRef.current = rpc;
@@ -1093,6 +1099,7 @@ function AgentsRailPage() {
 // One app-wide overlay that follows the chat in view. The "Show the coach companion" setting turns it
 // off, and it hides on phone-sized screens where it would sit on the composer.
 function Companion() {
+  useMascotGate();
   const { values } = useSettings();
   const enabled = values?.companion === undefined ? true : values.companion === true;
   const compact = useIsCompactViewport();

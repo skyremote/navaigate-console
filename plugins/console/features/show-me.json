@@ -1,0 +1,501 @@
+{
+  "F01": {
+    "kind": "route",
+    "href": "/plugins/fleet/fleet",
+    "label": "Fleet"
+  },
+  "F02": {
+    "kind": "panel",
+    "path": "home"
+  },
+  "F03": {
+    "kind": "none",
+    "reason": "Sidebar tag on each chat row"
+  },
+  "F04": {
+    "kind": "chat",
+    "hint": "Open a chat first: header Models"
+  },
+  "F05": {
+    "kind": "panel",
+    "path": "home"
+  },
+  "F06": {
+    "kind": "route",
+    "href": "/plugins/fleet/fleet",
+    "label": "Fleet"
+  },
+  "F07": {
+    "kind": "route",
+    "href": "/plugins/fleet/fleet",
+    "label": "Fleet"
+  },
+  "F08": {
+    "kind": "compose"
+  },
+  "F09": {
+    "kind": "chat",
+    "hint": "Open a chat first: header Models"
+  },
+  "F10": {
+    "kind": "panel",
+    "path": "home"
+  },
+  "F11": {
+    "kind": "panel",
+    "path": "home"
+  },
+  "F12": {
+    "kind": "none",
+    "reason": "Sidebar: click the always-on Mac's machine tile"
+  },
+  "F13": {
+    "kind": "panel",
+    "path": "home"
+  },
+  "F14": {
+    "kind": "panel",
+    "path": "home"
+  },
+  "F15": {
+    "kind": "panel",
+    "path": "home"
+  },
+  "F16": {
+    "kind": "none",
+    "reason": "Phone app, not in the desktop Console"
+  },
+  "F17": {
+    "kind": "route",
+    "href": "/plugins/fleet/fleet",
+    "label": "Fleet"
+  },
+  "F18": {
+    "kind": "route",
+    "href": "/plugins/fleet/fleet",
+    "label": "Fleet"
+  },
+  "F19": {
+    "kind": "panel",
+    "path": "home"
+  },
+  "F20": {
+    "kind": "none",
+    "reason": "Open your Mac's bb Connect address in a browser"
+  },
+  "F21": {
+    "kind": "route",
+    "href": "/plugins/fleet/fleet",
+    "label": "Fleet"
+  },
+  "F22": {
+    "kind": "route",
+    "href": "/plugins/fleet/fleet",
+    "label": "Fleet"
+  },
+  "F23": {
+    "kind": "route",
+    "href": "/plugins/fleet/fleet",
+    "label": "Fleet"
+  },
+  "F24": {
+    "kind": "panel",
+    "path": "home"
+  },
+  "F25": {
+    "kind": "route",
+    "href": "/plugins/fleet/fleet",
+    "label": "Fleet"
+  },
+  "F26": {
+    "kind": "route",
+    "href": "/plugins/fleet/fleet",
+    "label": "Fleet"
+  },
+  "F27": {
+    "kind": "chat",
+    "hint": "Open a mirrored chat first"
+  },
+  "F28": {
+    "kind": "chat",
+    "hint": "Open a new chat first: the Run on <machine> chip under the chat box"
+  },
+  "F29": {
+    "kind": "route",
+    "href": "/plugins/fleet/fleet",
+    "label": "Fleet"
+  },
+  "F30": {
+    "kind": "panel",
+    "path": "work-needs-you"
+  },
+  "F31": {
+    "kind": "panel",
+    "path": "work-needs-you"
+  },
+  "F32": {
+    "kind": "panel",
+    "path": "work-needs-you"
+  },
+  "F33": {
+    "kind": "panel",
+    "path": "work-needs-you"
+  },
+  "F34": {
+    "kind": "panel",
+    "path": "work-needs-you"
+  },
+  "F35": {
+    "kind": "panel",
+    "path": "work-needs-you"
+  },
+  "F36": {
+    "kind": "none",
+    "reason": "Sidebar action: right-click a chat"
+  },
+  "F37": {
+    "kind": "compose"
+  },
+  "F38": {
+    "kind": "none",
+    "reason": "Sidebar badge on a chat row"
+  },
+  "F39": {
+    "kind": "panel",
+    "path": "work-needs-you"
+  },
+  "F40": {
+    "kind": "panel",
+    "path": "work-needs-you"
+  },
+  "F41": {
+    "kind": "none",
+    "reason": "Phone only"
+  },
+  "F42": {
+    "kind": "panel",
+    "path": "work-needs-you"
+  },
+  "F43": {
+    "kind": "panel",
+    "path": "work-needs-you"
+  },
+  "F44": {
+    "kind": "route",
+    "href": "/plugins/automations/automations",
+    "label": "Automations"
+  },
+  "F45": {
+    "kind": "chat",
+    "hint": "Open a running chat first: send-arrow menu"
+  },
+  "F46": {
+    "kind": "chat",
+    "hint": "Open a chat first: send-arrow menu"
+  },
+  "F47": {
+    "kind": "panel",
+    "path": "home"
+  },
+  "F48": {
+    "kind": "compose"
+  },
+  "F49": {
+    "kind": "panel",
+    "path": "home"
+  },
+  "F50": {
+    "kind": "chat",
+    "hint": "Open a failed chat first"
+  },
+  "F51": {
+    "kind": "route",
+    "href": "/settings/plugins/navaigate-skin",
+    "label": "NavAIgate Workspace settings"
+  },
+  "F52": {
+    "kind": "route",
+    "href": "/settings/plugins/navaigate-skin",
+    "label": "NavAIgate Workspace settings"
+  },
+  "F53": {
+    "kind": "route",
+    "href": "/settings/plugins/navaigate-skin",
+    "label": "NavAIgate Workspace settings"
+  },
+  "F54": {
+    "kind": "chat",
+    "hint": "Open a chat first"
+  },
+  "F55": {
+    "kind": "compose"
+  },
+  "F56": {
+    "kind": "compose"
+  },
+  "F57": {
+    "kind": "compose"
+  },
+  "F58": {
+    "kind": "chat",
+    "hint": "Open a chat first: select text in a reply"
+  },
+  "F59": {
+    "kind": "panel",
+    "path": "home"
+  },
+  "F60": {
+    "kind": "panel",
+    "path": "home"
+  },
+  "F61": {
+    "kind": "chat",
+    "hint": "Open a chat on another Mac first"
+  },
+  "F62": {
+    "kind": "compose"
+  },
+  "F63": {
+    "kind": "chat",
+    "hint": "Open a chat first: header Delivery, Worktrees"
+  },
+  "F64": {
+    "kind": "compose"
+  },
+  "F65": {
+    "kind": "route",
+    "href": "/settings/projects",
+    "label": "Settings, Projects"
+  },
+  "F66": {
+    "kind": "panel",
+    "path": "delivery"
+  },
+  "F67": {
+    "kind": "panel",
+    "path": "delivery"
+  },
+  "F68": {
+    "kind": "panel",
+    "path": "delivery"
+  },
+  "F69": {
+    "kind": "none",
+    "reason": "Sidebar badge and a note in the chat"
+  },
+  "F70": {
+    "kind": "panel",
+    "path": "delivery"
+  },
+  "F71": {
+    "kind": "route",
+    "href": "/settings/appearance",
+    "label": "Settings, Appearance"
+  },
+  "F72": {
+    "kind": "route",
+    "href": "/settings/keyboard",
+    "label": "Settings, Keyboard"
+  },
+  "F73": {
+    "kind": "panel",
+    "path": "delivery"
+  },
+  "F74": {
+    "kind": "none",
+    "reason": "Sidebar action: right-click a project heading"
+  },
+  "F75": {
+    "kind": "panel",
+    "path": "delivery"
+  },
+  "F76": {
+    "kind": "route",
+    "href": "/settings/mobile",
+    "label": "Settings, Mobile"
+  },
+  "F77": {
+    "kind": "none",
+    "reason": "Works in the background"
+  },
+  "F78": {
+    "kind": "route",
+    "href": "/plugins/fleet/fleet",
+    "label": "Fleet"
+  },
+  "F79": {
+    "kind": "panel",
+    "path": "delivery"
+  },
+  "F80": {
+    "kind": "chat",
+    "hint": "Open a chat first: header Delivery, Research"
+  },
+  "F81": {
+    "kind": "panel",
+    "path": "delivery"
+  },
+  "F82": {
+    "kind": "route",
+    "href": "/plugins/fleet/fleet",
+    "label": "Fleet"
+  },
+  "F83": {
+    "kind": "panel",
+    "path": "delivery"
+  },
+  "S01": {
+    "kind": "none",
+    "reason": "Phone app only"
+  },
+  "S02": {
+    "kind": "none",
+    "reason": "Phone app only"
+  },
+  "S03": {
+    "kind": "chat",
+    "hint": "Open a chat first: header Models"
+  },
+  "S04": {
+    "kind": "panel",
+    "path": "work-needs-you"
+  },
+  "S05": {
+    "kind": "panel",
+    "path": "delivery"
+  },
+  "S06": {
+    "kind": "panel",
+    "path": "delivery"
+  },
+  "S08": {
+    "kind": "route",
+    "href": "/plugins/fleet/fleet",
+    "label": "Fleet"
+  },
+  "EXTRA-A": {
+    "kind": "panel",
+    "path": "stash"
+  },
+  "EXTRA-B": {
+    "kind": "none",
+    "reason": "Sidebar action: right-click a folder or project heading"
+  },
+  "EXTRA-C": {
+    "kind": "none",
+    "reason": "Comes with the Helper Desk release"
+  },
+  "EXTRA-D": {
+    "kind": "compose"
+  },
+  "EXTRA-E": {
+    "kind": "compose"
+  },
+  "EXTRA-F": {
+    "kind": "chat",
+    "hint": "Open a chat with an openui block in it"
+  },
+  "EXTRA-G": {
+    "kind": "route",
+    "href": "/settings/plugins/navaigate-skin",
+    "label": "NavAIgate Workspace settings"
+  },
+  "EXTRA-H": {
+    "kind": "chat",
+    "hint": "Open a chat first: side panel, New tab, Prompt stack"
+  },
+  "EXTRA-I": {
+    "kind": "panel",
+    "path": "inbox"
+  },
+  "EXTRA-J": {
+    "kind": "panel",
+    "path": "calendar"
+  },
+  "EXTRA-K": {
+    "kind": "panel",
+    "path": "home"
+  },
+  "EXTRA-L": {
+    "kind": "panel",
+    "path": "home"
+  },
+  "EXTRA-M": {
+    "kind": "panel",
+    "path": "home"
+  },
+  "EXTRA-N": {
+    "kind": "panel",
+    "path": "home"
+  },
+  "EXTRA-O": {
+    "kind": "panel",
+    "path": "home"
+  },
+  "EXTRA-P": {
+    "kind": "panel",
+    "path": "home"
+  },
+  "EXTRA-Q": {
+    "kind": "chat",
+    "hint": "Open a chat first: header Talk button, or Cmd+Shift+E"
+  },
+  "EXTRA-R": {
+    "kind": "panel",
+    "path": "board"
+  },
+  "EXTRA-S": {
+    "kind": "panel",
+    "path": "dashboard"
+  },
+  "EXTRA-T": {
+    "kind": "none",
+    "reason": "Strip along the top of the window"
+  },
+  "EXTRA-U": {
+    "kind": "compose"
+  },
+  "EXTRA-V": {
+    "kind": "compose"
+  },
+  "EXTRA-W": {
+    "kind": "none",
+    "reason": "The sidebar itself"
+  },
+  "EXTRA-X": {
+    "kind": "none",
+    "reason": "Right-click a folder in the sidebar"
+  },
+  "EXTRA-Y": {
+    "kind": "none",
+    "reason": "The Tags button beside Select in the sidebar"
+  },
+  "EXTRA-Z": {
+    "kind": "none",
+    "reason": "Sidebar footer"
+  },
+  "EXTRA-AA": {
+    "kind": "panel",
+    "path": "features"
+  },
+  "EXTRA-AB": {
+    "kind": "chat",
+    "hint": "Open a chat that has running sub-agents"
+  },
+  "EXTRA-AC": {
+    "kind": "chat",
+    "hint": "Open a chat whose agent saved a file outside its project"
+  },
+  "EXTRA-AD": {
+    "kind": "chat",
+    "hint": "Open a chat first: hover the usage line under the chat box"
+  },
+  "EXTRA-AE": {
+    "kind": "none",
+    "reason": "Right-click a chat row, or the 'On <machine>' header button"
+  },
+  "EXTRA-AF": {
+    "kind": "chat",
+    "hint": "Open a chat first: right panel Agents tab, or Cmd+Shift+A"
+  }
+}

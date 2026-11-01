@@ -20,7 +20,7 @@ describe("ssh failure classification", () => {
   it("treats a pre-connect ssh failure as unavailable even for a mutation", () => {
     expect(classifySshFailure({ code: 255, stdout: "", stderr: "ssh: connect to host studio.local port 22: Connection refused", mutation: true })).toBe("unavailable");
     expect(classifySshFailure({ code: 255, stdout: "", stderr: "ssh: Could not resolve hostname studio: nodename nor servname provided", mutation: true })).toBe("unavailable");
-    expect(classifySshFailure({ code: 255, stdout: "", stderr: "daniel@studio: Permission denied (publickey).", mutation: true })).toBe("unavailable");
+    expect(classifySshFailure({ code: 255, stdout: "", stderr: "sam@studio: Permission denied (publickey).", mutation: true })).toBe("unavailable");
   });
 
   it("keeps a mutation unknown when the remote command may have run", () => {

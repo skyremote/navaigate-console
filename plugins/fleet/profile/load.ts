@@ -44,9 +44,17 @@ export function loadProfile(path: string = profilePath()): ResolvedProfile {
   return resolved;
 }
 
-/** Validate and write the whole profile atomically, readable only by its owner. */
+/**
+ * Validate and write the whole profile atomically, readable only by its owner.
+ * Uses the same checks as reading (resolveProfile), so a profile the next read
+ * would reject is never written over a good one.
+ */
 export function saveProfile(profile: Profile, path: string = profilePath()): Profile {
   const valid = profileSchema.parse(profile);
+  const checked = resolveProfile(valid);
+  if (checked.source !== "file" || checked.errors.length > 0) {
+    throw new Error(`profile not saved: ${checked.errors.join("; ") || "it does not validate"}`);
+  }
   mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   const tmp = `${path}.${process.pid}.${Date.now()}.tmp`;
   writeFileSync(tmp, `${JSON.stringify(valid, null, 2)}\n`, { mode: 0o600 });

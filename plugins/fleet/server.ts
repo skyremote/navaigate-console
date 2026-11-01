@@ -80,7 +80,8 @@ import {
 } from "./model";
 import { TursoClient, loadBrainCredentials, type Row } from "./turso";
 import { loadProfile } from "./profile/load";
-import { alwaysOnMachine, isRestricted, machineLabel as profileMachineLabel, machineOrder, profileSchema, thisMachine } from "./profile/schema";
+import { offMessage, pickedOff, picksOff, type FleetGatedId } from "./lib/picks";
+import { alwaysOnMachine, COMMUNITY_DEFAULTS, isRestricted, setupDone, machineLabel as profileMachineLabel, machineOrder, thisMachine } from "./profile/schema";
 import { directRouteMachine, fleetSection, isFleetMachine, isWorkloadId, resolveMachineId, workloadLabel, workloadIds, DEFAULT_INSTALL_URL, GENERAL_WORKLOAD, workloadRefusal } from "./lib/profile-fleet";
 import { MIRROR_FEATURE, MIRROR_MODEL, MIRROR_PROVIDER_ID, type MirrorProviderOptions } from "./mirror/protocol";
 import { createMirror, type Mirror } from "./mirror/service";
@@ -202,6 +203,14 @@ const commandSchema = z.object({
 });
 export type Command = z.infer<typeof commandSchema>;
 
+/** What the browser needs of the profile: machine labels and order, and whether setup is done. Nothing else leaves the server. */
+const profileForBrowserSchema = z.object({
+  machines: z.array(z.object({ id: z.string(), label: z.string(), role: z.string(), restricted: z.boolean() })),
+  setupDone: z.boolean(),
+  /** The Fleet feature ids switched off in the setup picker (see lib/picks.ts). */
+  picksOff: z.array(z.string()),
+});
+
 const boardSchema = z.object({
       me: z.object({
         serverId: z.string(),
@@ -240,7 +249,7 @@ export const rpcContract = defineRpcContract({
   control_receipt: { input: z.object({ id: z.string().regex(/^[a-f0-9]{64}$/), remoteThreadId: controlInputSchema.shape.remoteThreadId.optional() }), output: controlResultSchema },
   thread_events_get: { input: threadEventsInputSchema, output: z.array(z.unknown()) },
   thread_answer_get: { input: z.object({ threadId: controlInputSchema.shape.remoteThreadId }), output: answerSchema },
-  profile_get: { input: z.null(), output: profileSchema },
+  profile_get: { input: z.null(), output: profileForBrowserSchema },
   thread_target_get: { input: z.object({ threadId: controlInputSchema.shape.remoteThreadId }).strict(), output: z.object({ serverId: z.string(), machineKey: z.string().min(1).max(40), hostId: z.string(), environmentId: z.string(), projectId: z.string(), threadId: z.string() }) },
   thread_tell: { input: tellInputSchema, output: tellResultSchema },
   thread_output_get: { input: z.object({ machine: z.string().trim().min(1).max(40), threadId: controlInputSchema.shape.remoteThreadId }).strict(), output: answerSchema },
@@ -509,9 +518,35 @@ function sha256(text: string): string {
   return createHash("sha256").update(text, "utf8").digest("hex");
 }
 
-// ---------- two-way relay tables (created at start, IF NOT EXISTS) ----------
+// ---------- fleet tables (created at start, IF NOT EXISTS) ----------
+// The snapshot and command tables match the brain's Fleet migration exactly, so a
+// brain that already has them is untouched and a fresh self-hosted brain gets them.
 
 const RELAY_SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS fleet_servers (
+     server_id TEXT PRIMARY KEY,
+     label TEXT NOT NULL,
+     url TEXT,
+     hostname TEXT,
+     published_at INTEGER NOT NULL,
+     payload TEXT NOT NULL
+   )`,
+  `CREATE TABLE IF NOT EXISTS fleet_commands (
+     id TEXT PRIMARY KEY,
+     target_server TEXT NOT NULL,
+     target_host_id TEXT,
+     title TEXT,
+     prompt TEXT NOT NULL,
+     provider_id TEXT,
+     from_server TEXT NOT NULL,
+     status TEXT NOT NULL DEFAULT 'pending',
+     thread_id TEXT,
+     thread_url TEXT,
+     error TEXT,
+     created_at INTEGER NOT NULL,
+     updated_at INTEGER NOT NULL
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_fleet_commands_target ON fleet_commands(target_server, status)`,
   `CREATE TABLE IF NOT EXISTS fleet_command_options (command_id TEXT PRIMARY KEY, payload TEXT NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS fleet_message_controls (message_id TEXT PRIMARY KEY, payload TEXT NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS fleet_messages (
@@ -589,6 +624,7 @@ export default async function plugin(bb: Bb) {
   for (const problem of loadedProfile.errors) bb.log.warn(`profile: ${problem}`);
   const alwaysOn = alwaysOnMachine(profile);
   const nasConfig = { path: profile.paths.nas, host: fleetSection(profile).nasHost };
+  const enrolmentOff = pickedOff(profile, "F82");
   const settings = bb.settings.define({
     joinFleet: {
       type: "boolean",
@@ -615,12 +651,15 @@ export default async function plugin(bb: Bb) {
       label: "Project new work starts in (blank = the profile's default project, else the personal workspace)",
       default: "",
     },
-    hostAliases: {
-      type: "string",
-      label: `Enrolled machine names to machine keys, JSON (e.g. {"Studio": "${alwaysOn?.id ?? machineOrder(profile)[0]}"})`,
-      experimental_multiline: true,
-      default: "{}",
-    },
+    // Machines enrolment (F82): the setting is not offered, and a saved value is ignored, while the feature is switched off.
+    ...(enrolmentOff ? {} : {
+      hostAliases: {
+        type: "string" as const,
+        label: `Enrolled machine names to machine keys, JSON (e.g. {"Studio": "${alwaysOn?.id ?? machineOrder(profile)[0]}"})`,
+        experimental_multiline: true,
+        default: "{}",
+      },
+    }),
     mirrorEnvironment: {
       type: "string",
       label: "Environment id that copies of other machines' chats reuse (blank = a ready project checkout on this Mac)",
@@ -649,7 +688,7 @@ export default async function plugin(bb: Bb) {
 
   let aliases: Record<string, string> = {};
   try {
-    const parsed: unknown = JSON.parse(config.hostAliases || "{}");
+    const parsed: unknown = enrolmentOff ? {} : JSON.parse((config as { hostAliases?: string }).hostAliases || "{}");
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
       aliases = Object.fromEntries(Object.entries(parsed).filter((e): e is [string, string] => typeof e[1] === "string"));
     }
@@ -659,7 +698,40 @@ export default async function plugin(bb: Bb) {
 
   const creds = loadBrainCredentials();
   const turso = creds ? new TursoClient(creds) : null;
-  const machineKey = (config.machineKey || thisMachine(profile, hostname()).id).trim();
+  // The machine key is the plugin setting (canonicalised to the profile's id), else the profile's match for
+  // this hostname, else the raw hostname. Never another machine's key.
+  const keySetting = config.machineKey.trim();
+  const keyFromProfile = thisMachine(profile, hostname())?.id ?? null;
+  const machineKey = (keySetting ? (resolveMachineId(profile, keySetting) ?? keySetting) : (keyFromProfile ?? hostname())).trim();
+  if (!keySetting && keyFromProfile === null) bb.log.warn(`This Mac (${hostname()}) matches no machine in the profile, so it uses its hostname as its machine key. Add the hostname to the profile or set the machine key.`);
+  /** Why this Fleet must not start work or move files, or null. Fails closed: a wrong identity could drop a machine's restrictions. */
+  const configProblem: string | null = (() => {
+    if (loadedProfile.errors.length > 0) return `The profile has errors (${loadedProfile.errors.join("; ")}), so Fleet starts no work and moves no files until it is fixed`;
+    if (keySetting && resolveMachineId(profile, keySetting) === null && (profile.machines.length > 1 || keySetting !== COMMUNITY_DEFAULTS.machines[0]!.id)) return `The machine key "${keySetting}" is not a machine in the profile (${machineOrder(profile).join(", ")}), so Fleet starts no work and moves no files until it is fixed`;
+    return null;
+  })();
+  if (configProblem !== null) bb.log.error(configProblem);
+  const refuseIfMisconfigured = (): void => { if (configProblem !== null) throw new Error(`${REJECTED_PREFIX}${configProblem}`); };
+  /** The same handlers, except that the named mutating methods refuse while the configuration is wrong. */
+  const guardMutations = <H extends Record<string, (...args: never[]) => unknown>>(handlers: H, methods: (keyof H)[]): H => {
+    const out: Record<string, unknown> = { ...handlers };
+    for (const method of methods) {
+      const inner = handlers[method] as unknown as (...args: unknown[]) => unknown;
+      out[method as string] = (...args: unknown[]) => { refuseIfMisconfigured(); return inner(...args); };
+    }
+    return out as H;
+  };
+  /** The profile is read afresh (it is mtime-cached), so a tick saved in the Console's Setup applies without reloading Fleet. */
+  const refuseIfOff = (id: FleetGatedId): void => { if (pickedOff(loadProfile().profile, id)) throw new Error(offMessage(id)); };
+  /** The same handlers, except that the named methods refuse with a plain message while the feature is switched off. */
+  const guardPicked = <H extends Record<string, (...args: never[]) => unknown>>(handlers: H, id: FleetGatedId, methods: (keyof H)[]): H => {
+    const out: Record<string, unknown> = { ...handlers };
+    for (const method of methods) {
+      const inner = handlers[method] as unknown as (...args: unknown[]) => unknown;
+      out[method as string] = (...args: unknown[]) => { refuseIfOff(id); return inner(...args); };
+    }
+    return out as H;
+  };
   const machineLabel = (config.machineLabel || profileMachineLabel(profile, machineKey)).trim();
   const alwaysOnId = alwaysOn?.id ?? null;
   const canonicalMachine = (raw: string): string => resolveMachineId(profile, raw) ?? raw.trim();
@@ -1121,7 +1193,7 @@ export default async function plugin(bb: Bb) {
     const persistent = hosts.filter((h) => h.type === "persistent");
     const serverHost = persistent.find((h) => h.machineProviderId === null) ?? persistent[0];
     const keyOf = (h: { id: string; name: string }) =>
-      h.id === serverHost?.id ? machineKey : machineKeyForHost(h.name, aliases, profile);
+      h.id === serverHost?.id ? machineKey : canonicalMachine(machineKeyForHost(h.name, aliases, profile));
     return { hosts: persistent, serverHost, keyOf };
   }
 
@@ -1402,6 +1474,7 @@ export default async function plugin(bb: Bb) {
 
   /** Every check before a native spawn. Any failure here means nothing was started. */
   async function validateLocalStart(target: string, selection: ExecutionSelection, routing: RoutingPreferences, project: WorkProject) {
+    refuseIfMisconfigured();
     selection = executionSelection(selection);
     const refusal = workloadRefusal(profile, target, routing.workload);
     if (refusal !== null) throw new Error(refusal);
@@ -1557,6 +1630,7 @@ export default async function plugin(bb: Bb) {
   }
 
   async function startWork(machine: string, prompt: string, title: string | undefined, selection: ExecutionSelection = {}, routing: RoutingPreferences = {}, requestId: string = randomUUID(), project: WorkProject = {}, attachments: { source: z.infer<typeof sourceAttachmentSchema>[]; owner: OwnerAttachmentRef[] } = { source: [], owner: [] }) {
+    refuseIfMisconfigured();
     selection = executionSelection(selection);
     const attachmentFingerprint = [
       ...attachments.source.map(({ type, sourceProjectId, path, name }) => ({ type, sourceProjectId, path, name })),
@@ -2087,7 +2161,7 @@ export default async function plugin(bb: Bb) {
       me: { serverId, machineKey, label: machineLabel, joined: config.joinFleet, brain: turso !== null, backendHealthy, lastSuccessfulSyncAt },
       columns: buildColumns([local, ...remote.filter((snapshot) => snapshot.serverId !== directOwner?.serverId), ...(directOwner ? [directOwner] : [])], serverId, localKeys, Date.now(), profile).map((column) => ({ ...column, online: column.ownerOnline ?? false })),
       commands,
-      error: publishError ?? pollError ?? relayError ?? mirrorError,
+      error: configProblem ?? publishError ?? pollError ?? relayError ?? mirrorError,
       transport: { broker: turso === null || !config.joinFleet ? "disabled" as const : backendHealthy ? "healthy" as const : "unavailable" as const, lastSuccessfulSyncAt, directMachine: directId, directOwner: !directConfigured ? "unconfigured" as const : directOwner && Date.now() - directOwner.publishedAt < 3 * 60_000 && directOwnerError === null ? "ready" as const : "unavailable" as const, directOwnerError },
       at: Date.now(),
     };
@@ -2095,7 +2169,7 @@ export default async function plugin(bb: Bb) {
 
   bb.rpc.register(rpcContract, {
     board_get: () => board(true),
-    profile_get: () => loadProfile().profile,
+    profile_get: () => ({ machines: profile.machines.map((machine) => ({ id: machine.id, label: machine.label, role: machine.role, restricted: machine.restricted })), setupDone: setupDone(profile), picksOff: picksOff(loadProfile().profile) }),
     work_start: async ({ machine, prompt, title, providerId, model, reasoningLevel, serviceTier, routing, requestId, projectId, projectName, workspace, attachments, ownerAttachments }) => {
       const selection = executionSelectionSchema.parse({ providerId, model, reasoningLevel, serviceTier });
       for (const key of Object.keys(selection) as (keyof ExecutionSelection)[]) if (selection[key] === undefined) delete selection[key];
@@ -2106,6 +2180,7 @@ export default async function plugin(bb: Bb) {
     },
     route_preview: async ({ machine, routing, projectId, projectName, workspace, attachments, ...selection }) => routePreview(machine, selection, routing, { ...(projectId ? { projectId } : {}), ...(projectName ? { projectName } : {}), ...(workspace ? { workspace } : {}) }, (attachments?.length ?? 0) > 0),
     work_attachments_put: async (input) => {
+      refuseIfMisconfigured();
       let destination: string;
       try { destination = await resolveDestinationProject({ ...(input.projectId ? { projectId: input.projectId } : {}), ...(input.projectName ? { projectName: input.projectName } : {}) }); }
       catch (cause) { throw new Error(`${REJECTED_PREFIX}${message(cause)}`); }
@@ -2144,6 +2219,7 @@ export default async function plugin(bb: Bb) {
       return { machine: machineKey, threadId, url: await localThreadUrl(threadId, thread.projectId), state, output: output.text, truncated: output.truncated, publishedAt: Date.now() };
     },
     thread_tell: async ({ machine, threadId, message: text, requestId = randomUUID() }) => {
+      refuseIfOff("F06");
       const claim = claimRequest(requestId, "tell", { machine, threadId, message: text });
       if (claim.existing) {
         const earlier = claim.result === null ? null : tellResultSchema.safeParse(JSON.parse(claim.result));
@@ -2162,7 +2238,7 @@ export default async function plugin(bb: Bb) {
         throw cause;
       }
     },
-    thread_output_get: async ({ machine, threadId }) => answerSchema.parse(await output({ kind: "output", machine, threadId, json: false })),
+    thread_output_get: async ({ machine, threadId }) => { refuseIfOff("F06"); return answerSchema.parse(await output({ kind: "output", machine, threadId, json: false })); },
     receipt_result: async ({ id }) => {
       try {
         const found = await result({ kind: "result", commandId: id, wait: false, timeoutMs: 2_000, json: false }, new AbortController().signal) as Answer & { commandId?: string | null };
@@ -2251,7 +2327,7 @@ export default async function plugin(bb: Bb) {
     },
   });
   readUpdateIntent = (intentId) => updates.readIntent(intentId);
-  bb.rpc.register(updatesRpcContract, updates.handlers);
+  bb.rpc.register(updatesRpcContract, guardPicked(guardPicked(updates.handlers, "F26", ["update_dispatch", "provider_update_dispatch"]), "F78", ["updates_policy_set"]));
 
   // ---------- owner detail: routes, binding proof, editor links (F18, F23, F25, F27) ----------
 
@@ -2310,10 +2386,15 @@ export default async function plugin(bb: Bb) {
   }
 
   bb.rpc.register(ownerDetailRpcContract, {
-    owner_detail_get: ({ machine }) => reads.run(`owner_detail:${machine}`, OWNER_DETAIL_TTL_MS, () => ownerDetail(machine)),
+    owner_detail_get: async ({ machine }) => {
+      const detail = await reads.run(`owner_detail:${machine}`, OWNER_DETAIL_TTL_MS, () => ownerDetail(machine));
+      // The terminal opens only from a verified route, so with F18 off the detail carries none (no RPC opens it).
+      return pickedOff(loadProfile().profile, "F18") ? { ...detail, terminal: { sshAlias: null, sshVerified: false, localHostId: null } } : detail;
+    },
     host_binding_get: ({ machine }) => hostBinding(machine),
     owner_project_target_get: ({ machine }) => ownerProjectTarget(machine),
     mcp_enable: async ({ enabled }) => {
+      refuseIfOff("F07");
       if (enabled) await bb.sdk.plugins.enable({ pluginId: "bb--mcp" } as never);
       else await bb.sdk.plugins.disable({ pluginId: "bb--mcp" } as never);
       return (await mcpState((await me()).url)) ?? { installed: false, enabled: false, endpoint: null };
@@ -2357,7 +2438,7 @@ export default async function plugin(bb: Bb) {
       return ssh.call("fleet", method, input, mutation);
     },
   });
-  bb.rpc.register(ownerProjectContract, ownerProject.handlers);
+  bb.rpc.register(ownerProjectContract, guardMutations(guardPicked(ownerProject.handlers, "F65", ["project_prepare"]), ["project_prepare", "transfer_manifest_apply"]));
 
   async function localTransferCheckout(projectId: string): Promise<string> {
     const hostId = await provenLocalHostId();
@@ -2368,8 +2449,8 @@ export default async function plugin(bb: Bb) {
     return source.path;
   }
   bb.rpc.register(transferRpcContract, {
-    transfer_candidates: async ({ projectId }) => listTransferCandidates(await localTransferCheckout(projectId)),
-    transfer_manifest_build: async ({ projectId, paths }) => buildTransferManifest(await localTransferCheckout(projectId), paths),
+    transfer_candidates: async ({ projectId }) => { refuseIfOff("F29"); return listTransferCandidates(await localTransferCheckout(projectId)); },
+    transfer_manifest_build: async ({ projectId, paths }) => { refuseIfOff("F29"); refuseIfMisconfigured(); return buildTransferManifest(await localTransferCheckout(projectId), paths); },
     owner_thread_target: async ({ machine, threadId }) => {
       if (machine === machineKey) return ownerThreadTarget(threadId);
       if (machine !== directId || (await authenticatedDirectOwner(directId)) === null) throw new Error("no-authenticated-owner-route");
@@ -2378,9 +2459,10 @@ export default async function plugin(bb: Bb) {
   });
 
   const ownerBrowser = createOwnerBrowser({ bb, hostId: () => provenLocalHostId(), controllerLabel: "Fleet takeover" });
-  bb.rpc.register(browserRpcContract, ownerBrowser.handlers);
+  bb.rpc.register(browserRpcContract, guardPicked(ownerBrowser.handlers, "F22", Object.keys(ownerBrowser.handlers) as (keyof typeof ownerBrowser.handlers)[]));
   bb.rpc.register(browserForwardContract, {
     browser_forward: async ({ machine, call }) => {
+      refuseIfOff("F22");
       if (machine === machineKey) {
         const handler = ownerBrowser.handlers[call.method] as (input: unknown) => Promise<unknown> | unknown;
         return await handler(call.input) as never;
@@ -2396,9 +2478,10 @@ export default async function plugin(bb: Bb) {
   });
 
   const simulators = createSimulators();
-  bb.rpc.register(simulatorRpcContract, simulators.handlers);
+  bb.rpc.register(simulatorRpcContract, guardPicked(simulators.handlers, "F21", Object.keys(simulators.handlers) as (keyof typeof simulators.handlers)[]));
   bb.rpc.register(simulatorForwardContract, {
     simulator_forward: async ({ machine, call }) => {
+      refuseIfOff("F21");
       if (machine === machineKey) {
         if (call.method === "simulator_list") return simulators.handlers.simulator_list();
         if (call.method === "simulator_frame") return simulators.handlers.simulator_frame(call.input);
@@ -2423,7 +2506,7 @@ export default async function plugin(bb: Bb) {
       return ssh.call("fleet", method, input, mutation);
     },
   });
-  bb.rpc.register(ownerWorkspaceContract, workspace.handlers);
+  bb.rpc.register(ownerWorkspaceContract, guardMutations(workspace.handlers, ["owner_file_write", "context_bundle_import", "interaction_respond"]));
 
   const mirrorWorkspace = createMirrorWorkspace({
     copyOwner: async (localThreadId) => (mirror === null ? null : mirror.copyOwner(localThreadId)),

@@ -12,7 +12,7 @@ describe("remote editor link", () => {
   });
 
   it("refuses relative, traversing or control-character paths and odd aliases", () => {
-    expect(remoteEditorUrl({ alias: "studio", absolutePath: "Users/daniel" })).toBeNull();
+    expect(remoteEditorUrl({ alias: "studio", absolutePath: "Users/sam" })).toBeNull();
     expect(remoteEditorUrl({ alias: "studio", absolutePath: "/Users/../etc" })).toBeNull();
     expect(remoteEditorUrl({ alias: "studio", absolutePath: "/Users/a\nb" })).toBeNull();
     expect(remoteEditorUrl({ alias: "studio/../x", absolutePath: "/Users/tester" })).toBeNull();

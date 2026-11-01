@@ -141,7 +141,7 @@ describe("buildColumns", () => {
 });
 
 describe("thread account (F03)", () => {
-  const account = { label: "daniel", email: "daniel@example.com", harness: "claude" as const };
+  const account = { label: "sam", email: "sam@example.com", harness: "claude" as const };
   const owner: Snapshot = {
     serverId: "studio-srv",
     label: "studio home",

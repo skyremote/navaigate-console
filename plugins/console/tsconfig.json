@@ -1,0 +1,44 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    },
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "profile",
+    "server.ts",
+    "server-todo.ts",
+    "app.tsx",
+    "src",
+    "components",
+    "lib",
+    "hooks",
+    "server-voice.ts",
+    "server-home.ts",
+    "server-inbox.ts",
+    "server-inbox-page.ts",
+    "server-ask.ts",
+    "server-social.ts",
+    "server-audience.ts",
+    "server-calendar.ts",
+    "server-money.ts",
+    "server-browser.ts",
+    "server-usage-trend.ts"
+  ]
+}

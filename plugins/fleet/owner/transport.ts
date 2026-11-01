@@ -94,7 +94,7 @@ export function createSshOwnerTransport(options: SshOwnerOptions) {
       if (!isOwnerMethod(plugin, method)) return Promise.resolve({ ok: false, kind: "refused", message: `${plugin}.${method} is not an owner method` });
       const command = ownerRpcCommand(plugin, method);
       return new Promise((resolve) => {
-        const child = run("ssh", ["-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", "-o", "ServerAliveInterval=15", options.alias, command], { timeout: options.timeoutMs ?? 30_000, maxBuffer: LARGE_ANSWERS[method] ?? options.maxBuffer ?? 2 * 1024 * 1024 }, (error, stdout, stderr) => {
+        const child = run("ssh", ["-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", "-o", "ServerAliveInterval=15", "--", options.alias, command], { timeout: options.timeoutMs ?? 30_000, maxBuffer: LARGE_ANSWERS[method] ?? options.maxBuffer ?? 2 * 1024 * 1024 }, (error, stdout, stderr) => {
           const out = String(stdout ?? "");
           const err = String(stderr ?? "");
           let body: unknown;

@@ -34,8 +34,8 @@ export const machineSchema = z.object({
   workloads: z.array(text(60)),
   /** os.hostname() values (case-insensitive) that identify this machine. */
   hostnames: z.array(text(120)),
-  /** SSH alias for a direct route to this machine, or null. */
-  sshAlias: optionalText(120),
+  /** SSH alias for a direct route to this machine, or null. A plain Host name: never starts with "-". */
+  sshAlias: z.string().max(120).regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/, "must be a plain SSH Host alias").nullable(),
   /** Address of this machine's bb, or null. */
   bbUrl: optionalText(300),
   /** Home folder on that machine, or null when unknown. */
@@ -157,6 +157,13 @@ export function resolveProfile(raw: unknown): ResolvedProfile {
     if (ids.has(m.id)) return { profile: COMMUNITY_DEFAULTS, source: "defaults", errors: [`machines: duplicate id ${m.id}`] };
     ids.add(m.id);
   }
+  // A reference to a machine that is not listed would silently lift a restriction, so it rejects the profile.
+  const unknown: string[] = [];
+  if (parsed.data.thisMachine !== null && !ids.has(parsed.data.thisMachine)) unknown.push(`thisMachine: unknown machine ${parsed.data.thisMachine}`);
+  for (const w of parsed.data.workloads) {
+    if (w.machine !== null && !ids.has(w.machine)) unknown.push(`workloads.${w.id}.machine: unknown machine ${w.machine}`);
+  }
+  if (unknown.length > 0) return { profile: COMMUNITY_DEFAULTS, source: "defaults", errors: unknown };
   return { profile: parsed.data, source: "file", errors: [] };
 }
 
@@ -177,16 +184,25 @@ export function machineOrder(p: Profile): string[] {
   return p.machines.map((m) => m.id);
 }
 
-/** The machine this profile sits on: explicit `thisMachine`, then a hostname match, then the first machine. */
-export function thisMachine(p: Profile, hostname?: string | null): ProfileMachine {
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * The machine this profile sits on: explicit `thisMachine`, then a `hostnames`
+ * match, then a machine id appearing as a whole word in the hostname (only when
+ * exactly one does), then the only machine of a one-machine profile. Null when
+ * none of these identifies it: never guess another machine's identity.
+ */
+export function thisMachine(p: Profile, hostname?: string | null): ProfileMachine | null {
   const explicit = machineById(p, p.thisMachine);
   if (explicit) return explicit;
   const h = (hostname ?? "").toLowerCase();
   if (h) {
     const byHost = p.machines.find((m) => m.hostnames.some((n) => n.toLowerCase() === h || h.startsWith(`${n.toLowerCase()}.`)));
     if (byHost) return byHost;
+    const byWord = p.machines.filter((m) => new RegExp(`(^|[^a-z0-9])${escapeRegExp(m.id.toLowerCase())}([^a-z0-9]|$)`).test(h));
+    if (byWord.length === 1) return byWord[0] as ProfileMachine;
   }
-  return p.machines[0] as ProfileMachine;
+  return p.machines.length === 1 ? (p.machines[0] as ProfileMachine) : null;
 }
 
 export function machinesWithRole(p: Profile, role: MachineRole): ProfileMachine[] {

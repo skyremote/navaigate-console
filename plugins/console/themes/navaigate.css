@@ -1,0 +1,268 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+/*
+  NavAIgate — bb theme v2 (31 October 2026)
+  Matches navaigate.dev: white paper and #0a0a0a ink, cool greys, #e6e6ea
+  hairlines and one blue (#2a5bff) that means "live". Selection and primary
+  actions are ink. No gold.
+*/
+
+:root,
+.light {
+  --canvas: #ffffff;
+  --ink: #0a0a0a;
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --card: #ffffff;
+  --card-foreground: var(--ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--ink);
+
+  --primary: #0a0a0a;
+  --primary-foreground: #ffffff;
+  --ring: #2a5bff;
+  --sidebar-ring: #2a5bff;
+  --surface-selected: #ececef;
+  --surface-selected-border: #c9c9d0;
+
+  --sidebar: #f5f5f7;
+  --sidebar-foreground: #0a0a0a;
+  --sidebar-accent: #ececef;
+  --sidebar-accent-foreground: #0a0a0a;
+  --sidebar-border: #e6e6ea;
+  --border: #e6e6ea;
+  --border-hairline: #ececef;
+  --border-seam: #e6e6ea;
+  --input: #85858d;
+  --muted: #f5f5f7;
+  --secondary: #f5f5f7;
+  --secondary-foreground: #0a0a0a;
+  --accent: #f0f0f3;
+  --accent-foreground: #0a0a0a;
+  --state-hover: #f0f0f3;
+  --state-active: #e8e8ec;
+  --surface-raised: #ffffff;
+  --surface-raised-solid: #ffffff;
+  --surface-recessed: #f5f5f7;
+  --surface-recessed-solid: #f5f5f7;
+  --surface-recessed-soft-solid: #fafafb;
+
+  --muted-foreground: #63636a;
+  --subtle-foreground: #63636a;
+  --readback-foreground: #63636a;
+
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --destructive-text: #c81e1e;
+  --warning: #c2410c;
+  --warning-text: #b93d0b;
+  --attention: #234fe8;
+  --attention-foreground: #ffffff;
+  --success: #126f35;
+  --success-foreground: #126f35;
+  --diff-added: #126f35;
+  --diff-removed: #c81e1e;
+  --pr-merged: #6e56a8;
+  --file-accent: #234fe8;
+  --timeline-accent: #6b6b72;
+  --sidebar-search-match: #dfe6ff;
+
+  --radius: 0.625rem;
+  --shadow-sm: 0 1px 2px rgb(10 10 10 / 0.04);
+  --shadow-md: 0 1px 2px rgb(10 10 10 / 0.04), 0 8px 24px rgb(10 10 10 / 0.06);
+  --shadow-lg: 0 16px 48px rgb(10 10 10 / 0.12);
+
+  /* Type: Inter for the interface and Inter Tight for titles and figures, as on navaigate.dev; Plex Mono for code, terminal and small metrics */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Inter Tight", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", "SF Mono", Menlo, monospace;
+  --font-terminal: "IBM Plex Mono", "SF Mono", Menlo, monospace;
+
+  /* Spacing: the 4px grid, as on navaigate.dev */
+  --spacing: 0.25rem;
+
+  /* Terminal palette: neutral greys, the site blue for blue, a plain yellow for yellow */
+  --ansi-0: #202225;  --ansi-8: #6c665c;
+  --ansi-1: #b42318;  --ansi-9: #d9534a;
+  --ansi-2: #1f7a4d;  --ansi-10: #3f9a6b;
+  --ansi-3: #a16207;  --ansi-11: #ca8a04;
+  --ansi-4: #2a5bff;  --ansi-12: #5b7fff;
+  --ansi-5: #7a5c8a;  --ansi-13: #9a7aa8;
+  --ansi-6: #4f7a6e;  --ansi-14: #6f9a8d;
+  --ansi-7: #dedbd1;  --ansi-15: #fbfaf8;
+  --ansi-bg-fg-0: #fbfaf8; --ansi-bg-fg-1: #fbfaf8; --ansi-bg-fg-2: #fbfaf8; --ansi-bg-fg-3: #fbfaf8;
+  --ansi-bg-fg-4: #fbfaf8; --ansi-bg-fg-5: #fbfaf8; --ansi-bg-fg-6: #fbfaf8; --ansi-bg-fg-7: #202225;
+  --ansi-bg-fg-8: #fbfaf8; --ansi-bg-fg-9: #202225; --ansi-bg-fg-10: #202225; --ansi-bg-fg-11: #202225;
+  --ansi-bg-fg-12: #202225; --ansi-bg-fg-13: #202225; --ansi-bg-fg-14: #202225; --ansi-bg-fg-15: #202225;
+}
+
+.dark {
+  --canvas: #0b0b0c;
+  --ink: #f5f5f7;
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --card: #151517;
+  --card-foreground: var(--ink);
+  --popover: #18181b;
+  --popover-foreground: var(--ink);
+
+  --primary: #f5f5f7;
+  --primary-foreground: #0a0a0a;
+  --ring: #6b8cff;
+  --sidebar-ring: #6b8cff;
+  --surface-selected: #202024;
+  --surface-selected-border: #3a3a41;
+
+  --sidebar: #111113;
+  --sidebar-foreground: #f5f5f7;
+  --sidebar-accent: #1c1c1f;
+  --sidebar-accent-foreground: #f5f5f7;
+  --sidebar-border: #222226;
+  --border: #26262b;
+  --border-hairline: #1f1f23;
+  --border-seam: #222226;
+  --input: #6a6a72;
+  --muted: #1c1c1f;
+  --secondary: #18181b;
+  --secondary-foreground: #f5f5f7;
+  --accent: #1f1f23;
+  --accent-foreground: #f5f5f7;
+  --state-hover: #1a1a1d;
+  --state-active: #232327;
+  --surface-raised: #1c1c1f;
+  --surface-raised-solid: #1c1c1f;
+  --surface-recessed: #111113;
+  --surface-recessed-solid: #111113;
+  --surface-recessed-soft-solid: #0f0f11;
+
+  --muted-foreground: #9a9aa2;
+  --subtle-foreground: #8e8e96;
+  --readback-foreground: #9a9aa2;
+
+  --destructive: #e5484d;
+  --destructive-foreground: #0a0a0a;
+  --destructive-text: #f2777a;
+  --warning: #f0883e;
+  --warning-text: #f0883e;
+  --attention: #6b8cff;
+  --attention-foreground: #0a0a0a;
+  --success: #4cc38a;
+  --success-foreground: #4cc38a;
+  --diff-added: #4cc38a;
+  --diff-removed: #f2777a;
+  --pr-merged: #a993d6;
+  --file-accent: #6b8cff;
+  --timeline-accent: #9a9aa2;
+  --sidebar-search-match: #1d2a52;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.5);
+  --shadow-md: 0 1px 2px rgb(0 0 0 / 0.5), 0 8px 24px rgb(0 0 0 / 0.36);
+  --shadow-lg: 0 16px 48px rgb(0 0 0 / 0.6);
+
+  --ansi-0: #1a1a1e;  --ansi-8: #5c5c66;
+  --ansi-1: #f0907f;  --ansi-9: #f4a99b;
+  --ansi-2: #5fcf94;  --ansi-10: #86dcae;
+  --ansi-3: #e2c044;  --ansi-11: #f0d675;
+  --ansi-4: #6b8cff;  --ansi-12: #9bb1ff;
+  --ansi-5: #b79ac4;  --ansi-13: #cfb8d9;
+  --ansi-6: #8fbfb0;  --ansi-14: #b1d6ca;
+  --ansi-7: #d4d4d8;  --ansi-15: #f4f2ec;
+  --ansi-bg-fg-0: #f4f2ec; --ansi-bg-fg-8: #f4f2ec;
+  --ansi-bg-fg-1: #131315; --ansi-bg-fg-2: #131315; --ansi-bg-fg-3: #131315; --ansi-bg-fg-4: #131315;
+  --ansi-bg-fg-5: #131315; --ansi-bg-fg-6: #131315; --ansi-bg-fg-7: #131315; --ansi-bg-fg-9: #131315;
+  --ansi-bg-fg-10: #131315; --ansi-bg-fg-11: #131315; --ansi-bg-fg-12: #131315; --ansi-bg-fg-13: #131315;
+  --ansi-bg-fg-14: #131315; --ansi-bg-fg-15: #131315;
+}
+
+/* Tabular figures across the interface, so counts and times line up */
+body {
+  font-feature-settings: "tnum" 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ------------------------------------------------------------------------
+   Micro-interactions on bb's own controls (theme-level, no behaviour change).
+   One easing curve, short durations, no overshoot.
+   ------------------------------------------------------------------------ */
+
+/* Reasoning effort picker in the model menu: a pill segmented control */
+[role="radiogroup"][aria-label="Reasoning"] {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 1px;
+  padding: 2px;
+  max-width: 100%;
+  box-sizing: border-box;
+  border-radius: 14px;
+  background: var(--muted);
+}
+[role="radiogroup"][aria-label="Reasoning"] [role="radio"] {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 12.5px;
+  white-space: nowrap;
+  border-radius: 999px;
+  transition: color 160ms cubic-bezier(.16, 1, .3, 1), background-color 160ms cubic-bezier(.16, 1, .3, 1), transform 160ms cubic-bezier(.16, 1, .3, 1);
+}
+[role="radiogroup"][aria-label="Reasoning"] [role="radio"]:hover { color: var(--foreground); }
+[role="radiogroup"][aria-label="Reasoning"] [role="radio"]:active { transform: scale(.97); }
+[role="radiogroup"][aria-label="Reasoning"] [role="radio"][aria-checked="true"] {
+  background: var(--foreground);
+  color: var(--background);
+  font-weight: 500;
+}
+
+/* Voice pill: the mic idles as a quiet round button and, while listening,
+   stretches into a blue pill with three moving bars. */
+button[aria-label="Start voice input"] {
+  border-radius: 999px;
+  transition: transform 160ms cubic-bezier(.16, 1, .3, 1), background-color 160ms cubic-bezier(.16, 1, .3, 1);
+}
+button[aria-label="Start voice input"]:hover { background: var(--accent); }
+button[aria-label*="voice input"]:not([aria-label="Start voice input"]),
+button[aria-label*="voice"][aria-pressed="true"] {
+  position: relative;
+  min-width: 64px;
+  border-radius: 999px;
+  background: var(--attention) !important;
+  color: var(--attention-foreground) !important;
+  animation: nav-pill-in 240ms cubic-bezier(.16, 1, .3, 1);
+}
+button[aria-label*="voice input"]:not([aria-label="Start voice input"])::after,
+button[aria-label*="voice"][aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 14px;
+  height: 12px;
+  margin-top: -6px;
+  background:
+    linear-gradient(currentColor, currentColor) 0 50% / 2px 40% no-repeat,
+    linear-gradient(currentColor, currentColor) 6px 50% / 2px 90% no-repeat,
+    linear-gradient(currentColor, currentColor) 12px 50% / 2px 55% no-repeat;
+  animation: nav-bars 900ms ease-in-out infinite;
+}
+@keyframes nav-pill-in { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes nav-bars {
+  0%, 100% { background-size: 2px 40%, 2px 90%, 2px 55%; }
+  33% { background-size: 2px 90%, 2px 45%, 2px 80%; }
+  66% { background-size: 2px 60%, 2px 70%, 2px 35%; }
+}
+
+/* A small press on composer and footer buttons */
+[data-follow-up-composer-footer] button,
+button[data-promptbox-submit-action],
+button[aria-label^="Provider, model"] {
+  transition: transform 120ms cubic-bezier(.16, 1, .3, 1);
+}
+[data-follow-up-composer-footer] button:active,
+button[data-promptbox-submit-action]:active,
+button[aria-label^="Provider, model"]:active,
+button[aria-label="Start voice input"]:active { transform: scale(.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  button[aria-label*="voice"]::after,
+  button[aria-label*="voice input"] { animation: none !important; }
+}

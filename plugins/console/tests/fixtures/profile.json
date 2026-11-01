@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "edition": "community",
+  "owner": {
+    "name": "Sam Example",
+    "username": "sam"
+  },
+  "thisMachine": "laptop",
+  "machines": [
+    {
+      "id": "laptop",
+      "label": "Laptop",
+      "role": "laptop",
+      "restricted": false,
+      "workloads": [],
+      "hostnames": [
+        "sams-laptop"
+      ],
+      "sshAlias": null,
+      "bbUrl": null,
+      "home": "/Users/sam"
+    },
+    {
+      "id": "studio",
+      "label": "Studio",
+      "role": "always-on",
+      "restricted": false,
+      "workloads": [],
+      "hostnames": [
+        "studio"
+      ],
+      "sshAlias": "studio",
+      "bbUrl": "https://studio.example.test",
+      "home": "/Users/studio"
+    },
+    {
+      "id": "work",
+      "label": "Work",
+      "role": "restricted",
+      "restricted": true,
+      "workloads": [
+        "client"
+      ],
+      "hostnames": [
+        "work-mac"
+      ],
+      "sshAlias": null,
+      "bbUrl": null,
+      "home": null
+    }
+  ],
+  "hosts": {
+    "fleet": null,
+    "brainMcp": null,
+    "brainDb": null,
+    "hooks": null,
+    "bbRemotes": [
+      "https://studio.example.test"
+    ]
+  },
+  "paths": {
+    "home": "/Users/sam",
+    "nas": "/Volumes/Shared",
+    "nasLocal": "/Users/sam/Shared_Local"
+  },
+  "workloads": [
+    {
+      "id": "client",
+      "label": "Client",
+      "machine": "work",
+      "match": [
+        "clientco"
+      ]
+    }
+  ],
+  "brain": {
+    "url": null,
+    "tokenSecret": null
+  },
+  "ids": {
+    "projects": {
+      "dailyBrief": "proj_examplexx"
+    },
+    "threads": {}
+  },
+  "features": {
+    "preset": null,
+    "picks": {}
+  },
+  "setup": {
+    "completedAt": 1,
+    "version": 1
+  },
+  "plugins": {
+    "console": {
+      "nasLink": "/Users/sam/Shared",
+      "nasProject": "Shared",
+      "nasAwayProject": "Shared (away)",
+      "handoffScript": null,
+      "handoffFile": null,
+      "dailyBriefDir": "Daily_Brief",
+      "dailyBriefAutomation": "Daily brief (Studio)",
+      "machineHints": {
+        "studio": "Always-on Mac at home, next to the shared folder.",
+        "work": "The client Mac.",
+        "laptop": "The main Mac."
+      }
+    }
+  }
+}

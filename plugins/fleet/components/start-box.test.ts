@@ -31,3 +31,11 @@ describe("StartBox", () => {
     expect(html.match(/disabled=""/g)?.length).toBe(2);
   });
 });
+
+describe("StartBox with Tell and Ask switched off", () => {
+  it("keeps Start but offers no Ask", () => {
+    const html = renderToStaticMarkup(createElement(StartBox, { column, reach: "brain" as const, onStart: async () => undefined, initialOpen: true, initialPrompt: "hostname", allowAsk: false }));
+    expect(html).toContain(">Start<");
+    expect(html).not.toContain("Ask studio and read the answer");
+  });
+});

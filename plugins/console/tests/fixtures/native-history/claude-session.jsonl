@@ -1,0 +1,14 @@
+{"type": "agent-setting", "agent": "chief-of-staff"}
+{"type": "user", "isMeta": true, "message": {"role": "user", "content": [{"type": "text", "text": "Skill instructions injected by the harness"}]}}
+{"type": "user", "message": {"role": "user", "content": "Please summarise the fixture project."}}
+{"type": "api-request-blob", "message": {"role": "user", "content": [{"type": "text", "text": "Duplicated request body"}]}}
+{"type": "api-request-blob", "message": {"role": "assistant", "content": [{"type": "text", "text": "Duplicated assistant body"}]}}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "thinking", "thinking": "private reasoning"}]}}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "tool_use", "name": "Bash", "input": {"command": "ls"}}]}}
+{"type": "user", "message": {"role": "user", "content": [{"type": "tool_result", "content": "private tool output"}]}}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "The fixture project has two modules."}]}}
+{"type": "attachment", "attachment": {"type": "file"}}
+{"type": "user", "message": {"role": "user", "content": "<task-notification>\nbackground task finished\n</task-notification>"}}
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "Thanks, list them."}]}}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "Alpha and Beta."}]}}
+{"type": "ai-title", "title": "Fixture summary"}

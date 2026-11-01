@@ -143,6 +143,8 @@
 .hd-mode-fresh .hd-m{animation:hd-hop .9s ease-out 1 both}
 .hd-m[data-off] .hd-m-strip,.hd-m[data-hidden] .hd-m-strip,.hd-m[data-off] .hd-m3-strip,.hd-m[data-hidden] .hd-m3-strip,.hd-paused .hd-m-strip,.hd-paused .hd-m3-strip,.hd-paused .hd-m{animation-play-state:paused !important}
 @media (prefers-reduced-motion:reduce){.hd-m,.hd-m-strip{animation:none !important}}
+.hd-m-still{display:flex;align-items:center;justify-content:center;animation:none !important}
+.hd-m-still::after{content:"";width:34%;height:34%;border-radius:50%;background:var(--muted-foreground,currentColor);opacity:.6}
 .hd-m3-canvas{display:block;width:100%;height:100%}
 .hd-m3-strip{display:block;height:100%;width:calc(var(--n,1)*100%);background-size:100% 100%;background-repeat:no-repeat;transform:translateX(0)}
 .hd-m3-work .hd-m3-strip,.hd-m3-idle .hd-m3-strip,.hd-m3-wait .hd-m3-strip{animation:hd-m3-loop var(--dur,1s) steps(var(--n,1)) infinite;animation-delay:var(--hd-md,0s)}

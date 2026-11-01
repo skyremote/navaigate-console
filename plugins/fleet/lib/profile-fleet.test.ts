@@ -14,7 +14,7 @@ describe("machines from the profile", () => {
   });
 
   it("routes directly to the always-on machine through its ssh alias, never to itself", () => {
-    expect(directRouteMachine(profile, "laptop")).toMatchObject({ alias: "studio", machine: { id: "studio" } });
+    expect(directRouteMachine(profile, "laptop")).toMatchObject({ alias: "studio-ssh", machine: { id: "studio" } });
     expect(directRouteMachine(profile, "studio")).toBeNull();
   });
 

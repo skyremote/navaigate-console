@@ -1,0 +1,351 @@
+/*
+ * Ember — native BB theme.
+ * Charcoal surfaces, a quiet neutral selection and one blue that means "live".
+ * Light follows BB's mode control; dark follows the supplied reference.
+ * Native typography, spacing, responsive rules and focus geometry are retained.
+ */
+:root,
+.light {
+  --canvas: #fbfbf9;
+  --ink: #242424;
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --card: #f4f4f1;
+  --card-foreground: var(--ink);
+  --popover: #fbfbf9;
+  --popover-foreground: var(--ink);
+  --sidebar: #f1f1ed;
+  --sidebar-foreground: var(--ink);
+  --sidebar-accent: #e6e6e0;
+  --sidebar-accent-foreground: var(--ink);
+  --secondary: #f0f0eb;
+  --secondary-foreground: var(--ink);
+  --muted: #e9e9e4;
+  --accent: #e9e9e4;
+  --accent-foreground: var(--ink);
+  --state-hover: #eeeeea;
+  --state-active: #e2e2db;
+  --surface-recessed: #f1f1ed;
+  --surface-recessed-solid: #f1f1ed;
+  --surface-recessed-soft-solid: #f6f6f2;
+  --surface-raised: #ffffff;
+  --surface-raised-solid: #ffffff;
+  --surface-scrim: rgb(251 251 249 / 0.94);
+  --surface-selected: #e2e2db;
+  --surface-selected-border: #98988e;
+
+  --muted-foreground: #55554f;
+  --readback-foreground: #5d5d56;
+  --subtle-foreground: #62625b;
+  --version-upgrade: var(--ink);
+  --primary: #242424;
+  --primary-foreground: #ffffff;
+  --ring: #2a5bff;
+  --sidebar-ring: var(--ring);
+  --timeline-accent: #62625b;
+  --file-accent: #3f6180;
+  --sidebar-search-match: #dfe6ff;
+
+  --border: #d7d7cf;
+  --border-hairline: #e2e2db;
+  --border-seam: #dcdcd4;
+  --border-seam-vertical: var(--border-seam);
+  --sidebar-border: #d7d7cf;
+  --input: #85857a;
+  --destructive: #9a403b;
+  --destructive-foreground: #ffffff;
+  --destructive-text: #9a403b;
+  --warning: #b93d0b;
+  --warning-text: #a8370a;
+  --attention: #234fe8;
+  --attention-foreground: #ffffff;
+  --success: #356f4d;
+  --success-foreground: #356f4d;
+  --diff-added: #356f4d;
+  --diff-removed: #9a403b;
+  --pr-merged: #6b548d;
+
+  --radius: 0.375rem;
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+  --shadow-lift: none;
+  --pill-shadow: none;
+}
+
+.dark {
+  --canvas: #161616;
+  --ink: #cececa;
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --card: #1b1b1a;
+  --card-foreground: var(--ink);
+  --popover: #20201e;
+  --popover-foreground: var(--ink);
+  --sidebar: #101010;
+  --sidebar-foreground: var(--ink);
+  --sidebar-accent: #252524;
+  --sidebar-accent-foreground: var(--ink);
+  --secondary: #20201e;
+  --secondary-foreground: var(--ink);
+  --muted: #262624;
+  --accent: #262624;
+  --accent-foreground: var(--ink);
+  --state-hover: #232322;
+  --state-active: #2b2b29;
+  --surface-recessed: #1b1b1a;
+  --surface-recessed-solid: #1b1b1a;
+  --surface-recessed-soft-solid: #191918;
+  --surface-raised: #242422;
+  --surface-raised-solid: #242422;
+  --surface-scrim: rgb(22 22 22 / 0.94);
+  --surface-selected: #2b2b29;
+  --surface-selected-border: #62625b;
+
+  --muted-foreground: #a6a6a0;
+  --readback-foreground: #9f9f99;
+  --subtle-foreground: #999993;
+  --version-upgrade: var(--ink);
+  --primary: #ededea;
+  --primary-foreground: #161616;
+  --ring: #6b8cff;
+  --sidebar-ring: var(--ring);
+  --timeline-accent: #a6a6a0;
+  --file-accent: #7aa9d6;
+  --sidebar-search-match: #1d2a52;
+
+  --border: #343431;
+  --border-hairline: #2b2b29;
+  --border-seam: #292927;
+  --border-seam-vertical: var(--border-seam);
+  --sidebar-border: #292927;
+  --input: #75756c;
+  --destructive: #b1534e;
+  --destructive-foreground: #ffffff;
+  --destructive-text: #de8b83;
+  --warning: #f0883e;
+  --warning-text: #f0883e;
+  --attention: #6b8cff;
+  --attention-foreground: #161616;
+  --success: #70ba99;
+  --success-foreground: #70ba99;
+  --diff-added: #70ba99;
+  --diff-removed: #de8b83;
+  --pr-merged: #aa94ce;
+}
+
+/* ------------------------------------------------------------------------
+ * Ember surfaces (30 October 2026).
+ * Layered charcoal cards for the NavAIgate skin: 1px hairlines, 12-16px
+ * radii, depth from surface steps, light-weight headline numerals with a
+ * muted word, monospace secondary metrics, small muted section labels and a
+ * filled pill for the active item.
+ * Every rule targets a data-nav-part hook the skin renders, and this file
+ * loads only while Ember is the selected theme, so the NavAIgate theme and
+ * BB's own themes never see these rules. Colours come from the tokens above,
+ * so light mode follows the same structure.
+ * ---------------------------------------------------------------------- */
+:root,
+.light {
+  --ember-card-top: #f4f4f1;
+  --ember-card-edge: rgb(255 255 255 / 0.9);
+  --ember-card-drop: 0 1px 2px rgb(36 36 36 / 0.05);
+  --ember-pill: #ffffff;
+  --ember-numeral: var(--ink);
+  --ember-label: #5d5d56;
+  --ember-metric: #55554f;
+  --ember-positive: #2f6847;
+  --ember-alert: #9a403b;
+}
+
+.dark {
+  --ember-card-top: #1b1b1a;
+  --ember-card-edge: rgb(255 255 255 / 0.05);
+  --ember-card-drop: 0 0 0 0 transparent;
+  --ember-pill: #2a2a28;
+  --ember-numeral: #ededea;
+  --ember-label: #999993;
+  --ember-metric: #a6a6a0;
+  --ember-positive: #7cc7a4;
+  --ember-alert: #de8b83;
+}
+
+/* Shared card treatment: a hairline and one surface step, no gradients. */
+[data-nav-part="now-card"],
+[data-nav-part="machine-tile"],
+[data-nav-part="stat-tile"],
+[data-nav-part="usage-card"] {
+  border: 1px solid var(--border-hairline);
+  background-color: var(--ember-card-top);
+  box-shadow: inset 0 1px 0 var(--ember-card-edge), var(--ember-card-drop);
+}
+
+/* Small muted sentence-case section labels, and monospace for metrics. */
+[data-nav-part="section-label"],
+[data-nav-part="section-head"],
+[data-nav-part="now-prefix"] {
+  color: var(--ember-label);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+[data-nav-part="metric"],
+[data-nav-part="count"] {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+[data-nav-part="metric"] { color: var(--ember-metric); }
+[data-nav-part="delta"][data-sign="positive"] { color: var(--ember-positive); }
+[data-nav-part="delta"][data-sign="negative"] { color: var(--ember-alert); }
+
+/* Light-weight headline numerals; the word after them is muted. */
+[data-nav-part="now-count"],
+[data-nav-part="stat-value"] {
+  color: var(--ember-numeral);
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+[data-nav-part="unit"],
+[data-nav-part="now-word"] {
+  color: var(--ember-metric);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ---- Sidebar rail ---- */
+[data-nav-part="section"] { border-top-color: var(--border-hairline); }
+[data-nav-part="section-head"] [data-nav-part="count"],
+[data-nav-part="section-head"] i { color: var(--ember-label); }
+
+[data-nav-part="row"],
+[data-nav-part="row"] > span[aria-hidden],
+[data-nav-part="new-chat"],
+[data-nav-part="new-chat"] > span[aria-hidden] {
+  border-radius: 10px;
+}
+/* The active chat is a filled pill; the bar gives way to it. */
+[data-nav-part="row"][aria-current="page"] [data-nav-part="row-fill"] {
+  background: var(--ember-pill);
+  box-shadow: inset 0 0 0 1px var(--border-hairline), inset 0 1px 0 var(--ember-card-edge);
+}
+[data-nav-part="row"][aria-current="page"] [data-nav-part="row-bar"] { display: none; }
+
+[data-nav-part="segmented"] {
+  border-color: var(--border-hairline);
+  background: var(--surface-recessed);
+}
+[data-nav-part="segment"][aria-pressed="true"] {
+  background: var(--ember-pill);
+  color: var(--foreground);
+  box-shadow: inset 0 0 0 1px var(--border), 0 1px 2px rgb(0 0 0 / 0.18);
+}
+[data-nav-part="segment"] [data-nav-part="count"] { font-size: 11px; opacity: 1; color: var(--ember-label); }
+[data-nav-part="segment"][aria-pressed="true"] [data-nav-part="count"] { color: var(--ember-metric); }
+[data-nav-part="pill"] { border-color: var(--border-hairline); }
+[data-nav-part="pill"][aria-pressed="true"] {
+  background: var(--ember-pill);
+  color: var(--foreground);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+/* ---- Now card ---- */
+[data-nav-part="now-card"] {
+  overflow: hidden;
+  border-radius: 16px;
+}
+[data-nav-part="now-head"] {
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 8px;
+  row-gap: 2px;
+}
+[data-nav-part="now-head"] [data-nav-part="now-needs"] { margin-left: 0; }
+[data-nav-part="now-headline"] {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+[data-nav-part="now-count"] { font-size: 28px; line-height: 1; }
+[data-nav-part="now-word"] { font-size: 13px; }
+[data-nav-part="now-needs"] {
+  color: var(--ember-alert);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+[data-nav-part="now-sub"] { color: var(--ember-metric); }
+/* The live line is a flat 2px rule in the live colour. */
+[data-nav-part="now-line"] { background: var(--border-hairline); }
+
+/* ---- Machine tiles ---- */
+[data-nav-part="machines"] { gap: 6px; }
+[data-nav-part="machine-tile"] {
+  border-radius: 14px;
+  padding: 8px 10px;
+  transition: border-color 160ms cubic-bezier(.16, 1, .3, 1), background-color 160ms cubic-bezier(.16, 1, .3, 1);
+}
+[data-nav-part="machine-tile"]:hover { border-color: var(--border); }
+[data-nav-part="machine-tile"][aria-pressed="true"] {
+  border-color: var(--surface-selected-border) !important;
+  background-color: var(--ember-pill) !important;
+}
+[data-nav-part="machine-tile"] [data-nav-part="count"] {
+  min-width: 18px;
+  border-color: var(--border-hairline);
+  font-size: 11px;
+}
+[data-nav-part="machine-tile"] [data-nav-part="metric"] { font-size: 11px; }
+
+/* ---- Usage card ---- */
+[data-nav-part="usage-card"] { border-radius: 16px; }
+[data-nav-part="stat-value"][data-size="lead"] {
+  width: auto;
+  min-width: 64px;
+  font-size: 32px;
+}
+[data-nav-part="stat-value"] [data-nav-part="unit"] { font-size: 0.5em; margin-left: 1px; }
+[data-nav-part="stat-tile"] {
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+[data-nav-part="stat-tile"] [data-nav-part="stat-value"] { font-size: 20px; margin-top: 4px; }
+[data-nav-part="bar"] {
+  background: var(--surface-recessed);
+  box-shadow: inset 0 0 0 1px var(--border-hairline);
+}
+
+/* ---- Header actions ---- */
+[data-nav-part="header-action"] {
+  border: 1px solid var(--border-hairline);
+  border-radius: 999px;
+  box-shadow: inset 0 1px 0 var(--ember-card-edge);
+}
+[data-nav-part="header-action"]:hover { border-color: var(--border); }
+[data-nav-part="header-action"] [data-nav-part="count"] { font-size: 11px; }
+[data-nav-part="header-mark"] { border-radius: 10px; }
+
+/* ---- Composer chrome ---- */
+[data-nav-part="composer-chip"] {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding-inline: 8px;
+}
+[data-nav-part="composer-chip"]:hover,
+[data-nav-part="composer-chip"][data-state="open"] {
+  border-color: var(--border-hairline);
+  background-color: var(--state-hover);
+}
+[data-nav-part="usage-line"] { font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-nav-part="machine-tile"] { transition: none; }
+}

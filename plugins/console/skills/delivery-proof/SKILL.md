@@ -1,0 +1,20 @@
+---
+name: delivery-proof
+description: Collect a private, context-rich BB diagnosis bundle and prepare screenshot or video proof beside a PR, retaining exact owner, version, commit and delivery receipts.
+---
+
+# Delivery proof
+
+Use the native Delivery panel's diagnosis command, or the published `delivery_diagnose` RPC in this plugin. For a one-command private packet, run `python3 <this-skill-directory>/collect.py --thread <thread-id> --output <private-path>.json`. The collector invokes BB's current SDK-backed RPC; it does not read login files or arbitrary logs. It records exact BB version, source server/thread/project and owner metadata, failures and the proof boundary. The plugin redacts credentials, email addresses, user-home names, URL query strings and network addresses. Review the result before sharing; redaction is not a guarantee for arbitrary screenshots or text.
+
+For a UI fix, capture the actual result on the owning runtime, include the changed commit and test evidence, and distinguish a fake/helper/browser result from actual native-host proof. Screenshots and media can contain customer addresses or credentials; inspect and redact those bytes before selecting them for upload. Keep original private evidence separately.
+
+To put proof beside a PR, use `python3 <this-skill-directory>/upload.py`. GitHub has no public image-upload API, so the script stores the media on a dedicated `delivery-proof` branch of the PR's own repository through the authenticated `gh` CLI (Git Data API, append-only, never forced), and returns commit-pinned `https://github.com/<owner>/<repo>/blob/<commit>/<path>?raw=true` URLs. Those render in PR comments for anyone with read access to the repository; a private repository keeps them private. It reads no token itself and installs nothing.
+
+Preview first: `upload.py --repo owner/name --pr 12 shot.png demo.mp4` prints checksums, MIME types and the proposed comment and makes no network call. Upload only after the user has named the destination and the files have been inspected and redacted: add `--upload --confirm-redacted`. Options: `--note` text above the media, `--receipt <new-private-path>.json` (mode 0600), `--no-comment` to store and return URLs only, `--branch` (must be `delivery-proof` or start with `delivery-proof/` or `delivery-proof-`; the script refuses the repository's default branch and the PR's head or base branch), `--max-bytes` (default 50 MB). A PR URL can replace `--repo` and `--pr`. Only png, jpg, gif, webp, mp4, mov and webm files whose bytes match their extension are accepted; symlinks, empty files and closed PRs are refused. Images embed inline; videos are linked, because GitHub only plays videos it hosts itself.
+
+The receipt records repo, PR, branch, commit, per-file URL, bytes, SHA-256, blob SHA and byte verification, upload time, access policy and expiry (none until the branch is deleted), plus the comment URL after the comment is re-read. Exit 3 means the media is stored but the comment failed (URLs are still in the receipt); exit 4 means the re-read comment lacks the URLs. The script needs push access to the repository; without it the upload fails before any comment and the local proof bundle stays the deliverable.
+
+An external upload succeeds only when it returns a remote URL/receipt for the bytes and the intended reviewer can retrieve it. Record returned URL, byte length, checksum if provided, upload time, access policy and expiry. A local attachment, preview, composer insert or successful HTTP request without a retrievable receipt is not proof that the PR contains the media. Keep the receipt and re-read the PR comment afterwards.
+
+The same upload is a button in the Console: Home, "Delivery and PR proof", pick the workspace row, "Attach proof to PR…" (open or draft PRs). It runs on the owner machine with that machine's `gh` login, takes up to six files and 10 MB at once, needs the redaction tick, and shows the comment link and each file link from the receipt. For larger videos, use `upload.py` directly.

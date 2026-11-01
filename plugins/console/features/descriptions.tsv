@@ -1,0 +1,122 @@
+F01	Models and agents	Keep using Claude, Codex and other subscriptions through one interface.
+F02	Models and agents	Bring Pi, OpenCode, Cursor and other compatible harnesses into the same working environment.
+F03	Models and agents	Keep accounts, configuration homes and early-access testing separate.
+F04	Models and agents	Have one model build, another review, and a cheaper one inspect evidence.
+F05	Models and agents	Coordinate a website, app and shared library while keeping their work separate.
+F06	Models and agents	Let a coordinator on your laptop ask a worker on another Mac for a result without manual copying.
+F07	Models and agents	Let an authorised assistant or messaging front end operate the same job system.
+F08	Models and agents	Bring older useful Claude/Codex sessions into the working interface.
+F09	Models and agents	Move from a Codex implementation to a Claude review without rebuilding the brief.
+F10	Working across Macs	Run background jobs on an always-on Mac, restricted work on a work Mac, and interactive work on your laptop.
+F11	Working across Macs	Keep jobs on other Macs running after you close this one.
+F12	Working across Macs	Keep the always-on Mac serving work without a desktop window open.
+F13	Working across Macs	Reply to and control every connected Mac from one interface or phone.
+F14	Working across Macs	Avoid overloading the always-on Mac with renders while this Mac has spare capacity.
+F15	Working across Macs	Use a Mac for iOS compilation while another machine runs the coding agent.
+F16	Working across Macs	Review results and continue work from the phone with mobile-specific controls.
+F17	Working across Macs	Reach hosts without inbound ports or a permanent phone VPN.
+F18	Working across Macs	Inspect a running build on another Mac, or a host problem, from elsewhere.
+F19	Working across Macs	See actual CPU, RAM, agent processes and data age alongside active jobs.
+F20	Working across Macs	Use the same remote workspace from a borrowed computer or phone.
+F21	Working across Macs	Watch and tap a booted iOS or Android simulator on another Mac from the Console.
+F22	Working across Macs	Sign in to a site on another Mac and let work continue in that browser.
+F23	Working across Macs	Use LAN at home and a tunnel or Tailscale when away without duplicating machines.
+F24	Working across Macs	Keep work-specific tools and actions tied to one restricted Mac.
+F25	Working across Macs	Give an authorised external controller a precise connection target.
+F26	Working across Macs	Keep your Macs from drifting onto incompatible BB and provider versions.
+F27	Working across Macs	Jump from a thread to the right files on another Mac using VS Code Remote SSH.
+F28	Working across Macs	Prepare a verified handoff to another Mac by cloning the repository there before the task starts.
+F29	Working across Macs	Carry a necessary local config file when Git alone is insufficient.
+F30	Attention and completion	See questions, failures and reviewable output without browsing dozens of busy chats.
+F31	Attention and completion	Remove completed work from the active list while keeping it retrievable.
+F32	Attention and completion	Recover a thread immediately after an accidental action.
+F33	Attention and completion	Park a client question until tomorrow while keeping a planned return time.
+F34	Attention and completion	Make a decision request visible across the fleet.
+F35	Attention and completion	Let agents work while the main list remains calm.
+F36	Attention and completion	Keep one live delivery or investigation visible even when it is working.
+F37	Attention and completion	Capture several independent ideas without navigating into each new chat.
+F38	Attention and completion	Return from a code change to the brief, reasoning and evidence.
+F39	Attention and completion	Keep the active inbox from filling with already landed work.
+F40	Attention and completion	Keep a delivery thread open when merging code is not the end of the work.
+F41	Attention and completion	Triage the fleet quickly on a phone.
+F42	Attention and completion	Clear a group of obsolete or badly named threads in one action.
+F43	Attention and completion	Keep historical conversations out of daily work.
+F44	Automation and usage	Run a morning brief, repository review or receipt-ingest check on a schedule.
+F45	Automation and usage	Correct direction without cancelling the fleet.
+F46	Automation and usage	Prepare the next step without interrupting useful work.
+F47	Automation and usage	See usage across models, subscriptions and Macs, and which workflows cost the most. Estimates are API-equivalent, not the subscription bill.
+F48	Automation and usage	Choose a usable account or wait rather than repeatedly hitting a limit.
+F49	Automation and usage	Avoid thinking one account on several Macs gives you several independent allowances.
+F50	Automation and usage	Let an overnight job continue when its existing allowance returns.
+F51	Automation and usage	Start scoped work when CI fails, a PR opens or a relevant business event arrives.
+F52	Automation and usage	Retain a job event until the Mac that should run it comes back online.
+F53	Automation and usage	Keep a familiar domain for webhook integrations.
+F54	Context and artefacts	Review a chart, plan, simulation or options without leaving the task.
+F55	Context and artefacts	Capture another idea without losing the current prompt.
+F56	Context and artefacts	Move a long brief from the wrong project to the right one.
+F57	Context and artefacts	Give a new task precise links to relevant previous work.
+F58	Context and artefacts	Make feedback point to the sentence or UI element that needs changing.
+F59	Context and artefacts	Use an attached logo, receipt or screenshot in a real output file.
+F60	Context and artefacts	Send a transcript, document, archive or media file to the selected machine.
+F61	Context and artefacts	Review a render from another Mac on your phone without downloading it through a network share.
+F62	Context and artefacts	Turn the current browser, slide or app view into an actionable brief.
+F63	Software delivery	Keep parallel changes from overwriting one another.
+F64	Software delivery	Ask a research/admin question without creating a repository first.
+F65	Software delivery	Start a new idea on the host that has its tools.
+F66	Software delivery	Handle GitHub, enterprise hosts, GitLab or Azure without changing the whole workflow.
+F67	Software delivery	Read diffs, comments and checks from desktop or phone.
+F68	Software delivery	Use a cheaper/faster model for metadata and retain project writing conventions.
+F69	Software delivery	Have failed checks and review comments wake the right task.
+F70	Software delivery	See likely finishable changes before blocked or conflicting work.
+F71	Interface and maintenance	Make the interface comfortable across phone and desktop.
+F72	Interface and maintenance	Reduce repeated navigation and task-entry effort.
+F73	Interface and maintenance	Use different defaults for work on a restricted Mac and work on your own laptop.
+F74	Interface and maintenance	Make projects recognisable at a glance.
+F75	Interface and maintenance	Diagnose Fleet/brain problems without rediscovering versions and log paths.
+F76	Interface and maintenance	Know when a long job finished, failed or needs an answer.
+F77	Interface and maintenance	Keep the phone/away experience responsive and avoid replaying full chat histories.
+F78	Interface and maintenance	Choose predictable daily work with an optional test environment.
+F79	Interface and maintenance	Adapt useful implementations without depending on black-box behaviour.
+F80	Research and business	Find requested features, complaints, prospects and competitor evidence beyond one website.
+F81	Research and business	Combine repo issues with Reddit, YouTube or other public feedback for product decisions.
+F82	Working across Macs	Add a Linux compute box or VPS later while keeping the Mac as the interface.
+F83	Software delivery	Put a screenshot or short video of a fix beside the PR so a reviewer sees the actual result.
+S01	Context and artefacts	Phone drafts and attachments survive a mobile restart and upload on reconnect; the host must be online to run work.
+S02	Context and artefacts	Supported iPhones can transcribe a prompt locally, then let you review the text before sending.
+S03	Working across Macs	Export/import a versioned context bundle while changing provider or execution host.
+S04	Automation and usage	Use a per-task replay key and a short coalescing window so repeated delivery does not create duplicate agent jobs.
+S05	Software delivery	Generate a review tour that points at meaningful parts of a change and marks decisions for the human reviewer.
+S06	Software delivery	Keep task files while reclaiming stale managed worktrees, with explicit rules for local changes.
+S08	Working across Macs	Record each request and its side effects together, so a crash cannot lose or duplicate a job.
+EXTRA-A	Extras you asked for	Chats untouched for a set number of days (7 by default) move to a Stash, not the archive, and return when you work in them.
+EXTRA-B	Extras you asked for	Detect or choose an icon for each folder or project and show it in the sidebar.
+EXTRA-C	Extras you asked for	Pick which mascot each Helper Desk agent card uses, or a default set, and choose the mascot on the right-hand side of Helper Desk.
+EXTRA-D	Extras you asked for	Drag a chat from the sidebar into the composer so the agent has it as context.
+EXTRA-E	Extras you asked for	Type Markdown in the message box and see it formatted as you write.
+EXTRA-F	Extras you asked for	See tables, charts, forms and buttons drawn inside a chat reply, and answer them with a click.
+EXTRA-G	Extras you asked for	Let an outside service start an agent through a signed webhook at your own public address.
+EXTRA-H	Models and agents	Tick which prompt-stack skills (prove it, spec, audit) each thread uses; a hook adds their cards beside every prompt.
+EXTRA-I	Research and business	Read mail from your Gmail accounts in one place, read-only, and sort it into piles. It never sends or deletes mail.
+EXTRA-J	Research and business	See your Google Calendars as a month with a day panel, ask about your schedule, and open Calendly booking links.
+EXTRA-K	Research and business	Show Qonto balances and this month's money in and out on Home, read-only, for one or more organisations.
+EXTRA-L	Research and business	Show your Blotato social accounts, scheduled queue, recent posts and their analytics on Home, read-only.
+EXTRA-M	Research and business	Show follower counts per platform on Home, taken only from public profile pages, with a plain note where a count is not public.
+EXTRA-N	Interface and maintenance	One front page with your machines, usage, agenda and a live view of every agent harness that needs you.
+EXTRA-O	Interface and maintenance	Show the headline of the latest daily brief on Home, and run the brief on demand.
+EXTRA-P	Models and agents	Type a request on Home and have it routed to the right agent and model, or name the agent yourself.
+EXTRA-Q	Interface and maintenance	Talk to a voice agent that can start and report on agent work, with a transcript tab. Uses your ElevenLabs account.
+EXTRA-R	Attention and completion	Keep a to-do list that moves on its own: a side panel in any chat, a Board page, and a tool the agent can use.
+EXTRA-S	Interface and maintenance	Show local web apps you already run as a page inside bb.
+EXTRA-T	Interface and maintenance	Add a browser-style strip of open chats across the top, with a new-chat button and drag-to-dock beside the open chat.
+EXTRA-U	Interface and maintenance	Show the logo and today's date above the box on the new-chat screen.
+EXTRA-V	Working across Macs	Show whether you are on your home network and which project a new chat starts in, so a network share is only read when it is close.
+EXTRA-W	Interface and maintenance	Replace bb's sidebar with a run sheet: a NOW card, a harness filter, folders, tags and right-click actions on every chat.
+EXTRA-X	Interface and maintenance	Group projects under real folders in the sidebar, create, rename and move them, and see them as sections.
+EXTRA-Y	Interface and maintenance	Label chats with coloured tags and filter the sidebar by any of them.
+EXTRA-Z	Interface and maintenance	Switch between light and dark from the sidebar footer, the same as Settings, Appearance.
+EXTRA-AA	Interface and maintenance	List every feature of the Console with where to find it, what is missing and the last check, and jump to it.
+EXTRA-AB	Automation and usage	Type a message while sub-agents are running and have it sent once they have all finished.
+EXTRA-AC	Context and artefacts	Open a file link in a chat even when the agent saved the file outside the project, with a note saying where it is.
+EXTRA-AD	Automation and usage	Hover the usage line under the chat box for a trend, burn rate, time to limit and which chats used the most.
+EXTRA-AE	Working across Macs	Send a chat to another Mac's own bb and follow its progress here, then pull the results back.
+EXTRA-AF	Models and agents	Open an Agents tab in any chat to see its family of sub-agents, read a session log and spin up a new agent.

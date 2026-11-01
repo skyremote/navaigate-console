@@ -19,7 +19,7 @@ import { join } from "node:path";
 
 const OUT_DIR = process.env.F13_OUT_DIR ?? "/tmp/f13-interactions";
 const BB = process.env.BB_CLI ?? "bb";
-const studio_ALIAS = process.env.F13_studio_ALIAS ?? "studio";
+const STUDIO_ALIAS = process.env.F13_STUDIO_ALIAS ?? "studio";
 const studio_BB_CLI = "/Applications/bb.app/Contents/Resources/app.asar.unpacked/node_modules/bb-app/host-daemon/dist/bb";
 const studio_PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
 const FEATURE = "mirror-interactions-v1";
@@ -86,10 +86,10 @@ async function studio(method, input) {
 }
 async function studioonce(method, input) {
   const command = `PATH='${studio_PATH}' '${studio_BB_CLI}' plugin rpc call 'fleet' '${method}' --input-file /dev/stdin --json`;
-  return envelope(`studio fleet.${method}`, await run("ssh", ["-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", studio_ALIAS, command], JSON.stringify(input ?? null)));
+  return envelope(`studio fleet.${method}`, await run("ssh", ["-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", STUDIO_ALIAS, command], JSON.stringify(input ?? null)));
 }
 async function studioshell(command) {
-  const result = await run("ssh", ["-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", studio_ALIAS, `PATH='${studio_PATH}'; ${command}`]);
+  const result = await run("ssh", ["-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", STUDIO_ALIAS, `PATH='${studio_PATH}'; ${command}`]);
   return result.stdout.trim();
 }
 async function laptopshell(file, args) { return (await run(file, args)).stdout.trim(); }

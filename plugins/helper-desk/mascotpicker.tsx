@@ -3,6 +3,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 import { ANIMATIONS } from "./avatars/animations";
 import { Avatar } from "./avatars/Avatar";
 import { chooseFor, useMascotChoice } from "./mascotchoice";
+import { useMascotsOff } from "./mascotgate";
 
 /** Where the menu's "Default set and right-hand mascot" link goes. Set by the panel; absent elsewhere, where the link is hidden. */
 export const MascotsTabLink = createContext<(() => void) | null>(null);
@@ -15,6 +16,8 @@ export function useMascotMenu(): [boolean, () => void] {
 
 /** The avatar, as a button that opens the card's menu. A small pencil marks it as changeable. */
 export function MascotTrigger({ name, open, onToggle, children }: { name: string; open: boolean; onToggle: () => void; children: ReactNode }) {
+  // With the mascots switched off the mark is not a button: there is nothing to choose.
+  if (useMascotsOff()) return <>{children}</>;
   return (
     <button type="button" className="hd-mpick" aria-label={`Choose mascot for ${name}`} aria-expanded={open} title="Choose mascot" onClick={onToggle}>
       {children}
@@ -28,9 +31,11 @@ export function MascotTrigger({ name, open, onToggle, children }: { name: string
 /** The nine animations to wear, each as a live preview, or back to the automatic one. Only open menus draw their previews. */
 export function MascotChooser({ seed, name, onMore }: { seed: string; name: string; colour?: string; onMore?: () => void }) {
   const choice = useMascotChoice();
+  const off = useMascotsOff();
   const linked = useContext(MascotsTabLink);
   const more = onMore ?? linked;
   const picked = choice.picks[seed] ?? null;
+  if (off) return null;
   return (
     <div className="hd-mchoose" role="group" aria-label={`Choose mascot for ${name}`}>
       <div className="hd-mchoose-grid hd-mchoose-grid3">
