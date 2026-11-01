@@ -209,6 +209,11 @@ class InstallerTest(unittest.TestCase):
         self.assertIn(['plugin','config','navaigate-skin','set','preset','pro'],calls)
         self.assertIn(['plugin','disable','navaigate-workspace'],calls)
         self.assertFalse(any(c[:2]==['plugin','remove'] for c in calls))
+        for left_out in ['fleet','prompt-stack','kanban','finder-links','tasks']: self.assertNotIn(left_out,self.installs(calls))
+
+    def test_console_switch_from_pro_with_the_pro_flag_adds_the_pro_plugins(self):
+        calls,_=self.run_installer('--console','--edition','pro',TEST_PLUGINS=PRO)
+        for plugin in ['fleet','prompt-stack','kanban']: self.assertIn(plugin,self.installs(calls))
 
     def test_console_switch_rolls_back_when_the_appearance_fails(self):
         calls,_=self.run_installer('--console',TEST_PLUGINS=PRO,TEST_LIST='navaigate-workspace/rail',TEST_FAIL_SETTING='navaigate-skin/rail',code=1)

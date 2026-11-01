@@ -72,15 +72,15 @@
     {
       "id": "voice",
       "aliases": [
-        "dan"
+        "mine"
       ],
-      "label": "Daniel's voice",
-      "card": "Anything written in Daniel's name follows the daniel-voice skill: flowing spoken rhythm, 'we' does the work, no metaphors, no startup jargon, proof over promises. Invoke it before drafting.",
-      "skill": "daniel-voice",
+      "label": "Your voice",
+      "card": "Anything written in your name follows your own voice skill: flowing spoken rhythm, plain words, no metaphors, no startup jargon, proof over promises. Invoke it before drafting.",
+      "skill": "your-voice",
       "brief_fields": [
         "Voice"
       ],
-      "summary": "Anything written as Daniel (email, post, lesson, site copy) uses daniel-voice: his spoken rhythm, 'we', no metaphors, no jargon, real names and numbers."
+      "summary": "Anything written as you (email, post, lesson, site copy) uses your own voice skill: your spoken rhythm, plain words, real names and numbers."
     },
     {
       "id": "design",

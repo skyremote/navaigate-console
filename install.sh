@@ -302,8 +302,11 @@ if [ "$MODE" = console ]; then
   CONSOLE_NEW=0; [ "$SKIN_OURS" -eq 0 ] && CONSOLE_NEW=1
   PRESET=""; WANT_PRO=0
   if [ "$CONSOLE_NEW" -eq 1 ]; then PRESET="${REQUESTED_EDITION:-${LEGACY_EDITION:-simple}}"; fi
+  # The Pro plugins come with an explicit --edition pro, or with a fresh install
+  # on the Pro preset. A preset carried over from a 1.11 install only sets the
+  # starting choice: plugins the person left out of 1.11 are not added.
   [ "$REQUESTED_EDITION" = pro ] && WANT_PRO=1
-  [ "$PRESET" = pro ] && WANT_PRO=1
+  [ "$CONSOLE_NEW" -eq 1 ] && [ -z "$LEGACY_EDITION" ] && [ "$PRESET" = pro ] && WANT_PRO=1
   EDITION=console
   SWITCHING=$CONSOLE_FLAG
   KEEP_LOOK=0; [ "$CURRENT_EDITION" = console ] && KEEP_LOOK=1

@@ -33,6 +33,34 @@ LICENSE_FROM="$OVERLAY/plugins/kanban/LICENSE"
 NOTICE_FROM="$OVERLAY/plugins/kanban/NOTICE"
 HOOK_SCRIPT="$OVERLAY/scripts/prompt-stack-install-hook.sh"
 
+# The vendored Claude Code half names its author and one personal skill. In this
+# overlay copy only (never in the source repository) the author becomes NavAIgate
+# and the "voice" entry becomes a neutral one that points at the reader's own
+# voice skill. Safe to run again: it rewrites to the same result every time.
+neutralise_prompt_stack() {
+  python3 - "$1" <<'PY'
+import json, sys, os
+root = sys.argv[1]
+p = os.path.join(root, ".claude-plugin", "plugin.json")
+if os.path.exists(p):
+    j = json.load(open(p))
+    j["author"] = {"name": "NavAIgate", "url": "https://navaigate.dev"}
+    json.dump(j, open(p, "w"), indent=2); open(p, "a").write("\n")
+p = os.path.join(root, "stack.json")
+j = json.load(open(p))
+for e in j.get("entries", []):
+    if e.get("id") == "voice":
+        e["aliases"] = ["mine"]
+        e["label"] = "Your voice"
+        e["card"] = ("Anything written in your name follows your own voice skill: flowing spoken rhythm, plain words, "
+                     "no metaphors, no startup jargon, proof over promises. Invoke it before drafting.")
+        e["skill"] = "your-voice"
+        e["summary"] = ("Anything written as you (email, post, lesson, site copy) uses your own voice skill: "
+                        "your spoken rhythm, plain words, real names and numbers.")
+json.dump(j, open(p, "w"), indent=2, ensure_ascii=False); open(p, "a").write("\n")
+PY
+}
+
 ONLY=""; CHECK=0
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -127,6 +155,7 @@ if wanted prompt-stack; then
   mkdir -p "$cdest"
   rsync -a --delete --exclude __pycache__ --exclude '*.pyc' --exclude .DS_Store "$PS_CLAUDE_SRC/" "$cdest/"
   cp "$HOOK_SCRIPT" "$cdest/install-hook.sh"; chmod 755 "$cdest/install-hook.sh"
+  neutralise_prompt_stack "$cdest"
   pcommit="$(git -C "$PS_REPO" rev-parse HEAD)"
   tracked="$(git -C "$PS_REPO" ls-files -- "$PS_CLAUDE_SRC" | wc -l | tr -d ' ')"
   digest="$(cd "$PS_CLAUDE_SRC" && find . -type f ! -name '*.pyc' ! -name .DS_Store ! -path '*/__pycache__/*' | LC_ALL=C sort | xargs shasum -a 256 | shasum -a 256 | cut -d' ' -f1)"
