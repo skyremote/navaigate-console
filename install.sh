@@ -1,15 +1,25 @@
 #!/usr/bin/env bash
-# BB Overlay 1.11 — Simple and Pro, from NavAIgate.
-# Fresh installs default to Simple; existing installs keep their edition and look.
-# Simple installs the lean sidebar, Helper Desk, Cache Clock, Reflect, Screen Share
-# and an acknowledged guided tour. Pro retains the established full workspace.
-# No plugin is removed, no saved data is deleted, and disabled extras stay disabled.
+# BB Overlay 1.12: the NavAIgate Console, from NavAIgate.
+# A fresh install gets the Console: one sidebar and Home page, with a setup screen
+# where you tick the features you want. --edition simple|pro only picks which
+# starting preset the setup screen offers (default simple); Pro also installs
+# Fleet, Prompt Stack, Kanban, Finder Links and the optional third-party folders,
+# agent board and tasks. Helper Desk, Cache Clock, Reflect, Screen Share, the
+# Markdown plugin (NavMotion Skin) and the guided tour come with both.
+#
+# An existing 1.11 Simple or Pro install is kept exactly as it is. Run with
+# --console to move it to the Console; nothing is uninstalled and no data is
+# deleted. A navaigate-skin you installed from another source is never touched.
+# Disabled plugins stay disabled.
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/skyremote/bb-overlay/main/install.sh | bash
-#   bash install.sh [--edition simple|pro] [--dry-run] [--no-look] [--no-mods]
+#   bash install.sh [--edition simple|pro] [--console] [--dry-run] [--no-look] [--no-mods]
 #
-#   --edition simple|pro  choose explicitly (existing choices otherwise preserved)
+#   --edition simple|pro  the Console's starting preset on a fresh install (default
+#                         simple); on an existing 1.11 install without --console it
+#                         switches between 1.11 Simple and 1.11 Pro as it did before
+#   --console             move an existing 1.11 Simple or Pro install to the Console
 #   --dry-run             print mutations without making changes
 #   --no-look             leave theme, navigation and thread-list preferences alone
 #   --no-mods             skip the helper plugins
@@ -19,6 +29,8 @@
 set -euo pipefail
 
 EDITION="BB Overlay"
+BRAIN_KIT_URL="https://github.com/skyremote/bb-overlay/tree/main/extras/brain-selfhost-kit"
+CONSOLE_ID="navaigate-skin"
 REPO_URL="https://github.com/skyremote/bb-overlay.git"
 REPO_REF="main"
 MIN_BB="0.48"
@@ -51,6 +63,7 @@ DRY_RUN=0
 SET_LOOK=1
 SET_MODS=1
 PIN_FOLDERS=0
+CONSOLE_FLAG=0
 REQUESTED_EDITION=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -62,9 +75,10 @@ while [ "$#" -gt 0 ]; do
     --no-look) SET_LOOK=0 ;;
     --no-mods) SET_MODS=0 ;;
     --pin-folders) PIN_FOLDERS=1 ;;
+    --console) CONSOLE_FLAG=1 ;;
     -h|--help)
       if [ -f "$0" ]; then sed -n '2,/^set -euo pipefail/p' "$0" | sed '$d;s/^# *//'
-      else printf '%s\n' 'Options: --edition simple|pro --dry-run --no-look --no-mods --pin-folders'; fi
+      else printf '%s\n' 'Options: --edition simple|pro --console --dry-run --no-look --no-mods --pin-folders'; fi
       exit 0 ;;
     *) echo "Unknown option: $1 (try --help)" >&2; exit 2 ;;
   esac
@@ -116,7 +130,7 @@ version_lt() { # true when $1 < $2 (major.minor.patch)
   return 1
 }
 if version_lt "$BB_VERSION" "$MIN_BB"; then
-  die "BB Overlay 1.11 needs bb $MIN_BB or later. Update bb first, then run this again."
+  die "BB Overlay 1.12 needs bb $MIN_BB or later. Update bb first, then run this again."
 fi
 
 PLUGIN_LIST="$(bb plugin list 2>/dev/null)" || die "bb is installed but not answering. Open the bb app, wait for it to load, then run this again."
@@ -241,31 +255,84 @@ ensure() {
 }
 
 # ---------------------------------------------------------------- edition
+# Which core is in charge today?
+#   simple   navaigate-simple (1.11 Simple)
+#   pro      navaigate-workspace (1.11 Pro), or a navaigate-skin from another source
+#   console  navaigate-skin installed from this repository (the Console)
+SKIN_SRC="$(plugin_source "$CONSOLE_ID")"
+SKIN_OURS=0; SKIN_OTHER=0
+if [ -n "$(plugin_line "$CONSOLE_ID")" ]; then
+  if src_matches "$SKIN_SRC" "$NAV_MATCH"; then SKIN_OURS=1; else SKIN_OTHER=1; fi
+fi
+SKIN_ENABLED=0
+[ "$SKIN_OURS" -eq 1 ] && [ "$(plugin_line "$CONSOLE_ID" | awk '{print $2}')" != "disabled" ] && SKIN_ENABLED=1
+
 CURRENT_EDITION=""
 SELECTED_LIST="$(bb settings ui get sidebar.threadListProvider 2>/dev/null | tr -d '"[:space:]' || true)"
 if [[ "$SELECTED_LIST" == navaigate-simple/* ]] && [ -n "$(plugin_line navaigate-simple)" ]; then
   CURRENT_EDITION=simple
+elif [[ "$SELECTED_LIST" == navaigate-skin/* ]] && [ "$SKIN_OURS" -eq 1 ]; then
+  CURRENT_EDITION=console
 elif [[ "$SELECTED_LIST" == navaigate-workspace/* || "$SELECTED_LIST" == navaigate-skin/* ]] && [ -n "$(plugin_line navaigate-workspace)$(plugin_line navaigate-skin)" ]; then
   CURRENT_EDITION=pro
 elif [ -n "$(plugin_line navaigate-simple)" ] && [ "$(plugin_line navaigate-simple | awk '{print $2}')" != "disabled" ]; then
   CURRENT_EDITION=simple
+elif [ "$SKIN_ENABLED" -eq 1 ]; then
+  CURRENT_EDITION=console
 elif [ -n "$(plugin_line navaigate-workspace)$(plugin_line navaigate-skin)" ]; then
-  CURRENT_EDITION=pro
+  if [ "$SKIN_OURS" -eq 1 ] && [ -z "$(plugin_line navaigate-workspace)" ]; then CURRENT_EDITION=console; else CURRENT_EDITION=pro; fi
 fi
-EDITION="${REQUESTED_EDITION:-${CURRENT_EDITION:-simple}}"
-if [ "$SET_LOOK" -eq 0 ] && [ -n "$CURRENT_EDITION" ] && [ "$EDITION" != "$CURRENT_EDITION" ]; then
-  die "--no-look cannot switch editions: the old thread list would point at a disabled core. Remove --no-look to switch, or omit --edition to update your current setup."
+LEGACY_EDITION=""
+case "$CURRENT_EDITION" in simple|pro) LEGACY_EDITION="$CURRENT_EDITION" ;; esac
+
+# Console or the 1.11 editions? A fresh install, an existing Console and --console
+# all mean the Console. An existing 1.11 Simple or Pro install is kept as it is.
+# A navaigate-skin from another source is never replaced or reconfigured.
+MODE=legacy
+if [ "$CONSOLE_FLAG" -eq 1 ] && [ "$SKIN_OTHER" -eq 1 ]; then
+  say "$CONSOLE_ID is already installed from $SKIN_SRC. Keeping your copy as it is: it is not replaced, reconfigured or given a preset."
+  CONSOLE_FLAG=0
+elif [ "$CONSOLE_FLAG" -eq 1 ] || [ "$CURRENT_EDITION" = console ] || [ -z "$CURRENT_EDITION" ]; then
+  MODE=console
 fi
 
-PRESERVE_PRO=0
-[ "$EDITION" = pro ] && [ -n "$(plugin_line navaigate-workspace)$(plugin_line navaigate-skin)" ] && PRESERVE_PRO=1
-KEEP_LOOK=0
-[ -n "$CURRENT_EDITION" ] && [ "$EDITION" = "$CURRENT_EDITION" ] && KEEP_LOOK=1
-step "BB Overlay: $EDITION"
-say "Fresh installs default to Simple. Choose another edition with --edition simple or --edition pro."
+if [ "$MODE" = console ]; then
+  # --edition picks the starting preset and, for pro, the extra plugins.
+  # An existing Console keeps its own preset and look.
+  CONSOLE_NEW=0; [ "$SKIN_OURS" -eq 0 ] && CONSOLE_NEW=1
+  PRESET=""; WANT_PRO=0
+  if [ "$CONSOLE_NEW" -eq 1 ]; then PRESET="${REQUESTED_EDITION:-${LEGACY_EDITION:-simple}}"; fi
+  [ "$REQUESTED_EDITION" = pro ] && WANT_PRO=1
+  [ "$PRESET" = pro ] && WANT_PRO=1
+  EDITION=console
+  SWITCHING=$CONSOLE_FLAG
+  KEEP_LOOK=0; [ "$CURRENT_EDITION" = console ] && KEEP_LOOK=1
+  if [ "$SET_LOOK" -eq 0 ] && [ -n "$LEGACY_EDITION" ] && [ "$CONSOLE_FLAG" -eq 1 ]; then
+    die "--no-look cannot switch to the Console: the old thread list would point at a disabled core. Remove --no-look to switch, or omit --console to keep your current setup."
+  fi
+  step "BB Overlay: Console"
+  if [ "$CONSOLE_NEW" -eq 1 ]; then
+    say "The Console is the core for both starting presets. Its setup screen opens first; you tick the features you want there. Starting preset: $PRESET."
+  fi
+else
+  EDITION="${REQUESTED_EDITION:-${CURRENT_EDITION:-simple}}"
+  SWITCHING=0; [ -n "$REQUESTED_EDITION" ] && SWITCHING=1
+  if [ "$SET_LOOK" -eq 0 ] && [ -n "$CURRENT_EDITION" ] && [ "$EDITION" != "$CURRENT_EDITION" ]; then
+    die "--no-look cannot switch editions: the old thread list would point at a disabled core. Remove --no-look to switch, or omit --edition to update your current setup."
+  fi
+  PRESERVE_PRO=0
+  [ "$EDITION" = pro ] && [ -n "$(plugin_line navaigate-workspace)$(plugin_line navaigate-skin)" ] && PRESERVE_PRO=1
+  KEEP_LOOK=0
+  [ -n "$CURRENT_EDITION" ] && [ "$EDITION" = "$CURRENT_EDITION" ] && KEEP_LOOK=1
+  step "BB Overlay: $EDITION (1.11 setup, kept as it is)"
+  if [ "$SKIN_OTHER" -eq 0 ]; then
+    say "BB Overlay 1.12 adds the NavAIgate Console. Nothing about your $EDITION setup has changed. To move to the Console, run this again with --console (nothing is uninstalled)."
+  fi
+fi
 
-# Save only appearance values when explicitly moving from Pro to Simple.
-# Separate text files avoid requiring Python/Node on a member's computer.
+# Save only appearance values when moving away from a 1.11 edition: Pro to Simple
+# (so Pro can come back) or either 1.11 edition to the Console. Separate text files
+# avoid requiring Python/Node on a member's computer.
 SAVED_LOOK="${XDG_CONFIG_HOME:-$HOME/.config}/bb-overlay/pro-look"
 if [ "$DRY_RUN" -eq 0 ] && [ "$SET_LOOK" -eq 1 ] && [ "$CURRENT_EDITION" = pro ] && [ "$EDITION" = simple ]; then
   mkdir -p "$SAVED_LOOK"
@@ -273,9 +340,20 @@ if [ "$DRY_RUN" -eq 0 ] && [ "$SET_LOOK" -eq 1 ] && [ "$CURRENT_EDITION" = pro ]
   bb settings ui get sidebar.navigationProvider > "$SAVED_LOOK/navigation.json"
   bb theme show | sed -n '1s/.*(\(.*\))$/\1/p' > "$SAVED_LOOK/theme.txt"
 fi
+if [ "$DRY_RUN" -eq 0 ] && [ "$SET_LOOK" -eq 1 ] && [ "$MODE" = console ] && [ "$CONSOLE_FLAG" -eq 1 ] && [ -n "$LEGACY_EDITION" ]; then
+  BEFORE_CONSOLE="${XDG_CONFIG_HOME:-$HOME/.config}/bb-overlay/before-console"
+  mkdir -p "$BEFORE_CONSOLE"
+  bb settings ui get sidebar.threadListProvider > "$BEFORE_CONSOLE/thread-list.json"
+  bb settings ui get sidebar.navigationProvider > "$BEFORE_CONSOLE/navigation.json"
+  bb theme show | sed -n '1s/.*(\(.*\))$/\1/p' > "$BEFORE_CONSOLE/theme.txt"
+  printf '%s\n' "$LEGACY_EDITION" > "$BEFORE_CONSOLE/edition.txt"
+fi
 
 # ---------------------------------------------------------------- plugins
-if [ "$EDITION" = simple ]; then
+if [ "$MODE" = console ]; then
+  WS_ID="$CONSOLE_ID"
+  ensure "$CONSOLE_ID" "NavAIgate Console" "$NAV_MATCH" "git:${REPO_URL}@${REPO_REF}" --plugin console
+elif [ "$EDITION" = simple ]; then
   WS_ID=navaigate-simple
   ensure "$WS_ID" "NavAIgate Simple" "$NAV_MATCH" "git:${REPO_URL}@${REPO_REF}" --plugin simple
 else
@@ -305,8 +383,21 @@ if [ "$SET_MODS" -eq 1 ]; then
   for mod in helper-desk cache-clock reflect screen-share; do
     ensure "$mod" "$mod" "$NAV_MATCH" "git:${REPO_URL}@${REPO_REF}" --plugin "$mod"
   done
+  if [ "$MODE" = console ]; then
+    ensure navmotion-skin "Markdown plugin (NavMotion Skin)" "$NAV_MATCH" "git:${REPO_URL}@${REPO_REF}" --plugin navmotion-skin
+  fi
 fi
-if [ "$EDITION" = pro ]; then
+if [ "$MODE" = console ]; then
+  if [ "$WANT_PRO" -eq 1 ]; then
+    ensure fleet "Fleet" "$NAV_MATCH" "git:${REPO_URL}@${REPO_REF}" --plugin fleet
+    ensure prompt-stack "Prompt Stack" "$NAV_MATCH" "git:${REPO_URL}@${REPO_REF}" --plugin prompt-stack
+    ensure kanban Kanban "$NAV_MATCH" "git:${REPO_URL}@${REPO_REF}" --plugin kanban
+    ensure finder-links "Finder Links" "$NAV_MATCH" "git:${REPO_URL}@${REPO_REF}" --plugin finder-links
+    FALLBACK="$PF_FALLBACK" ensure project-folders "Projects & Sections" "$PF_MATCH" "$PF_SOURCE"
+    ensure agent-board "Agent Board" "$AB_MATCH" "$AB_SOURCE"
+    ensure tasks "Tasks (built into bb)" "" tasks
+  fi
+elif [ "$EDITION" = pro ]; then
   ensure finder-links "Finder Links" "$NAV_MATCH" "git:${REPO_URL}@${REPO_REF}" --plugin finder-links
   ensure navmotion-skin "NavMotion Skin" "$NAV_MATCH" "git:${REPO_URL}@${REPO_REF}" --plugin navmotion-skin
   FALLBACK="$PF_FALLBACK" ensure project-folders "Projects & Sections" "$PF_MATCH" "$PF_SOURCE"
@@ -324,7 +415,7 @@ if [ "${#CHANGED[@]}" -gt 0 ]; then
     fi
   done
 fi
-if [ "$FAILURES" -eq 0 ] && [ -n "$REQUESTED_EDITION" ] && [ "$(plugin_line "$WS_ID" | awk '{print $2}')" = disabled ]; then
+if [ "$FAILURES" -eq 0 ] && [ "$SWITCHING" -eq 1 ] && [ "$(plugin_line "$WS_ID" | awk '{print $2}')" = disabled ]; then
   if ! run bb plugin enable "$WS_ID"; then FAILURES=$((FAILURES + 1)); fi
 fi
 
@@ -334,7 +425,7 @@ if [ "$FAILURES" -eq 0 ] && [ "$SET_LOOK" -eq 1 ] && [ "$KEEP_LOOK" -eq 0 ]; the
   OLD_NAV="$(bb settings ui get sidebar.navigationProvider)"
   OLD_THEME="$(bb theme show | sed -n '1s/.*(\(.*\))$/\1/p')"
   NEW_LIST="$RAIL_ID"; NEW_NAV=navigation/rail; NEW_THEME="$THEME_ID"
-  if [ "$EDITION" = pro ] && [ -s "$SAVED_LOOK/thread-list.json" ] && [ -s "$SAVED_LOOK/navigation.json" ] && [ -s "$SAVED_LOOK/theme.txt" ]; then
+  if [ "$MODE" = legacy ] && [ "$EDITION" = pro ] && [ -s "$SAVED_LOOK/thread-list.json" ] && [ -s "$SAVED_LOOK/navigation.json" ] && [ -s "$SAVED_LOOK/theme.txt" ]; then
     NEW_LIST="$(cat "$SAVED_LOOK/thread-list.json")"
     NEW_NAV="$(cat "$SAVED_LOOK/navigation.json")"
     NEW_THEME="$(cat "$SAVED_LOOK/theme.txt")"
@@ -352,9 +443,10 @@ elif [ "$KEEP_LOOK" -eq 1 ]; then
   say "Your existing $EDITION appearance, rail, tabs, plugins and settings are kept."
 fi
 
-if [ "$FAILURES" -eq 0 ] && [ -n "$REQUESTED_EDITION" ]; then
+if [ "$FAILURES" -eq 0 ] && [ "$SWITCHING" -eq 1 ]; then
   OTHER_CORES=navaigate-simple
   [ "$EDITION" != simple ] || OTHER_CORES="navaigate-workspace navaigate-skin"
+  [ "$MODE" != console ] || OTHER_CORES="navaigate-simple navaigate-workspace"
   DISABLED_CORES=""
   for id in $OTHER_CORES; do
     if [ -n "$(plugin_line "$id")" ] && [ "$(plugin_line "$id" | awk '{print $2}')" != disabled ]; then
@@ -368,6 +460,15 @@ if [ "$FAILURES" -eq 0 ] && [ -n "$REQUESTED_EDITION" ]; then
       fi
     fi
   done
+fi
+
+# A Console we installed in this run starts on the chosen preset. This is only a
+# starting choice: the Console's setup screen reads it and the person ticks the
+# features there. It is never set on a Console that was already installed.
+if [ "$FAILURES" -eq 0 ] && [ "$MODE" = console ] && [ "$CONSOLE_NEW" -eq 1 ] && [ -n "$PRESET" ] \
+   && [ "$(plugin_line "$CONSOLE_ID" | awk '{print $2}')" != disabled ]; then
+  run bb plugin config "$CONSOLE_ID" set preset "$PRESET" \
+    || warn "Could not record the $PRESET preset. The Console's setup screen will open on its default; choose Simple or Pro there."
 fi
 
 # Configure the guide only after all required installs succeeded. An existing
@@ -388,3 +489,23 @@ else
 fi
 say "Each step needs your acknowledgement. Close to pause; replay from Settings, BB Overlay guide."
 say "Run this again to update. Disabled plugins, saved data and existing appearance are preserved."
+
+if [ "$MODE" = console ]; then
+  step "Next steps"
+  say "Setup: after you reload, the Console opens its setup screen. Tick the features you want there; you can come back to it from Settings."
+  say "Brain (optional): a self-hosted memory service for Fleet and the Console's brain features. The kit is in this repository, ${BRAIN_KIT_URL}. Nothing is installed for it here; the Console's setup screen takes its address."
+  if [ "$WANT_PRO" -eq 1 ]; then
+    say "Fleet needs a second Mac running bb and a brain. Add the other Mac in the setup screen."
+    say "Prompt Stack's Claude Code hook is a separate, opt-in step. This installer never touches ~/.claude/settings.json. To add the hook (it saves a dated backup of settings.json first and can be run again safely):"
+    HOOK_LOCAL=""
+    if [ -f "$0" ]; then
+      HOOK_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd || true)"
+      [ -n "$HOOK_DIR" ] && [ -f "$HOOK_DIR/plugins/prompt-stack/claude-plugin/install-hook.sh" ] && HOOK_LOCAL="$HOOK_DIR/plugins/prompt-stack/claude-plugin/install-hook.sh"
+    fi
+    if [ -n "$HOOK_LOCAL" ]; then
+      say "  bash \"$HOOK_LOCAL\""
+    else
+      say "  d=\$(mktemp -d) && git clone --depth 1 ${REPO_URL} \"\$d\" && bash \"\$d/plugins/prompt-stack/claude-plugin/install-hook.sh\""
+    fi
+  fi
+fi

@@ -46,6 +46,18 @@
     {
       "name": "onboarding",
       "source": "./plugins/onboarding"
+    },
+    {
+      "name": "console",
+      "source": "./plugins/console"
+    },
+    {
+      "name": "fleet",
+      "source": "./plugins/fleet"
+    },
+    {
+      "name": "prompt-stack",
+      "source": "./plugins/prompt-stack"
     }
   ]
 }
