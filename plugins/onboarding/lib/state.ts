@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { stepIds, type Edition } from "./steps";
-export const editionSchema = z.enum(["simple", "pro"]);
+import { EDITIONS, stepIds, type Edition } from "./steps";
+export const editionSchema = z.enum(EDITIONS);
 export const versionSchema = z.string().min(1).max(32).regex(/^[a-zA-Z0-9._-]+$/);
 export const reviewSchema = z.object({ at: z.number().int().nonnegative(), availability: z.enum(["visible", "unavailable"]) });
 export const progressSchema = z.object({

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { definePluginApp, useRealtime, useRpc, useSettings } from "@get-bb/plugin-sdk/app";
 import type { rpcContract } from "./server";
 import { GuideView, type GuidePhase, type GuideSnapshot } from "./guide";
-import { STEPS } from "./lib/steps";
+import { STEPS, editionLabel } from "./lib/steps";
 import type { GuideAction } from "./lib/state";
 export const OPEN_EVENT = "bb-overlay-guide:open";
 export const REPLAY_EVENT = "bb-overlay-guide:replay";
@@ -97,7 +97,7 @@ export function GuideSettings() {
   const read = useCallback(() => { rpcRef.current.call("snapshot").then(next => { setSnapshot(next); setError(null); }, cause => setError(message(cause))); }, []);
   useEffect(read, [read]); useRealtime("guide-changed", read); useRealtime("guide-configured", read);
   const p = snapshot?.progress;
-  return <div className="bbog-settings"><p>A short guide anchored to your real workspace. Every step waits for your explicit read check.</p>{snapshot && p && <><p className="bbog-settings-meta">{snapshot.edition === "simple" ? "Simple" : "Pro"} · guide {snapshot.guideVersion} · {Object.keys(p.reviewed).length} of {STEPS[snapshot.edition].length} steps read{p.status === "completed" ? " · completed" : p.status === "paused" ? " · paused" : ""}</p>{p.history.lastCompletedAt && <p className="bbog-settings-meta">Last completed {new Date(p.history.lastCompletedAt).toLocaleDateString("en-GB")}. {p.history.completedRuns} completed {p.history.completedRuns === 1 ? "run" : "runs"} kept in history.</p>}</>}{error && <p className="bbog-error" role="alert">Could not load progress: {error}</p>}<div className="bbog-settings-actions"><button className="bbog-primary" onClick={() => window.dispatchEvent(new CustomEvent(OPEN_EVENT))}>Open or resume guide</button><button className="bbog-secondary" onClick={() => window.dispatchEvent(new CustomEvent(REPLAY_EVENT))}>Replay guide</button></div><p className="bbog-settings-meta" style={{ marginTop: 12 }}>Replay clears this run’s read checks and preserves completion history. Neither action changes your workspace or enables a feature.</p></div>;
+  return <div className="bbog-settings"><p>A short guide anchored to your real workspace. Every step waits for your explicit read check.</p>{snapshot && p && <><p className="bbog-settings-meta">{editionLabel(snapshot.edition)} · guide {snapshot.guideVersion} · {Object.keys(p.reviewed).length} of {STEPS[snapshot.edition].length} steps read{p.status === "completed" ? " · completed" : p.status === "paused" ? " · paused" : ""}</p>{p.history.lastCompletedAt && <p className="bbog-settings-meta">Last completed {new Date(p.history.lastCompletedAt).toLocaleDateString("en-GB")}. {p.history.completedRuns} completed {p.history.completedRuns === 1 ? "run" : "runs"} kept in history.</p>}</>}{error && <p className="bbog-error" role="alert">Could not load progress: {error}</p>}<div className="bbog-settings-actions"><button className="bbog-primary" onClick={() => window.dispatchEvent(new CustomEvent(OPEN_EVENT))}>Open or resume guide</button><button className="bbog-secondary" onClick={() => window.dispatchEvent(new CustomEvent(REPLAY_EVENT))}>Replay guide</button></div><p className="bbog-settings-meta" style={{ marginTop: 12 }}>Replay clears this run’s read checks and preserves completion history. Neither action changes your workspace or enables a feature.</p></div>;
 }
 export default definePluginApp(app => {
   app.slots.experimental_appOverlay({ id: "guide", component: GuideController });

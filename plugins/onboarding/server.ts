@@ -10,7 +10,7 @@ export const rpcContract = defineRpcContract({
 });
 export default function plugin(bb: BbPluginApi) {
   const settings = bb.settings.define({
-    edition: { type: "select", label: "Edition", options: ["simple", "pro"], default: "pro", description: "Choose the guide for your existing workspace. This changes only the guide." },
+    edition: { type: "select", label: "Edition", options: ["simple", "pro", "console"], default: "pro", description: "Choose the guide for your workspace: the Console, or the 1.11 Simple or Pro setup. This changes only the guide." },
     autoStart: { type: "boolean", label: "Offer the guide once", default: false, description: "Offer this edition and guide version once. Dismissed, paused and completed guides do not reopen on updates." },
     guideVersion: { type: "string", label: "Guide version", default: "1", experimental_schema: versionSchema, description: "Progress is saved separately for each edition and guide version." },
   });

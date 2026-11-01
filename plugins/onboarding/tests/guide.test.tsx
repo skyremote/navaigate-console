@@ -63,4 +63,14 @@ describe("coach-mark UI", () => {
     const p = props(); p.snapshot.progress.history.lastUnavailableSteps = ['cache-clock']; render(<GuideView {...p} phase="completed" />);
     expect(screen.getByText(/1 controls were unavailable/)).toBeTruthy(); fireEvent.click(screen.getByRole('button', { name: 'Replay guide' })); expect(p.onAction).toHaveBeenCalledWith({ kind: 'replay' });
   });
+  it("the Console tour names itself, explains a missing Fleet entry and never ticks for the person", async () => {
+    const snapshot = { edition: "console" as const, guideVersion: "1", autoStart: false, progress: transition(freshProgress("console", "1"), { kind: "start" }, 1, () => "run").progress };
+    snapshot.progress.index = 4;
+    const onAction = vi.fn(); render(<GuideView snapshot={snapshot} phase="tour" busy={false} error={null} onAction={onAction} onClose={vi.fn()} />);
+    expect(screen.getByText(/Console · Step 5 of 5/)).toBeTruthy();
+    await screen.findByText('This control isn’t visible here.', {}, { timeout: 2500 });
+    expect(screen.getByText(/second Mac/, { selector: 'p' })).toBeTruthy();
+    expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(false); expect(onAction).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('checkbox')); expect(onAction).toHaveBeenCalledWith({ kind: 'review', runId: 'run', stepId: 'console-fleet', checked: true, availability: 'unavailable' });
+  });
 });

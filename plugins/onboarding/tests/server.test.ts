@@ -37,6 +37,18 @@ describe("guide backend contract", () => {
     const s = await h.harness.behavior.callRpc("update", { edition: "pro", guideVersion: "1", action: { kind: "start" } }) as GuideSnapshot;
     await expect(h.harness.behavior.callRpc("update", { edition: "pro", guideVersion: "1", action: { kind: "move", runId: s.progress.runId, direction: "next" } })).rejects.toThrow(/explicitly tick/);
   });
+  it("accepts the console edition and keeps its progress apart from the other editions", async () => {
+    const h = await make({ edition: "console", autoStart: true });
+    const s = await h.harness.behavior.callRpc("snapshot") as GuideSnapshot;
+    expect(s).toMatchObject({ edition: "console", progress: { status: "new", edition: "console" } });
+    const p = await h.harness.behavior.callRpc("update", { edition: "console", guideVersion: "1", action: { kind: "start" } }) as GuideSnapshot;
+    await h.harness.behavior.callRpc("update", { edition: "console", guideVersion: "1", action: { kind: "review", runId: p.progress.runId, stepId: "console-setup", checked: true, availability: "visible" } });
+    await h.harness.behavior.setSettings({ edition: "simple" });
+    expect((await h.harness.behavior.callRpc("snapshot") as GuideSnapshot).progress.reviewed).toEqual({});
+    await h.harness.behavior.setSettings({ edition: "console" });
+    expect((await h.harness.behavior.callRpc("snapshot") as GuideSnapshot).progress.reviewed["console-setup"]).toBeTruthy();
+    await expect(h.harness.behavior.setSettings({ edition: "unknown" })).rejects.toThrow();
+  });
   it("uses only public SDK surfaces", async () => {
     const scan = await experimental_scanPublicSdkOnly(fileURLToPath(new URL("../", import.meta.url)), { allow: [/^react(?:-dom)?(?:\/client)?$/, /^@testing-library\/react$/, /^vitest\/config$/, /^esbuild$/] });
     expect(scan.violations).toEqual([]); expect(scan.privateDependencies).toEqual([]);

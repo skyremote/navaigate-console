@@ -57,6 +57,21 @@ describe("real-target resolution and bounded placement", () => {
     const step = STEPS.pro.find(candidate => candidate.id === id)!;
     expect(findTarget(step)).not.toBeNull();
   });
+  it("anchors the Console tour only on the Console's own data-tour attributes", () => {
+    for (const step of STEPS.console) {
+      expect(step.selectors).toEqual([`[data-tour="${step.id}"]`]);
+      expect(step.unavailable.length).toBeGreaterThan(40);
+    }
+  });
+  it.each(["console-setup", "console-home", "console-rail", "console-features", "console-fleet"])("resolves the Console step %s and refuses a lookalike", (id) => {
+    document.body.innerHTML = `<div data-tour="${id}">Target</div><div data-tour="${id}-other">Other</div>`;
+    const target = document.querySelector<HTMLElement>(`[data-tour="${id}"]`)!;
+    document.querySelectorAll<HTMLElement>("div").forEach(element => { element.getBoundingClientRect = () => rect(20, 80, 200, 40); });
+    const step = STEPS.console.find(candidate => candidate.id === id)!;
+    expect(findTarget(step)?.element).toBe(target);
+    target.remove();
+    expect(findTarget(step)).toBeNull();
+  });
   it("clamps a mobile card and removes arrows when a target is unavailable", () => {
     const p = placeCard({ left: 12, top: 740, width: 360, height: 80 }, { width: 366, height: 430 }, { left: 0, top: 0, width: 390, height: 844 }, "right");
     expect(p.left).toBeGreaterThanOrEqual(12); expect(p.left + 366).toBeLessThanOrEqual(378); expect(p.top + 430).toBeLessThanOrEqual(832);

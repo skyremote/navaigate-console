@@ -1,6 +1,6 @@
 ---
 name: bb-overlay-guide
-description: Resume or replay the interactive BB Overlay guide for Simple or the existing Pro workspace.
+description: Resume or replay the interactive BB Overlay guide for the Console, Simple or the existing Pro workspace.
 ---
 
 # BB Overlay guide
@@ -17,7 +17,7 @@ Try again; the guide never clicks a substitute control or activates a plugin.
 
 Configuration (guide only; it never changes an edition’s layout):
 
-- `bb plugin config bb-overlay-guide set edition simple` (or `pro`).
+- `bb plugin config bb-overlay-guide set edition console` (or `simple`, or `pro`).
 - `bb plugin config bb-overlay-guide set autoStart true` offers this edition/version
   once. It does not reopen a dismissed, paused or completed guide on installer reruns.
 - `bb plugin config bb-overlay-guide set guideVersion 1` selects a progress namespace.

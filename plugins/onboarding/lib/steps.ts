@@ -1,4 +1,6 @@
-export type Edition = "simple" | "pro";
+export type Edition = "simple" | "pro" | "console";
+export const EDITIONS = ["simple", "pro", "console"] as const;
+export const editionLabel = (edition: Edition) => edition === "simple" ? "Simple" : edition === "console" ? "Console" : "Pro";
 export interface GuideStep {
   id: string;
   title: string;
@@ -98,8 +100,48 @@ const tabs: GuideStep = {
   selectors: [mark("tabs"), '[data-nav-tabs] [aria-label="Open chats"]', '[data-nav-tabs]'],
   unavailable: "The Pro tab strip is not present on this screen. It may be hidden in your current skin or layout. The guide will not change that preference.", side: "bottom",
 };
+// The Console tour is anchored only on the Console's own data-tour attributes, so it
+// does not depend on BB's internal markup. The attribute names are the ones the
+// Console's setup work adds; confirm them against the Console release before shipping.
+const tour = (name: string) => `[data-tour="console-${name}"]`;
+const consoleSetup: GuideStep = {
+  id: "console-setup", title: "Tick the features you want",
+  body: "Setup is where you choose what the Console shows. Pick Simple or Pro as a starting point, then tick or untick individual features. Boxes that need something you have not added yet, such as a second Mac, say what they need.",
+  tip: "Nothing is ticked for you by this tour. You can open Setup again from Settings whenever you want to change a choice.",
+  selectors: [tour("setup")],
+  unavailable: "Setup is not visible on this screen. Open the Console\u2019s Settings page and look for Setup. The tour has not changed any choice.", side: "right",
+};
+const consoleHome: GuideStep = {
+  id: "console-home", title: "Start from Home",
+  body: "Home shows your work in one place: what is running, what is waiting for you and what finished. Open it whenever you come back to bb.",
+  tip: "Home only reads what is already there. This tour does not start or stop any work.",
+  selectors: [tour("home")],
+  unavailable: "Home is not visible here. It may be hidden behind a narrow layout or switched off in Setup. Open the sidebar to look for it.", side: "right",
+};
+const consoleRail: GuideStep = {
+  id: "console-rail", title: "Find your way around the rail",
+  body: "The rail lists your projects and chats, with a mark for the harness each one runs in. Right-click a chat to flag or tag it, or move it into a folder.",
+  tip: "The guide never opens, moves or changes a chat.",
+  selectors: [tour("rail")],
+  unavailable: "The rail is not visible in this layout. Open the sidebar and use Try again. Your place in the guide is saved.", side: "right",
+};
+const consoleFeatures: GuideStep = {
+  id: "console-features", title: "See everything the Console can do",
+  body: "The Features guide lists each feature with a plain description and shows you where it lives. Use it when you wonder what a control does or whether a feature is switched on.",
+  tip: "It describes features; it does not switch any of them on. Do that in Setup.",
+  selectors: [tour("features")],
+  unavailable: "The Features guide is not visible on this screen. Look for it in the Console\u2019s navigation or Settings. Nothing has been changed.", side: "right",
+};
+const consoleFleet: GuideStep = {
+  id: "console-fleet", title: "Fleet needs a second Mac",
+  body: "Fleet shows every Mac that runs bb and lets you start work on any of them. It needs a second Mac and a brain, which you add in Setup.",
+  tip: "On a single Mac, Fleet stays hidden and that is expected. The tour does not add a machine or connect anything.",
+  selectors: [tour("fleet")],
+  unavailable: "Fleet is not shown. That is normal with one Mac, or when Fleet is not installed or not ticked in Setup. Nothing needs enabling to finish reading this step.", side: "right",
+};
 export const STEPS: Readonly<Record<Edition, readonly GuideStep[]>> = {
   simple: [project, chats, newChat, composer, helper, cache, reflect, sideChat, share, appearance, settings],
   pro: [rail, chats, newChat, tabs, composer, helper, cache, reflect, sideChat, share, settings],
+  console: [consoleSetup, consoleHome, consoleRail, consoleFeatures, consoleFleet],
 };
 export function stepIds(edition: Edition): string[] { return STEPS[edition].map(step => step.id); }

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { STEPS, type Edition } from "./lib/steps";
+import { STEPS, editionLabel, type Edition } from "./lib/steps";
 import { placeCard } from "./lib/anchors";
 import { useAnchor } from "./lib/use-anchor";
 import type { GuideAction, GuideProgress } from "./lib/state";
@@ -63,20 +63,20 @@ export function GuideView({ snapshot, phase, busy, error, onAction, onClose }: G
       <div className="bbog-card-head"><span className="bbog-identity"><Book /> BB Overlay guide</span><button type="button" className="bbog-close" aria-label="Close guide and save progress" onClick={onClose}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg></button></div>
       <div className="bbog-content" key={key}>
       {phase === "offer" ? <>
-        <span className="bbog-step-meta">{snapshot.edition === "simple" ? "Simple" : "Your existing Pro workspace"} · {steps.length} short steps</span>
+        <span className="bbog-step-meta">{snapshot.edition === "pro" ? "Your existing Pro workspace" : editionLabel(snapshot.edition)} · {steps.length} short steps</span>
         <h2 id="bbog-title" ref={heading} tabIndex={-1}>A short guide, right where you work.</h2>
         <p id="bbog-description">We’ll point to the real controls in your workspace. Read each explanation and tick its read check before moving on.</p>
         <p className="bbog-tip">You can close this at any point and resume later. The guide leaves your chats, modules, appearance and accounts unchanged.</p>
         <div className="bbog-actions"><button className="bbog-secondary" onClick={onClose}>Later</button><button className="bbog-primary" disabled={busy} onClick={() => onAction({ kind: "start" })}>Start guide <Arrow /></button></div>
       </> : phase === "completed" ? <>
-        <span className="bbog-step-meta">{snapshot.edition === "simple" ? "Simple" : "Pro"} guide · complete</span>
+        <span className="bbog-step-meta">{editionLabel(snapshot.edition)} guide · complete</span>
         <h2 id="bbog-title" ref={heading} tabIndex={-1}>You’ve read every step.</h2>
         <p id="bbog-description">Your progress is saved. Resume or replay from the BB Overlay guide section in Settings, or find its command in the command palette.</p>
         {snapshot.progress.history.lastUnavailableSteps.length > 0 && <p className="bbog-target-note">{snapshot.progress.history.lastUnavailableSteps.length} controls were unavailable in this layout. You acknowledged their explanations; the guide has not enabled or verified those features.</p>}
         <p className="bbog-tip">Replay clears this run’s read checks and preserves your previous completion history.</p>
         <div className="bbog-actions"><button className="bbog-secondary" disabled={busy} onClick={() => onAction({ kind: "replay" })}>Replay guide</button><button className="bbog-primary" onClick={onClose}>Back to work <Arrow /></button></div>
       </> : <>
-        <div className="bbog-step-meta"><span>{snapshot.edition === "simple" ? "Simple" : "Pro"} · Step {snapshot.progress.index + 1} of {steps.length}</span><span>{Object.keys(snapshot.progress.reviewed).length} read</span></div>
+        <div className="bbog-step-meta"><span>{editionLabel(snapshot.edition)} · Step {snapshot.progress.index + 1} of {steps.length}</span><span>{Object.keys(snapshot.progress.reviewed).length} read</span></div>
         <div className="bbog-progress" aria-hidden="true">{steps.map((item, index) => <span key={item.id} data-current={index === snapshot.progress.index} data-reviewed={snapshot.progress.reviewed[item.id] !== undefined} />)}</div>
         <h2 id="bbog-title" ref={heading} tabIndex={-1}>{step.title}</h2>
         <p id="bbog-description">{step.body}</p>

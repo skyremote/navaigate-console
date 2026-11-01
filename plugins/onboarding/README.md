@@ -1,10 +1,10 @@
 # BB Overlay guide
 
-A separate BB plugin that points to real Simple or existing Pro controls. It does
+A separate BB plugin that points to real Console, Simple or existing Pro controls. It does
 not replace, rearrange or restyle Pro. BB 0.48 and Plugin SDK 0.6.94 or later.
 
 Install from the multi-plugin repository with `--plugin onboarding`. Plugin ID:
-`bb-overlay-guide`. Settings: `edition` (`simple` or `pro`, default `pro`),
+`bb-overlay-guide`. Settings: `edition` (`console`, `simple` or `pro`, default `pro`; the 1.12 installer sets `console` for Console installs),
 `autoStart` (default `false`) and `guideVersion` (default `1`). Set edition first,
 then autoStart at the end of installation. The offer is durable and once per
 edition/version, even if autoStart remains true on later installer runs.
@@ -19,6 +19,8 @@ guide version. Each step needs an explicit checked acknowledgement before Next.
 Back retains checks; partial close resumes; replay resets current-run checks and
 retains completion history. Missing controls are never replaced with a guessed
 target, and their unavailable status is retained with the acknowledgement.
+
+The Console tour (five steps: Setup, Home, rail, Features guide, Fleet) is anchored only on the Console's own `data-tour="console-setup"`, `console-home`, `console-rail`, `console-features` and `console-fleet` attributes. Its progress is saved under `guide:console:<guideVersion>`, apart from Simple and Pro. It follows the same rules as the other tours: an explicit read check per step, pause and resume, replay that keeps history, reduced motion, and a plain explanation when a control is missing (Fleet is normally missing on a single Mac).
 
 Targets are narrow current BB attributes and existing plugin controls. Simple adds
 `data-bb-overlay-tour` markers. Native BB selectors were checked in BB 0.48 installed

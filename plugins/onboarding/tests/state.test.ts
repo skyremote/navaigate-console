@@ -48,4 +48,27 @@ describe("explicit guide progress policy", () => {
     expect(parseProgress({ wrong: true }, "pro", "1")).toEqual(freshProgress("pro", "1"));
     expect(parseProgress(start(), "simple", "1").edition).toBe("simple");
   });
+ 
+describe("Console tour progress", () => {
+  const startConsole = () => transition(freshProgress("console", "1"), { kind: "start" }, 10, () => "run-c").progress;
+  it("has its own five steps and its own saved progress", () => {
+    expect(stepIds("console")).toEqual(["console-setup", "console-home", "console-rail", "console-features", "console-fleet"]);
+    expect(storageKey("console", "1")).toBe("guide:console:1");
+    expect(storageKey("console", "1")).not.toBe(storageKey("simple", "1")); expect(storageKey("console", "1")).not.toBe(storageKey("pro", "1"));
+    expect(parseProgress(startConsole(), "simple", "1")).toEqual(freshProgress("simple", "1"));
+    expect(parseProgress(start(), "console", "1")).toEqual(freshProgress("console", "1"));
+  });
+  it("keeps the 1.11 rules: explicit read check, pause and resume, replay keeps history", () => {
+    let p = startConsole();
+    expect(() => transition(p, { kind: "move", runId: p.runId, direction: "next" }, 11, () => "r")).toThrow(/explicitly tick/);
+    for (const [i, id] of stepIds("console").entries()) {
+      p = transition(p, { kind: "review", runId: p.runId, stepId: id, checked: true, availability: id === "console-fleet" ? "unavailable" : "visible" }, 100 + i, () => "r").progress;
+      if (i === 1) { p = transition(p, { kind: "close", runId: p.runId }, 150, () => "r").progress; expect(p.status).toBe("paused"); p = transition(p, { kind: "start" }, 151, () => "r").progress; expect(p.index).toBe(1); }
+      p = transition(p, { kind: "move", runId: p.runId, direction: "next" }, 200 + i, () => "r").progress;
+    }
+    expect(p.status).toBe("completed"); expect(p.history.lastUnavailableSteps).toEqual(["console-fleet"]);
+    const replay = transition(p, { kind: "replay" }, 400, () => "run-2").progress;
+    expect(replay.reviewed).toEqual({}); expect(replay.history).toEqual(p.history);
+  });
+});
 });
