@@ -1,0 +1,20 @@
+# Database server. Copy to /etc/systemd/system/, replace the three REPLACE_ values, then:
+#   sudo systemctl daemon-reload && sudo systemctl enable --now brain-sqld brain-connector brain-backup.timer
+[Unit]
+Description=Brain database server (sqld)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=REPLACE_USER
+ExecStartPre=/bin/mkdir -p REPLACE_BRAIN_HOME/sqld
+ExecStart=REPLACE_KIT/bin/sqld --db-path REPLACE_BRAIN_HOME/sqld/data.sqld --http-listen-addr 127.0.0.1:8090 --auth-jwt-key-file REPLACE_BRAIN_HOME/keys/jwt-public.pem --no-welcome
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=REPLACE_BRAIN_HOME
+
+[Install]
+WantedBy=multi-user.target

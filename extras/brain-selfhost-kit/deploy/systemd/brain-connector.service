@@ -1,0 +1,24 @@
+[Unit]
+Description=Brain MCP connector (read-only)
+After=brain-sqld.service
+Requires=brain-sqld.service
+
+[Service]
+User=REPLACE_USER
+WorkingDirectory=REPLACE_KIT
+Environment=BRAIN_HOME=REPLACE_BRAIN_HOME
+Environment=BRAIN_DB_URL=http://127.0.0.1:8090
+Environment=BRAIN_DB_TOKEN_FILE=REPLACE_BRAIN_HOME/keys/ro.jwt
+Environment=BRAIN_MCP_PORT=8765
+# Your public hostname(s), the one clients type in, for example brain.example.com
+Environment=BRAIN_MCP_HOSTS=
+ExecStart=REPLACE_KIT/.venv/bin/python REPLACE_KIT/connector/brain_mcp.py
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=REPLACE_BRAIN_HOME
+
+[Install]
+WantedBy=multi-user.target

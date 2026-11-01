@@ -1,0 +1,91 @@
+# Your own brain: database server + read-only connector, with two optional front doors.
+#
+#   docker compose up -d                          server + connector, reachable on THIS machine only
+#   docker compose --profile tunnel up -d         also start a Cloudflare Tunnel (needs TUNNEL_TOKEN in .env)
+#   docker compose --profile caddy up -d          also start Caddy for HTTPS on a VPS (needs BRAIN_DOMAIN in .env)
+#   docker compose run --rm tools scripts/mint.py init     one-off helper scripts (see the guide)
+#
+# Make the keys first (mint.py init). If a bind-mounted file is missing, Docker invents an empty folder in its place.
+
+services:
+  sqld:
+    image: ghcr.io/tursodatabase/libsql-server:v0.24.32
+    restart: unless-stopped
+    environment:
+      SQLD_NODE: primary
+      SQLD_HTTP_LISTEN_ADDR: 0.0.0.0:8080
+      SQLD_AUTH_JWT_KEY_FILE: /run/secrets/jwt-public.pem
+    volumes:
+      # Windows with Docker Desktop: put SQLD_DATA=brain_sqld_data in .env to use a Docker volume instead of a folder.
+      - ${SQLD_DATA:-./state/sqld}:/var/lib/sqld
+      - ./state/keys/jwt-public.pem:/run/secrets/jwt-public.pem:ro   # public key only; the private key never enters a container
+    ports:
+      - "127.0.0.1:${SQLD_PORT:-8090}:8080"   # this machine only. Never publish this to the internet without HTTPS.
+
+  connector:
+    build:
+      context: .
+      dockerfile: connector/Dockerfile
+    restart: unless-stopped
+    depends_on: [sqld]
+    environment:
+      BRAIN_HOME: /state
+      BRAIN_DB_URL: http://sqld:8080
+      BRAIN_DB_TOKEN_FILE: /run/secrets/ro.jwt
+      BRAIN_MCP_BIND: 0.0.0.0
+      BRAIN_MCP_PORT: "8765"
+      BRAIN_MCP_HOSTS: ${BRAIN_MCP_HOSTS:-${BRAIN_DOMAIN:-}}
+    volumes:
+      - ./state/connector:/state/connector            # client token hashes and the search index
+      - ./state/keys/ro.jwt:/run/secrets/ro.jwt:ro   # the READ-ONLY database token
+    ports:
+      - "127.0.0.1:${MCP_PORT:-8765}:8765"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8765/health',timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # One-off helpers: bootstrap, brain.py, client_token.py, smoke.py. Not started by "up".
+  tools:
+    profiles: [tools]
+    build:
+      context: .
+      dockerfile: connector/Dockerfile
+    entrypoint: ["python"]
+    environment:
+      BRAIN_HOME: /state
+      BRAIN_DB_URL: http://sqld:8080
+      BRAIN_MCP_TOKENS: /state/connector/tokens.json
+    volumes:
+      - ./state:/state
+
+  # Private address without opening router ports. Ingress is set in the Cloudflare dashboard (see the guide).
+  cloudflared:
+    profiles: [tunnel]
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+
+  # HTTPS on a VPS. Needs ports 80 and 443 open on the server.
+  caddy:
+    profiles: [caddy]
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [connector]
+    environment:
+      BRAIN_DOMAIN: ${BRAIN_DOMAIN:-}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
+  brain_sqld_data:

@@ -1,0 +1,7 @@
+0001_init.sql
+0002_tasks_board.sql
+0003_images.sql
+0004_images_sha_unique.sql
+0005_conversations.sql
+0007_knowledge.sql
+0008_digest_size.sql

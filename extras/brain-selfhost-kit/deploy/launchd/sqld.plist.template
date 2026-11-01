@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>@PREFIX@.sqld</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>@KIT@/bin/sqld</string>
+    <string>--db-path</string><string>@BRAIN_HOME@/sqld/data.sqld</string>
+    <string>--http-listen-addr</string><string>127.0.0.1:@SQLD_PORT@</string>
+    <string>--auth-jwt-key-file</string><string>@BRAIN_HOME@/keys/jwt-public.pem</string>
+    <string>--no-welcome</string>
+  </array>
+  <key>WorkingDirectory</key><string>@BRAIN_HOME@</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>10</integer>
+  <key>StandardOutPath</key><string>@LOGS@/sqld.log</string>
+  <key>StandardErrorPath</key><string>@LOGS@/sqld.log</string>
+</dict>
+</plist>

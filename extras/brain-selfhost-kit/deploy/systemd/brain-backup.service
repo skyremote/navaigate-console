@@ -1,0 +1,8 @@
+[Unit]
+Description=Brain nightly backup
+
+[Service]
+Type=oneshot
+User=REPLACE_USER
+Environment=BRAIN_HOME=REPLACE_BRAIN_HOME
+ExecStart=REPLACE_KIT/.venv/bin/python REPLACE_KIT/scripts/backup.py

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>@PREFIX@.connector</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>@KIT@/.venv/bin/python</string>
+    <string>@KIT@/connector/brain_mcp.py</string>
+  </array>
+  <key>WorkingDirectory</key><string>@KIT@</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>BRAIN_HOME</key><string>@BRAIN_HOME@</string>
+    <key>BRAIN_DB_URL</key><string>http://127.0.0.1:@SQLD_PORT@</string>
+    <key>BRAIN_DB_TOKEN_FILE</key><string>@BRAIN_HOME@/keys/ro.jwt</string>
+    <key>BRAIN_MCP_PORT</key><string>@MCP_PORT@</string>
+    <key>BRAIN_MCP_HOSTS</key><string>@MCP_HOSTS@</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>10</integer>
+  <key>StandardOutPath</key><string>@LOGS@/connector.log</string>
+  <key>StandardErrorPath</key><string>@LOGS@/connector.log</string>
+</dict>
+</plist>

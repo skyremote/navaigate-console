@@ -1,0 +1,22 @@
+# HTTPS for a VPS. Caddy gets and renews the certificate by itself.
+# Set BRAIN_DOMAIN in .env (for example brain.example.com) and point its DNS A record at the server first.
+{$BRAIN_DOMAIN} {
+	# AI clients (the connector). Everything under /mcp and the /health check.
+	handle /mcp* {
+		reverse_proxy connector:8765
+	}
+	handle /health {
+		reverse_proxy connector:8765
+	}
+	# Optional: lets your OWN other machines write to the database over HTTPS (needs a read-write token).
+	# Delete this block if only the VPS itself writes.
+	handle {
+		reverse_proxy sqld:8080
+		# If the aios CLI (libsql replica sync) cannot connect through here, replace the line above with:
+		# reverse_proxy sqld:8080 {
+		#	transport http {
+		#		versions h2c
+		#	}
+		# }
+	}
+}

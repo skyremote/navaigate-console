@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>@PREFIX@.backup</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>@KIT@/.venv/bin/python</string>
+    <string>@KIT@/scripts/backup.py</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>BRAIN_HOME</key><string>@BRAIN_HOME@</string>
+  </dict>
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>2</integer><key>Minute</key><integer>30</integer></dict>
+  <key>StandardOutPath</key><string>@LOGS@/backup.log</string>
+  <key>StandardErrorPath</key><string>@LOGS@/backup.log</string>
+</dict>
+</plist>
