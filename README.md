@@ -1,6 +1,6 @@
 # BB Overlay
 
-**Two starting setups for [bb](https://getbb.app), from [NavAIgate](https://navaigate.dev): Simple and Pro.** Simple is a quiet branded IDE with the essential helpers. Pro keeps the established full Workspace exactly as before. Both have an acknowledged, replayable walkthrough over the real controls.
+**The NavAIgate Console for [bb](https://getbb.app), from [NavAIgate](https://navaigate.dev).** One sidebar, a Home page and a setup screen where you tick the features you want, plus helpers that show what your agents are doing. Simple and Pro are starting presets for those tick boxes. It comes with an acknowledged, replayable walkthrough over the real controls.
 
 > **In plain words**
 >
@@ -14,17 +14,29 @@
 >
 > The legal terms are in [LICENSE](LICENSE) (PolyForm Internal Use 1.0.0) and [NOTICE](NOTICE). If this box and those files ever disagree, the files win.
 
-## Choose Simple or Pro
+## What you get
 
-- **Simple** (`plugins/simple`): a lean, real project/chat sidebar with native BB navigation and conversation tools, a Features drawer and a warm light/dark theme. Installs Helper Desk, Cache Clock, Reflect and Screen Share. It does not load the full Workspace's Inbox, Calendar, Voice or machine services.
-- **Pro** (`plugins/workspace`): the existing full Workspace described below. Its interface has not been redesigned. Existing personal Pro installations keep their exact skin source, appearance, tabs and module choices.
-- **BB Overlay guide** (`plugins/onboarding`): automatic first-install invitation, an anchored walkthrough for each edition, explicit read acknowledgement at every step, saved pause/resume, completion history and replay from plugin Settings. No video; short spatial transitions with reduced-motion support. It never acknowledges a step on a timer or connects accounts for you.
+- **The Console** (`plugins/console`, bb plugin id `navaigate-skin`): the core of 1.12. A run-sheet sidebar and a Home page, with a **Setup** screen that opens on first run. In Setup you give your name, optionally add other Macs, optionally add a public address and a brain address, and then tick the features you want. The **Features guide** inside the Console lists every feature in plain words and shows where it lives.
+- **Simple and Pro are starting presets**, not separate products. Simple ticks a smaller set of features; Pro ticks nearly all of them. You can change any box afterwards, and a box that needs something you have not added yet (a second Mac, a public address, a brain) says what it needs.
+- **Helper Desk, Cache Clock, Reflect, Screen Share and the Markdown plugin** (`helper-desk`, `cache-clock`, `reflect`, `screen-share`, `navmotion-skin`) come with both presets.
+- **Pro also installs** Fleet (`fleet`), Prompt Stack (`prompt-stack`), Kanban, Finder Links and the optional third-party Projects & Sections, Agent Board and Tasks.
+- **Fleet** (`plugins/fleet`): one board for every Mac that runs bb, with a box to start work on any of them. It needs a second Mac running bb and a brain (a small database the Macs share); on a single Mac it stays hidden.
+- **Prompt Stack** (`plugins/prompt-stack`): tick boxes in a thread's side panel that choose which prompt-stack skills that thread uses. A small Claude Code hook injects the chosen skill cards beside each prompt. The hook is a separate opt-in step (below). It ships Ray Amjad's create, maintain and audit prove-it skills, MIT licensed, with their licence and source notes.
+- **The Markdown plugin** (`plugins/navmotion-skin`): live Markdown in the chat box, with an **Md** button, a **Preview** tab on the side and a **+** menu that inserts a table, a checklist or a heading. It also carries the three NavMotion skins and a Skin button.
+- **A brain kit** (`extras/brain-selfhost-kit`): everything to run your own brain (structured memory) on a Mac, Linux, Windows or a VPS, and connect Claude Code, Claude Desktop, Cursor and other MCP clients to it. MIT licensed. Nothing in the installer installs it; the Console's Setup screen takes the address once it is running.
+- **BB Overlay guide** (`plugins/onboarding`): a first-install invitation and an anchored walkthrough for the Console (and for 1.11 Simple and Pro), with an explicit read acknowledgement at every step, saved pause and resume, completion history and replay from plugin Settings. No video; short spatial transitions with reduced-motion support. It never acknowledges a step on a timer or connects accounts for you.
+- **Kept for 1.11 installs:** `plugins/simple` (Simple) and `plugins/workspace` (the Pro Workspace) stay in this repository, so an existing installation keeps updating. Fresh installs use the Console.
 
-Fresh installs default to Simple. Add `--edition pro` for a fresh full Workspace, or `--edition simple` to choose Simple explicitly. Running the installer again without an edition preserves the current setup. Switching editions never uninstalls plugins or deletes their data.
+### Fresh install or an existing 1.11 setup
 
-## What's inside Pro
+- **Fresh install:** the Console on the Simple preset. Add `--edition pro` for the Pro preset and the Pro plugins.
+- **Existing 1.11 Simple or Pro:** running the installer again changes nothing about how it looks or what it has. It updates within its pins and prints one line about `--console`. Add `--console` to move to the Console; nothing is uninstalled and no data is deleted. The way the Console is switched on is described in [INSTALL.md](INSTALL.md).
+- **A `navaigate-skin` you installed from somewhere else** (for example a local path) is never replaced, reconfigured or given a preset.
 
-The established Workspace, boards and optional companion tools:
+## What's inside the 1.11 Pro Workspace
+
+The established Workspace, boards and optional companion tools. This is what an existing 1.11 Pro install has; the Console's own Features guide is the list of what the Console does.
+
 
 - **NavAIgate Workspace** (`plugins/workspace`)
   - **Home:** a greeting, your daily brief, an Ask box that Jev routes to the right harness, today's calendar, mail that needs a reply, social posts, and how much of each subscription you've used.
@@ -82,7 +94,13 @@ You need bb installed (0.48 or later, on macOS or Linux), open, and signed in to
 curl -fsSL https://raw.githubusercontent.com/skyremote/bb-overlay/main/install.sh | bash
 ```
 
-On a fresh machine this installs Simple, the four essential helpers and the guide. For a fresh full Pro setup, use `bash -s -- --edition pro` after the pipe. On an existing installation it preserves your edition, appearance and disabled tools, updates matching installed packages and adds the guide. Reload BB and start the invitation. You explicitly acknowledge each step; pause/resume or replay from **Settings → Plugins → BB Overlay guide**. [Full install instructions](INSTALL.md).
+On a fresh machine this installs the Console on the Simple preset, Helper Desk, Cache Clock, Reflect, Screen Share, the Markdown plugin and the guide. For the Pro preset and the Pro plugins use `bash -s -- --edition pro` after the pipe. Reload bb and the Console opens its Setup screen; the guide offers to start once. You explicitly acknowledge each step, and can pause and resume or replay from the plugin's Settings.
+
+If you already run 1.11 Simple or Pro, the same command keeps your setup exactly as it is and updates it within its pins. To move to the Console, add `--console`:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/skyremote/bb-overlay/main/install.sh | bash -s -- --console
+```
 
 **Read it first.** It's a good habit to read a script before you pipe it into a shell: [install.sh](install.sh). To see every command it would run without changing anything:
 
@@ -90,19 +108,33 @@ On a fresh machine this installs Simple, the four essential helpers and the guid
 curl -fsSL https://raw.githubusercontent.com/skyremote/bb-overlay/main/install.sh | bash -s -- --dry-run
 ```
 
-Safe to run again: it updates what's already there within its own pin, never removes or downgrades anything without asking, and leaves alone any plugin you installed from somewhere else. The one thing it asks about is Projects & Sections at 0.6.20 or later: it offers to switch you to 0.6.19 and keeps your folders (`--pin-folders` switches without asking). If a different NavAIgate rail is already your sidebar list, it leaves your theme and rail as they are; Navigation still uses the left icon rail; `--no-look` skips all appearance changes altogether. There is no Windows version, because bb runs on macOS and Linux.
+Safe to run again: it updates what's already there within its own pin, never removes or downgrades anything, leaves disabled plugins disabled, and leaves alone any plugin you installed from somewhere else. Options: `--edition simple|pro`, `--console`, `--dry-run`, `--no-look` (leave theme, navigation and thread-list settings alone), `--no-mods` (skip the helper plugins) and `--pin-folders`. The one thing it offers is Projects & Sections at 0.6.20 or later: `--pin-folders` switches it in place to 0.6.19 and keeps your folders.
 
-**Prefer a bb chat?** Paste: "Run the BB Overlay installer: `curl -fsSL https://raw.githubusercontent.com/skyremote/bb-overlay/main/install.sh | bash`. Then open Home and walk me through Set up."
+**Prefer a bb chat?** Paste: "Run the BB Overlay installer: `curl -fsSL https://raw.githubusercontent.com/skyremote/bb-overlay/main/install.sh | bash`. Then open Setup and walk me through it."
+
+### Prompt Stack's Claude Code hook
+
+The Prompt Stack plugin in bb works through a small Claude Code hook. The installer never touches `~/.claude/settings.json`. With `--edition pro` it prints the one command that adds the hook: `plugins/prompt-stack/claude-plugin/install-hook.sh`. The script copies the plugin to `~/.claude/prompt-stack-plugin`, saves a dated backup of `settings.json`, adds one `UserPromptSubmit` entry and leaves everything else alone. Run it again and nothing changes; `--dry-run` shows what it would do and `--remove` takes the entry out. `PROMPT_STACK=off` silences the hook without removing it.
+
+### The brain
+
+The brain kit is in `extras/brain-selfhost-kit` (start with its README and `self-host-your-brain_v2.md`). The installer installs nothing for it. Once your brain is running, enter its address in the Console's Setup screen. The Setup screen takes the name of the bb secret or environment variable that holds the token, never the token itself.
 
 ### Install by hand
 
 ```sh
-bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin workspace
-bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin kanban
+bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin console
 bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin helper-desk
 bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin cache-clock
 bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin reflect
 bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin screen-share
+bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin navmotion-skin
+bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin onboarding
+# Pro preset, as well:
+bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin fleet
+bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin prompt-stack
+bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin kanban
+bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin finder-links
 bb plugin install git:https://github.com/VKirill/bb-plugin-project-folders.git@v0.6.19
 bb plugin install git:https://github.com/aaronphifer/bb-plugin-agent-board.git@semver:^0.6.1
 bb plugin install tasks
@@ -110,11 +142,27 @@ bb plugin install tasks
 
 Projects & Sections is pinned to 0.6.19, the last release that runs on standard bb. Later releases need VKirill's own build of bb. Why, and when the pin comes off: [MAINTAINERS.md](MAINTAINERS.md).
 
-Then pick the look in bb: **Settings, Appearance**. Choose the NavAIgate theme, the NavAIgate rail as the thread list, and **Rail** as Navigation (bb 0.47 or later). (On bb 0.44 and 0.45 there is also a NavAIgate sidebar header; bb 0.46 removed that option.)
+The installer then selects **Thread list: NavAIgate rail** (`navaigate-skin/rail`), **Navigation: Rail** and the NavAIgate theme. By hand, choose the same in **Settings, Appearance**.
 
 Not technical? Follow the step-by-step guide in [INSTALL.md](INSTALL.md).
 
-## Set up (first run)
+## The Console's Setup screen
+
+Setup opens once on a fresh install, and you can open it again from Settings or the Features guide. Every step except the first can be skipped.
+
+1. **You:** your name.
+2. **Machines:** this Mac's name, and optionally other Macs (a name, a role, an SSH alias and a bb address). A second Mac unlocks the features that need two machines, including Fleet. You can also list work that must run on one particular Mac.
+3. **Addresses (optional):** a public address for webhooks, and a brain address with the name of the bb secret or environment variable that holds its token.
+4. **Features:** two one-click presets, Simple and Pro, and a tick box for each feature, grouped by what it is for. A box whose requirement is not met is greyed and says what it needs; changing any box makes your choice a custom one.
+5. **Review and save.** Saving writes your profile only. It does not install, remove or reconfigure any plugin.
+
+The installer can pre-select the preset (`bb plugin config navaigate-skin set preset simple` or `pro`) on a fresh install; Setup uses it as the first choice and you change it there.
+
+Your choices are kept on your computer in `~/.config/navaigate-console/profile.json` (or the path in `NAVAIGATE_CONSOLE_PROFILE`). The file holds no secrets.
+
+## Set up (first run, 1.11 Pro Workspace)
+
+This section is for the 1.11 Pro Workspace. In the Console, use the Setup screen above.
 
 Open **Home**. Until you finish setting up, Home shows the Set up wizard. You can reopen it any time from **Set up** in the sidebar, or with **Workspace: set up** in the command palette.
 
@@ -169,6 +217,15 @@ The installer adds two plugins made by other people. They are not part of BB Ove
 It also uses two plugins built into bb: **Tasks** (To-do and the Board; bb ships it but it's opt-in, so the installer adds it) and, if you use it, **Account Pooler** (per-account usage in the dock and the Claude account chip; add your accounts with `bb pool`).
 
 If a companion is missing, the rest still works. Its feature shows greyed out with the line that installs it, for example "Move to folder" says "Install project-folders to use folders", and the last step of Set up lists every companion as installed or missing, with a Copy button for its install line.
+
+## If you already use 1.11
+
+- **Nothing changes unless you ask.** Running the installer again keeps your Simple or Pro setup, its look, its plugin sources and everything you turned off. It updates what is installed, within its pins, and prints one line about `--console`.
+- **Updated plugins you already have.** Helper Desk, the Markdown plugin (NavMotion Skin) and the others update through the normal update, as before.
+- **Move to the Console with `--console`.** The installer saves your current thread list, navigation and theme (in `~/.config/bb-overlay/before-console`), installs the Console, reloads it, and only then switches the look and turns your old Simple or Pro core off. If any step fails it puts your previous settings back and leaves the old core running. Your old core is turned off, never uninstalled, and no data is deleted. Setup starts on the Pro preset if you came from 1.11 Pro, and on the Simple preset if you came from 1.11 Simple. Pass `--edition simple|pro` as well to choose the preset yourself.
+- **Going back.** The old core is still installed. Turn it on with `bb plugin enable navaigate-simple` (or `navaigate-workspace`) and choose its thread list and theme in **Settings, Appearance**; the saved values above show what you had.
+- **Your own `navaigate-skin`.** If you installed a `navaigate-skin` from another source, it is left alone, with or without `--console`.
+- **Fleet and Prompt Stack** are new plugins. An existing Pro install does not gain them by itself; add them with `bb plugin install` (see Install by hand) or `--edition pro` on an existing Console.
 
 ## What's new in 1.11.0
 
@@ -286,9 +343,12 @@ If a companion is missing, the rest still works. Its feature shows greyed out wi
 Run the installer again; it updates everything it installed. Or one at a time:
 
 ```sh
-bb plugin update navaigate-workspace
-bb plugin update kanban
+bb plugin update navaigate-skin      # the Console
+bb plugin update fleet
+bb plugin update helper-desk
 ```
+
+Use `navaigate-simple` or `navaigate-workspace` in place of `navaigate-skin` if you still run a 1.11 core. Updating the Console never changes your Setup choices.
 
 ---
 
