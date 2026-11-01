@@ -173,7 +173,7 @@ describe("machine row polling storm", () => {
     const board = useFleetBoard();
     return <p data-testid="board">{board === null ? "loading" : board.available ? `columns:${board.board?.columns.length}` : `unavailable:${board.error}`}</p>;
   }
-  const goodBoard = { available: true as const, board: { serverId: "sky", serverKey: "laptop", columns: [{ key: "laptop", label: "laptop", serverId: "sky", online: true, lastSeenAt: 1, threads: [] }] }, error: null };
+  const goodBoard = { available: true as const, board: { serverId: "srv-laptop", serverKey: "laptop", columns: [{ key: "laptop", label: "laptop", serverId: "srv-laptop", online: true, lastSeenAt: 1, threads: [] }] }, error: null };
 
   it("keeps showing the last good board through a failed refresh, then gives up after three minutes", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });

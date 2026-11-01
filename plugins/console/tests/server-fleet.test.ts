@@ -16,12 +16,12 @@ function fakeBb(answer: (call: Call) => unknown) {
 }
 
 const fleetBoard = {
-  me: { serverId: "sky", machineKey: "laptop", label: "laptop home", joined: true, brain: true },
+  me: { serverId: "srv-laptop", machineKey: "laptop", label: "laptop home", joined: true, brain: true },
   columns: [
-    { key: "laptop", label: "laptop home", serverId: "sky", url: "https://laptop.example.test", online: true, local: true, lastSeenAt: 10, capabilities: ["NAS"], counts: { running: 0, needsYou: 0, queued: 0 }, threads: [] },
+    { key: "laptop", label: "laptop home", serverId: "srv-laptop", url: "https://laptop.example.test", online: true, local: true, lastSeenAt: 10, capabilities: ["NAS"], counts: { running: 0, needsYou: 0, queued: 0 }, threads: [] },
     {
-      key: "work", label: "work Client", serverId: "sky-m4", url: "https://work.example.test", online: true, local: false, lastSeenAt: 9, capabilities: ["VPN"], counts: { running: 1, needsYou: 0, queued: 0 },
-      threads: [{ id: "thr_a", title: "Master Reports Insights", state: "running", machine: "work", projectId: "p", projectName: "10_Atlas", providerId: "claude-code", parentThreadId: null, createdAt: 1, updatedAt: 2, url: "https://work.example.test/threads/thr_a", via: "sky-m4", extra: "ignored" }],
+      key: "work", label: "work Client", serverId: "srv-work", url: "https://work.example.test", online: true, local: false, lastSeenAt: 9, capabilities: ["VPN"], counts: { running: 1, needsYou: 0, queued: 0 },
+      threads: [{ id: "thr_a", title: "Master Reports Insights", state: "running", machine: "work", projectId: "p", projectName: "10_Atlas", providerId: "claude-code", parentThreadId: null, createdAt: 1, updatedAt: 2, url: "https://work.example.test/threads/thr_a", via: "srv-work", extra: "ignored" }],
     },
   ],
   commands: [],
@@ -35,7 +35,7 @@ test("board maps Fleet's board and takes this bb's key from Fleet", async () => 
   const r = await link.board();
   assert.deepEqual(calls, ["fleet.board_get"]);
   assert.equal(r.available, true);
-  assert.equal(r.board?.serverId, "sky");
+  assert.equal(r.board?.serverId, "srv-laptop");
   assert.equal(r.board?.serverKey, "laptop");
   assert.deepEqual(r.board?.columns.map((c) => c.key), ["laptop", "work"]);
   assert.equal(r.board?.columns[1].threads[0].title, "Master Reports Insights");

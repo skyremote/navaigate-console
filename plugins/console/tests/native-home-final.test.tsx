@@ -33,9 +33,9 @@ afterEach(() => {
 });
 
 const board = (now: number) => ({
-  serverId: "sky", serverKey: "laptop",
+  serverId: "srv-laptop", serverKey: "laptop",
   columns: [
-    { key: "laptop", label: "laptop home", serverId: "sky", online: true, lastSeenAt: now, threads: [], resources: { observedAt: now, cpuCount: 12, cpuUtilization: 0.25, totalMemoryBytes: 32 * gb, availableMemoryBytes: 16 * gb } },
+    { key: "laptop", label: "laptop home", serverId: "srv-laptop", online: true, lastSeenAt: now, threads: [], resources: { observedAt: now, cpuCount: 12, cpuUtilization: 0.25, totalMemoryBytes: 32 * gb, availableMemoryBytes: 16 * gb } },
     { key: "studio", label: "Studio home", serverId: "m1", online: true, lastSeenAt: now, threads: [], resources: { observedAt: now, cpuCount: 8, cpuUtilization: 0.5, totalMemoryBytes: 16 * gb, availableMemoryBytes: 8 * gb } },
   ],
 });

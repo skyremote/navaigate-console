@@ -45,11 +45,11 @@ const thread = (id: string, title: string, over: Record<string, unknown> = {}) =
   href: `/projects/p1/threads/${id}`, isHidden: false, environment: null, host: null, createdAt: NOW - 5 * HOUR, updatedAt: NOW - HOUR, lastActivityAt: NOW - HOUR, ...over,
 }) as unknown as PluginSidebarThread;
 const board: FleetBoard = {
-  serverId: "sky", serverKey: "laptop",
+  serverId: "srv-laptop", serverKey: "laptop",
   columns: [
-    { key: "laptop", label: "laptop home", serverId: "sky", online: true, lastSeenAt: NOW, threads: [], resources: { observedAt: NOW, cpuCount: 12, cpuUtilization: 0.18, totalMemoryBytes: 32 * 1024 ** 3, availableMemoryBytes: 14 * 1024 ** 3 } },
+    { key: "laptop", label: "laptop home", serverId: "srv-laptop", online: true, lastSeenAt: NOW, threads: [], resources: { observedAt: NOW, cpuCount: 12, cpuUtilization: 0.18, totalMemoryBytes: 32 * 1024 ** 3, availableMemoryBytes: 14 * 1024 ** 3 } },
     { key: "studio", label: "Studio home", serverId: "srv-studio", online: true, lastSeenAt: NOW, threads: [{ id: "r1", title: "Nightly render", state: "running", machine: "studio", projectName: null, providerId: "claude-code", updatedAt: NOW, url: "", via: "srv-studio" }], resources: { observedAt: NOW, cpuCount: 8, cpuUtilization: 0.31, totalMemoryBytes: 16 * 1024 ** 3, availableMemoryBytes: 9 * 1024 ** 3 } },
-    { key: "work", label: "work Client", serverId: "sky-m4", online: false, lastSeenAt: NOW - 2 * HOUR, threads: [] },
+    { key: "work", label: "work Client", serverId: "srv-work", online: false, lastSeenAt: NOW - 2 * HOUR, threads: [] },
   ],
 };
 

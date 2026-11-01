@@ -3,13 +3,13 @@
  "source": "bb fleet status --json and bb thread get, 1 Nov 2026 20:37 CET, ids, titles, urls and paths removed",
  "now": 1793561855931,
  "board": {
-  "serverId": "sky",
+  "serverId": "srv-laptop",
   "serverKey": "laptop",
   "columns": [
    {
     "key": "laptop",
     "label": "laptop home",
-    "serverId": "sky",
+    "serverId": "srv-laptop",
     "online": true,
     "lastSeenAt": 1793561837965,
     "threads": [
@@ -44,7 +44,7 @@
       "providerId": "codex",
       "updatedAt": 1793528615246,
       "url": "https://host.example/projects/proj_01/threads/thr_root",
-      "via": "sky"
+      "via": "srv-laptop"
      },
      {
       "id": "thr_04",
@@ -55,7 +55,7 @@
       "providerId": "claude-code",
       "updatedAt": 1793560438822,
       "url": "https://host.example/projects/proj_01/threads/thr_04",
-      "via": "sky"
+      "via": "srv-laptop"
      },
      {
       "id": "thr_05",
@@ -66,7 +66,7 @@
       "providerId": "claude-code",
       "updatedAt": 1793542918397,
       "url": "https://host.example/projects/proj_01/threads/thr_05",
-      "via": "sky"
+      "via": "srv-laptop"
      },
      {
       "id": "thr_06",
@@ -77,7 +77,7 @@
       "providerId": "claude-code",
       "updatedAt": 1793540338385,
       "url": "https://host.example/projects/proj_01/threads/thr_06",
-      "via": "sky"
+      "via": "srv-laptop"
      },
      {
       "id": "thr_root",
@@ -88,7 +88,7 @@
       "providerId": "codex",
       "updatedAt": 1793528615246,
       "url": "https://host.example/projects/proj_01/threads/thr_root",
-      "via": "sky"
+      "via": "srv-laptop"
      }
     ]
    },
@@ -137,7 +137,7 @@
    {
     "key": "work",
     "label": "work Client",
-    "serverId": "sky-m4",
+    "serverId": "srv-work",
     "online": false,
     "lastSeenAt": 1793034268140,
     "threads": [
@@ -150,7 +150,7 @@
       "providerId": "claude-code",
       "updatedAt": 1793033583721,
       "url": "https://host.example/projects/proj_01/threads/thr_11",
-      "via": "sky-m4"
+      "via": "srv-work"
      },
      {
       "id": "thr_12",
@@ -161,7 +161,7 @@
       "providerId": "claude-code",
       "updatedAt": 1793033089661,
       "url": "https://host.example/projects/proj_01/threads/thr_12",
-      "via": "sky-m4"
+      "via": "srv-work"
      }
     ]
    }

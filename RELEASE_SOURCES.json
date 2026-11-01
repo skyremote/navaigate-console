@@ -7,7 +7,7 @@
       "pluginId": "navaigate-skin",
       "sourceRepo": "navaigate-console",
       "branch": "navaigate/community-release-integrated-20261101",
-      "commit": "83683cd14e42ef1a330362fba2e404a471fa1a87"
+      "commit": "f855d4de99a5b1532d5d50d4384b99b33153d8c0"
     },
     {
       "folder": "plugins/fleet",
@@ -35,7 +35,7 @@
       "pluginId": "prompt-stack",
       "sourceRepo": "bb-plugin-prompt-stack",
       "branch": "navaigate/community-release-20261101",
-      "commit": "a2318a76134a74cffec803385bed675896fac546"
+      "commit": "ad6754da2fa2f4b3e355c2d237c867ca6a186f0f"
     }
   ],
   "vendored": [

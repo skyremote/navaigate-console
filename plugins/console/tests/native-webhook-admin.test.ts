@@ -8,7 +8,7 @@ afterEach(async () => {
   for (const h of hosts.splice(0)) await h.harness.lifecycle.dispose();
 });
 
-const OWNER = { serverId: "sky", machine: "laptop" };
+const OWNER = { serverId: "srv-laptop", machine: "laptop" };
 const input = {
   name: "ci-failed",
   projectId: "proj_test",
@@ -113,7 +113,7 @@ describe("webhook form server", () => {
       expect.objectContaining({
         id: "ci-failed",
         enabled: true,
-        ownerServerId: "sky",
+        ownerServerId: "srv-laptop",
         hostId: "host-m5",
         projectId: "proj_test",
         projectName: "Native BB acceptance",
@@ -123,7 +123,7 @@ describe("webhook form server", () => {
       }),
     ]);
     const stored = JSON.parse((await f.inbox.settings.get()).webhookHooks);
-    expect(stored[0]).toMatchObject({ machine: "laptop", ownerServerId: "sky", hostId: "host-m5" });
+    expect(stored[0]).toMatchObject({ machine: "laptop", ownerServerId: "srv-laptop", hostId: "host-m5" });
   });
 
   it("refuses to bind when this core cannot name the execution host, and removes the task it just made", async () => {

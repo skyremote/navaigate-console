@@ -189,15 +189,19 @@ export default async function plugin(bb: BbPluginApi) {
 
   // The hook deletes a thread's stack file after one prompt uses it. Watch the
   // threads folder so the panel unticks itself as soon as that happens.
+  let watcher: ReturnType<typeof watch> | null = null;
+  let disposed = false;
   const watchHome = async () => {
-    const { stackHome } = await settings.get();
-    const home = stackHome || process.env.PROMPT_STACK_HOME || join(homedir(), ".claude", "prompt-stack");
-    const dir = join(home, "threads");
+    let dir = "the prompt-stack threads folder";
     try {
+      const { stackHome } = await settings.get();
+      const home = stackHome || process.env.PROMPT_STACK_HOME || join(homedir(), ".claude", "prompt-stack");
+      dir = join(home, "threads");
+      if (disposed) return;
       mkdirSync(dir, { recursive: true });
-      const watcher = watch(dir, (_event, file) => {
+      watcher = watch(dir, (_event, file) => {
         const name = file ? String(file) : "";
-        if (name.endsWith(".json")) bb.realtime.publish("stack-changed", { threadId: name.slice(0, -5) });
+        if (!disposed && name.endsWith(".json")) bb.realtime.publish("stack-changed", { threadId: name.slice(0, -5) });
       });
       watcher.on("error", (cause) => bb.log.warn("stack watch stopped: " + String(cause)));
     } catch (cause) {
@@ -205,6 +209,11 @@ export default async function plugin(bb: BbPluginApi) {
     }
   };
   void watchHome();
+  bb.onDispose(() => {
+    disposed = true;
+    watcher?.close();
+    watcher = null;
+  });
 
   bb.log.info("loaded: Prompt stack panel");
 }

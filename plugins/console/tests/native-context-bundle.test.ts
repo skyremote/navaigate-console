@@ -11,7 +11,7 @@ import type { Event } from "../server-native-context";
 
 const COMMIT = "5dc2c537ad2762caa162adb34aff7d1e9cecc081";
 const OTHER = "1111111111111111111111111111111111111111";
-const SOURCE = { serverId: "sky", threadId: "thr_root", machine: "laptop" };
+const SOURCE = { serverId: "srv-laptop", threadId: "thr_root", machine: "laptop" };
 const sha = (value: Buffer | string) => createHash("sha256").update(value).digest("hex");
 
 function events(): Event[] {
@@ -32,7 +32,7 @@ describe("structured context narrative", () => {
     expect(entries.map((entry) => [entry.id, entry.seq])).toEqual([["request:req_1", 2], ["item:a1", 4], ["request:req_2", 6], ["item:a2", 8]]);
     const decisions = deriveDecisions(entries, SOURCE);
     expect(decisions.map((decision) => decision.text)).toEqual(["DECISION_A_x9 ship on Friday", "DECISION_B_x9 keep the text fallback", "Agreed. DECISION_A_x9 ship on Friday"]);
-    expect(decisions[0]!.sourceRefs).toEqual([{ serverId: "sky", threadId: "thr_root", messageId: "request:req_2", messageSeq: 6 }]);
+    expect(decisions[0]!.sourceRefs).toEqual([{ serverId: "srv-laptop", threadId: "thr_root", messageId: "request:req_2", messageSeq: 6 }]);
     expect(decisions.every((decision) => decision.sourceRefs.every((ref) => ref.messageId && ref.messageSeq))).toBe(true);
     const phrased = deriveDecisions([{ id: "item:p", seq: 3, role: "assistant", text: "Decision: use Fleet.\nWe decided to keep Studio.\nNo decisions were made about Work.\nWhich decision?" }], SOURCE);
     expect(phrased.map((decision) => decision.text)).toEqual(["Decision: use Fleet.", "We decided to keep Studio."]);
@@ -42,9 +42,9 @@ describe("structured context narrative", () => {
     const entries = sourceEntries(events(), "thr_root");
     const base = { source: SOURCE, task: "Continue", entries, attachmentIds: [] };
     expect(() => buildNarrative({ ...base, decisions: [{ text: "DECISION_C no refs", sourceRefs: [] }] })).toThrow(ContextIntegrityError);
-    expect(() => buildNarrative({ ...base, decisions: [{ text: "DECISION_C attachment only", sourceRefs: [{ serverId: "sky", threadId: "thr_root", attachmentId: "attachments/notes.pdf" }] }] })).toThrow(/no source message reference/);
-    expect(() => buildNarrative({ ...base, decisions: [{ text: "DECISION_C stray", sourceRefs: [{ serverId: "sky", threadId: "thr_root", messageId: "item:missing" }] }] })).toThrow(/not in the source conversation/);
-    expect(() => buildNarrative({ ...base, decisions: [{ text: "DECISION_C ok", sourceRefs: [{ serverId: "sky", threadId: "thr_root", messageSeq: 6 }] }] })).not.toThrow();
+    expect(() => buildNarrative({ ...base, decisions: [{ text: "DECISION_C attachment only", sourceRefs: [{ serverId: "srv-laptop", threadId: "thr_root", attachmentId: "attachments/notes.pdf" }] }] })).toThrow(/no source message reference/);
+    expect(() => buildNarrative({ ...base, decisions: [{ text: "DECISION_C stray", sourceRefs: [{ serverId: "srv-laptop", threadId: "thr_root", messageId: "item:missing" }] }] })).toThrow(/not in the source conversation/);
+    expect(() => buildNarrative({ ...base, decisions: [{ text: "DECISION_C ok", sourceRefs: [{ serverId: "srv-laptop", threadId: "thr_root", messageSeq: 6 }] }] })).not.toThrow();
   });
 
   it("lists every message it leaves out and every source attachment as omitted, keeping caller order", () => {
@@ -53,7 +53,7 @@ describe("structured context narrative", () => {
     expect(narrative.messages.map((message) => message.id)).toEqual(["request:req_2", "item:a2"]);
     expect(narrative.omitted).toEqual({ messageIds: ["request:req_1", "item:a1"], attachmentIds: ["attachments/notes.pdf"] });
     expect(narrative.decisions).toHaveLength(3);
-    expect(narrative.brief.sourceRefs).toEqual([{ serverId: "sky", threadId: "thr_root", messageId: "request:req_2", messageSeq: 6 }]);
+    expect(narrative.brief.sourceRefs).toEqual([{ serverId: "srv-laptop", threadId: "thr_root", messageId: "request:req_2", messageSeq: 6 }]);
     // Messages past the 64 KiB narrative limit are omitted, never silently dropped.
     const big = sourceEntries(all, "thr_root").map((entry) => ({ ...entry, text: entry.text + "x".repeat(30_000) }));
     const bounded = buildNarrative({ source: SOURCE, task: "Continue", entries: big, attachmentIds: [] });
@@ -66,7 +66,7 @@ function narrativeOf(input: { brief: unknown; decisions: unknown; messages: unkn
   return { brief: input.brief, decisions: input.decisions, messages: input.messages, omitted: input.omitted } as Narrative;
 }
 function verified(commit: string | null = COMMIT): ProjectVerify {
-  return { owner: { serverId: "sky", machineKey: "laptop", hostId: "host_m5", projectId: "proj_test", environmentId: "env_m5" }, available: true, verified: true, repository: { rootPath: "/work/repo", remoteUrl: null, branch: "main", commit, dirty: false }, message: null, observedAt: 1 };
+  return { owner: { serverId: "srv-laptop", machineKey: "laptop", hostId: "host_m5", projectId: "proj_test", environmentId: "env_m5" }, available: true, verified: true, repository: { rootPath: "/work/repo", remoteUrl: null, branch: "main", commit, dirty: false }, message: null, observedAt: 1 };
 }
 function bundleFor(input: Narrative & { selectedFiles: { path: string }[]; target: OwnerTarget }, commit = COMMIT): PortableBundle {
   const content = Buffer.from("# Readme\n");
@@ -80,7 +80,7 @@ function bundleFor(input: Narrative & { selectedFiles: { path: string }[]; targe
 
 describe("structured context commit verification", () => {
   it("refuses a bundle whose commit differs from project_verify", () => {
-    const target = { serverId: "sky", machineKey: "laptop" as const, hostId: "host_m5", environmentId: "env_m5", projectId: "proj_test" };
+    const target = { serverId: "srv-laptop", machineKey: "laptop" as const, hostId: "host_m5", environmentId: "env_m5", projectId: "proj_test" };
     const bundle = bundleFor({ ...buildNarrative({ source: SOURCE, task: "t", entries: [], attachmentIds: [] }), selectedFiles: [], target }, OTHER);
     expect(() => assertBundleCommit(verified(COMMIT), bundle)).toThrow(/commit changed during export/);
     expect(assertBundleCommit(verified(OTHER), bundle)).toBe(OTHER);
@@ -112,10 +112,10 @@ function fixture(options: { exportCommit?: string; exportError?: Error; importOu
   const fleet: NativeWorkDependencies["fleet"] = {
     route: vi.fn(async () => route),
     start: vi.fn(async () => ({ outcome: "started" as const, threadId: "thr_m1", url: null, route })),
-    board: vi.fn(async () => ({ available: true, board: { serverId: "sky", serverKey: "laptop" } })),
+    board: vi.fn(async () => ({ available: true, board: { serverId: "srv-laptop", serverKey: "laptop" } })),
     mirrorOpen: vi.fn(async () => ({ localThreadId: "thr_mirror" })),
   };
-  const sourceTarget: OwnerTarget = { serverId: "sky", machineKey: "laptop", hostId: "host_m5", environmentId: "env_m5", projectId: "proj_test", threadId: "thr_root" };
+  const sourceTarget: OwnerTarget = { serverId: "srv-laptop", machineKey: "laptop", hostId: "host_m5", environmentId: "env_m5", projectId: "proj_test", threadId: "thr_root" };
   const ownerTarget: OwnerTarget = { serverId: "srv-studio", machineKey: "studio", hostId: "host_m1", environmentId: "env_m1", projectId: "proj_m1", threadId: "thr_m1" };
   let exported: PortableBundle | null = null;
   const link: ContextBundleLink = {

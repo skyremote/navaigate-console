@@ -53,11 +53,11 @@ const projects = [
   { id: "p3", name: "Survey app", isPersonal: false },
 ];
 const board: FleetBoard = {
-  serverId: "sky", serverKey: "laptop",
+  serverId: "srv-laptop", serverKey: "laptop",
   columns: [
-    { key: "laptop", label: "laptop home", serverId: "sky", online: true, lastSeenAt: NOW, threads: [], resources: { observedAt: NOW, cpuCount: 12, cpuUtilization: 0.18, totalMemoryBytes: 32 * 1024 ** 3, availableMemoryBytes: 14 * 1024 ** 3 } },
+    { key: "laptop", label: "laptop home", serverId: "srv-laptop", online: true, lastSeenAt: NOW, threads: [], resources: { observedAt: NOW, cpuCount: 12, cpuUtilization: 0.18, totalMemoryBytes: 32 * 1024 ** 3, availableMemoryBytes: 14 * 1024 ** 3 } },
     { key: "studio", label: "Studio home", serverId: "srv-studio", online: true, lastSeenAt: NOW, threads: [{ id: "r1", title: "Nightly render", state: "running", machine: "studio", projectName: null, providerId: "claude-code", updatedAt: NOW, url: "", via: "srv-studio" }] },
-    { key: "work", label: "work Client", serverId: "sky-m4", online: false, lastSeenAt: NOW - 2 * HOUR, threads: [] },
+    { key: "work", label: "work Client", serverId: "srv-work", online: false, lastSeenAt: NOW - 2 * HOUR, threads: [] },
   ],
 };
 

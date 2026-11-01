@@ -42,7 +42,7 @@ describe("rail render cost", () => {
   it("does not re-render when the background reads return what it already shows", async () => {
     const copy = <T,>(v: T): T => structuredClone(v);
     const conversation = { rootThreadId: "root", activeThreadId: "run", memberIds: ["root", "run"], members: [live("root", { isHidden: false }), live("run", { status: "active", model: "claude-opus-5-5", reasoningLevel: "high" })] };
-    const board = { serverId: "sky", serverKey: "laptop", columns: [{ key: "laptop", label: "laptop", serverId: "sky", online: true, lastSeenAt: 1, threads: [] }, { key: "studio", label: "studio", serverId: "m1", online: true, lastSeenAt: 1, mirror: true, threads: [] }] };
+    const board = { serverId: "srv-laptop", serverKey: "laptop", columns: [{ key: "laptop", label: "laptop", serverId: "srv-laptop", online: true, lastSeenAt: 1, threads: [] }, { key: "studio", label: "studio", serverId: "m1", online: true, lastSeenAt: 1, mirror: true, threads: [] }] };
     const callRpc = async ({ method }: { method: string }) => {
       if (method === "list") return copy({ folders: [{ id: "f1", projectId: "p1", hostId: "h", parentId: null, name: "REA", path: "/p1/REA" }], roots: [{ id: "root:p1", projectId: "p1", hostId: "h", parentId: null, name: "Away", path: "/p1" }], bindings: {}, places: { root: "f1" } });
       if (method === "prefs_get") return { prefs: {}, items: {}, stored: true };

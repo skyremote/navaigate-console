@@ -69,15 +69,15 @@ const rec = (threadId: string) => ({ threadId, mode: "stashed", wakeAt: null, ch
 const row = (threadId: string, title: string, status: string, over: Record<string, unknown> = {}) => ({ threadId, title, hostId: "h", environmentId: null, status, question: null, updatedAt: NOW - HOUR, pinned: false, wakeAt: null, ...over });
 const pr = (number: number, checks: string, failedCount = 0) => ({ number, url: `https://github.com/example/x/pull/${number}`, state: "open", checks, failedCount });
 const board: FleetBoard = {
-  serverId: "sky", serverKey: "laptop",
+  serverId: "srv-laptop", serverKey: "laptop",
   columns: [
-    { key: "laptop", label: "laptop", serverId: "sky", online: true, lastSeenAt: NOW, threads: [], resources: { observedAt: NOW, cpuCount: 12, cpuUtilization: 0.18, totalMemoryBytes: 32 * 1024 ** 3, availableMemoryBytes: 14 * 1024 ** 3 } },
+    { key: "laptop", label: "laptop", serverId: "srv-laptop", online: true, lastSeenAt: NOW, threads: [], resources: { observedAt: NOW, cpuCount: 12, cpuUtilization: 0.18, totalMemoryBytes: 32 * 1024 ** 3, availableMemoryBytes: 14 * 1024 ** 3 } },
     { key: "studio", label: "studio", serverId: "srv-studio", online: true, lastSeenAt: NOW, mirror: true, threads: [
       { id: "r1", title: "Nightly render", state: "idle", machine: "studio", projectName: "Atlas", providerId: "claude-code", updatedAt: NOW - HOUR, url: "https://m1/threads/r1", via: "srv-studio" },
       { id: "r2", title: "Course upload retry", state: "needs-you", machine: "studio", projectName: "Admin", providerId: "codex", updatedAt: NOW - 2 * HOUR, url: "https://m1/threads/r2", via: "srv-studio" },
       { id: "r3", title: "Podcast cut", state: "idle", machine: "studio", projectName: "Admin", providerId: "claude-code", updatedAt: NOW - 3 * HOUR, url: "https://m1/threads/r3", via: "srv-studio" },
     ] },
-    { key: "work", label: "work", serverId: "sky-m4", online: false, lastSeenAt: NOW - 2 * HOUR, threads: [] },
+    { key: "work", label: "work", serverId: "srv-work", online: false, lastSeenAt: NOW - 2 * HOUR, threads: [] },
   ],
 };
 
@@ -186,7 +186,7 @@ describe("rail screenshots from fixture data", () => {
   const STASH_TITLES = ["Pricing page idea", "Old Zoom notes", "Invoice INV-040", "Course lesson cover v2", "Portal landing page copy", "Survey export", "Podcast cut for the client", "Receipts for October", "Clientco workshop agenda", "Ember theme spacing", "Travel plan for the offsite", "Offer notes", "Acme contract check", "Onboarding checklist", "Archive tidy", "Video thumbnails round two", "Sales call recap", "Dashboard colours", "Search index tidy", "Insurance renewal letter", "Landing page headline test", "Studio backup schedule", "NAS share permissions", "Hooks review", "Template registry cleanup", "Weekly course post", "Notes sync check", "Quote for new customer", "Logo choice", "Folder logos"];
   const stash30 = STASH_TITLES.map((title, i) => row(`s${i}`, title, "stashed", {
     updatedAt: NOW - (i < 4 ? 2 + i : 7 + i * 2) * DAY - i * HOUR,
-    ...(i % 5 === 1 ? { remote: true, machine: "studio", ownerServerId: "srv-studio", ownerHostId: "h1" } : i % 7 === 3 ? { remote: true, machine: "work", ownerServerId: "sky-m4", ownerHostId: "h4" } : {}),
+    ...(i % 5 === 1 ? { remote: true, machine: "studio", ownerServerId: "srv-studio", ownerHostId: "h1" } : i % 7 === 3 ? { remote: true, machine: "work", ownerServerId: "srv-work", ownerHostId: "h4" } : {}),
   }));
   const stashRpc = { attention_state: () => ({ records: stash30.map((r) => rec(r.threadId)), foldWorking: false, stashAfterDays: 7 }), attention_fleet_inbox: () => ({ rows: stash30, truncated: false, notices: [] }) };
 

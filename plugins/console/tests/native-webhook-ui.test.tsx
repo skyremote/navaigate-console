@@ -12,7 +12,7 @@ vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 const receipt = (over: Record<string, unknown> = {}) => ({
   id: "r1",
   hookId: "ci-failed",
-  binding: { id: "ci-failed", ownerServerId: "sky", hostId: "host-m5", projectId: "proj_test", automationId: "auto_1" },
+  binding: { id: "ci-failed", ownerServerId: "srv-laptop", hostId: "host-m5", projectId: "proj_test", automationId: "auto_1" },
   bindingFingerprint: "a".repeat(64),
   deliveryId: "delivery-1",
   receivedAt: 1_800_000_000_000,
@@ -29,7 +29,7 @@ const hook = {
   enabled: true,
   holdOffline: true,
   coalesceSeconds: 0,
-  ownerServerId: "sky",
+  ownerServerId: "srv-laptop",
   hostId: "host-m5",
   projectId: "proj_test",
   projectName: "Native BB acceptance",
@@ -42,7 +42,7 @@ const base: WebhookFormState = {
   publicBaseUrl: "https://laptop.example.test",
   endpoint: "https://laptop.example.test/api/v1/plugins/navaigate-skin/http/automation-hook",
   secretSet: true,
-  owner: { serverId: "sky", machine: "laptop" },
+  owner: { serverId: "srv-laptop", machine: "laptop" },
   hooks: [hook],
   deliveries: [receipt(), receipt({ id: "r2", deliveryId: "delivery-2", state: "held", runId: null, error: "Owning server or execution host is offline." })],
 };

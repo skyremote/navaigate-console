@@ -301,6 +301,12 @@ export function SetupPage() {
   const save = async () => {
     setAttempted(true);
     if (hasProblems(problems)) return;
+    // A profile file that exists but failed to load reads as the defaults; saving would
+    // replace the real file with them. Ask for the file to be fixed instead.
+    if (state.source !== "file" && state.errors.length > 0) {
+      setError(`Your profile file could not be read, so Setup will not overwrite it: ${state.errors.join("; ")}. Fix or move ${state.path ?? "the file"}, then reload.`);
+      return;
+    }
     setSaving(true);
     setError(null);
     try {

@@ -150,9 +150,9 @@ describe("F30 the rail links to Work needs you", () => {
 
 describe("F38 the pull request the owning Mac sees shows on its remote row", () => {
   const board: FleetBoard = {
-    serverId: "sky", serverKey: "laptop",
+    serverId: "srv-laptop", serverKey: "laptop",
     columns: [
-      { key: "laptop", label: "laptop", serverId: "sky", online: true, lastSeenAt: NOW, threads: [] },
+      { key: "laptop", label: "laptop", serverId: "srv-laptop", online: true, lastSeenAt: NOW, threads: [] },
       { key: "studio", label: "studio", serverId: "srv-studio", online: true, lastSeenAt: NOW, mirror: true, threads: [
         { id: "r1", title: "Nightly render", state: "idle", machine: "studio", projectName: "Admin", providerId: "claude-code", updatedAt: NOW - HOUR, url: "https://m1/threads/r1", via: "srv-studio" },
         { id: "r2", title: "No PR here", state: "idle", machine: "studio", projectName: "Admin", providerId: "claude-code", updatedAt: NOW - HOUR, url: "https://m1/threads/r2", via: "srv-studio" },

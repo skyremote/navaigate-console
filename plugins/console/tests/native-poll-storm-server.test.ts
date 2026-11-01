@@ -120,8 +120,8 @@ describe("attention fleet inbox under a polling storm", () => {
 
 describe("fleet board under a polling storm", () => {
   const raw = {
-    me: { serverId: "sky", machineKey: "laptop", label: "laptop home", joined: true, brain: true },
-    columns: [{ key: "laptop", label: "laptop home", serverId: "sky", url: "https://laptop.example.test", online: true, local: true, lastSeenAt: 10, capabilities: ["NAS"], counts: { running: 0, needsYou: 0, queued: 0 }, threads: [] }],
+    me: { serverId: "srv-laptop", machineKey: "laptop", label: "laptop home", joined: true, brain: true },
+    columns: [{ key: "laptop", label: "laptop home", serverId: "srv-laptop", url: "https://laptop.example.test", online: true, local: true, lastSeenAt: 10, capabilities: ["NAS"], counts: { running: 0, needsYou: 0, queued: 0 }, threads: [] }],
     commands: [],
     error: null,
     at: 11,

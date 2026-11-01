@@ -18,11 +18,11 @@ beforeEach(() => {
 afterEach(() => { cleanup(); document.body.innerHTML = ""; vi.restoreAllMocks(); });
 
 const board: FleetBoard = {
-  serverId: "sky", serverKey: "laptop",
+  serverId: "srv-laptop", serverKey: "laptop",
   columns: [
-    { key: "laptop", label: "laptop home", serverId: "sky", online: true, lastSeenAt: NOW, threads: [] },
+    { key: "laptop", label: "laptop home", serverId: "srv-laptop", online: true, lastSeenAt: NOW, threads: [] },
     { key: "studio", label: "Studio home", serverId: "srv-studio", online: true, lastSeenAt: NOW, threads: [] },
-    { key: "work", label: "work Client", serverId: "sky-m4", online: false, lastSeenAt: NOW, threads: [] },
+    { key: "work", label: "work Client", serverId: "srv-work", online: false, lastSeenAt: NOW, threads: [] },
   ],
 };
 const service: M1ServiceState = {

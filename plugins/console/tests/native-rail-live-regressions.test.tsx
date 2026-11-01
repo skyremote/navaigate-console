@@ -136,9 +136,9 @@ describe("a project heading", () => {
 
 describe("machine view rows", () => {
   const board = (threadId: string): FleetBoard => ({
-    serverId: "sky", serverKey: "laptop",
+    serverId: "srv-laptop", serverKey: "laptop",
     columns: [
-      { key: "laptop", label: "laptop", serverId: "sky", online: true, lastSeenAt: 1, threads: [{ id: threadId, title: "Extract features from video transcript", state: "idle", machine: "laptop", projectName: "Shared (away)", providerId: "claude-code", updatedAt: Date.now() - 17 * HOUR, url: null, via: "m5-desktop" }] },
+      { key: "laptop", label: "laptop", serverId: "srv-laptop", online: true, lastSeenAt: 1, threads: [{ id: threadId, title: "Extract features from video transcript", state: "idle", machine: "laptop", projectName: "Shared (away)", providerId: "claude-code", updatedAt: Date.now() - 17 * HOUR, url: null, via: "m5-desktop" }] },
       { key: "studio", label: "studio", serverId: "m1", online: true, lastSeenAt: 1, mirror: true, threads: [] },
     ],
   });

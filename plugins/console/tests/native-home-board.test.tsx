@@ -106,9 +106,9 @@ describe("Home panels", () => {
 describe("Control room", () => {
   it("shows the four states, the harness split and each Mac's load from Fleet", async () => {
     const board = {
-      serverId: "sky", serverKey: "laptop",
+      serverId: "srv-laptop", serverKey: "laptop",
       columns: [
-        { key: "laptop", label: "laptop home", serverId: "sky", online: true, lastSeenAt: NOW, threads: [], resources: { observedAt: NOW, cpuCount: 12, cpuUtilization: 0.25, totalMemoryBytes: 32 * gb, availableMemoryBytes: 16 * gb } },
+        { key: "laptop", label: "laptop home", serverId: "srv-laptop", online: true, lastSeenAt: NOW, threads: [], resources: { observedAt: NOW, cpuCount: 12, cpuUtilization: 0.25, totalMemoryBytes: 32 * gb, availableMemoryBytes: 16 * gb } },
         { key: "work", label: "work Client", serverId: "m4", online: false, lastSeenAt: NOW - 3_600_000, threads: [], resources: null },
       ],
     };
