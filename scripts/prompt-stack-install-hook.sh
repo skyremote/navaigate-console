@@ -6,7 +6,9 @@
 # plugin, then adds one UserPromptSubmit hook to ~/.claude/settings.json that
 # runs hooks/inject.py from that copy. Nothing else in settings.json is touched.
 # Before changing settings.json it saves a dated backup next to it. Running it
-# again changes nothing if the hook is already there.
+# again changes nothing if the hook is already there, and an existing
+# ~/.claude/prompt-stack-plugin/stack.json (the file you edit to add your own
+# entries) is kept as it is.
 #
 #   bash install-hook.sh [--dry-run] [--remove]
 #
@@ -35,17 +37,21 @@ done
 command -v python3 >/dev/null || { echo "Stopped: python3 is needed (the hook is a Python script)." >&2; exit 1; }
 [ -f "$HERE/hooks/inject.py" ] || { echo "Stopped: $HERE/hooks/inject.py is missing; run this from the plugin's claude-plugin folder." >&2; exit 1; }
 
-COMMAND="python3 \"$TARGET/hooks/inject.py\""
 
 if [ "$REMOVE" -eq 0 ] && [ "$DRY" -eq 0 ] && [ "$HERE" != "$TARGET" ]; then
   mkdir -p "$TARGET"
-  rsync -a --delete --exclude __pycache__ --exclude '*.pyc' "$HERE/" "$TARGET/"
-  echo "Copied the plugin to $TARGET"
+  KEEP=()
+  if [ -f "$TARGET/stack.json" ]; then KEEP=(--exclude /stack.json); fi
+  rsync -a --delete ${KEEP[@]+"${KEEP[@]}"} --exclude __pycache__ --exclude '*.pyc' "$HERE/" "$TARGET/"
+  if [ "${#KEEP[@]}" -gt 0 ]; then echo "Copied the plugin to $TARGET (kept your stack.json)"; else echo "Copied the plugin to $TARGET"; fi
 fi
 
-python3 - "$SETTINGS" "$COMMAND" "$REMOVE" "$DRY" <<'PY'
-import json, os, shutil, sys, time
-path, command, remove, dry = sys.argv[1], sys.argv[2], sys.argv[3] == "1", sys.argv[4] == "1"
+python3 - "$SETTINGS" "$TARGET" "$REMOVE" "$DRY" <<'PY'
+import json, os, shlex, shutil, sys, time
+path, target, remove, dry = sys.argv[1], sys.argv[2], sys.argv[3] == "1", sys.argv[4] == "1"
+command = "python3 " + shlex.quote(os.path.join(target, "hooks", "inject.py"))
+# A symlinked settings.json (dotfiles setups) stays a symlink: read and write the real file.
+path = os.path.realpath(path)
 MARK = "prompt-stack-plugin/hooks/inject.py"
 
 if os.path.exists(path):

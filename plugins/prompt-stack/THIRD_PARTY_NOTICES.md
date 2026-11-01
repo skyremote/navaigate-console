@@ -29,7 +29,7 @@ The registry components above follow the shadcn/ui component model (https://ui.s
 
 ## Prove-it skills (Ray Amjad)
 
-The verifier idea and the `create-prove-it`, `maintain-prove-it` and `audit-prove-it` skills come from Ray Amjad, "Verification is the new code review" (https://github.com/ray-amjad/skills, commit `36dea1e9fd58c527a80244bd147f062516e2c253`). They are vendored verbatim, with their own `LICENSE` and `SOURCE.md`, in the Prompt Stack Claude Code plugin that this panel drives (`claude-plugin/skills/`), not in this panel's source.
+The verifier idea and the `create-prove-it`, `maintain-prove-it` and `audit-prove-it` skills come from Ray Amjad, "Verification is the new code review" (https://github.com/ray-amjad/skills, commit `36dea1e9fd58c527a80244bd147f062516e2c253`). They are vendored verbatim, with their own `LICENSE` and `SOURCE.md`, in the Prompt Stack Claude Code plugin that this panel drives (`claude-plugin/skills/`, a folder of this plugin in BB Overlay).
 
 ## Copyright lines and licence text
 

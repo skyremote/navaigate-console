@@ -39,7 +39,7 @@ Run the same command. Your setup stays exactly as it is, and the installer print
 curl -fsSL https://raw.githubusercontent.com/skyremote/bb-overlay/main/install.sh | bash -s -- --console
 ```
 
-It saves your current thread list, navigation and theme, installs the Console and reloads it, and only then switches the look and turns your old core off. If a step fails it restores your previous settings and leaves the old core running. Nothing is uninstalled and no data is deleted. To go back, enable the old core (`bb plugin enable navaigate-simple` or `navaigate-workspace`) and choose its thread list and theme in **Settings, Appearance**.
+It saves your current thread list, navigation and theme, installs the Console and reloads it, and only then switches the look and turns your old core off. If a step fails it restores your previous settings and leaves the old core running. Nothing is uninstalled and no data is deleted. To go back, enable the old core (`bb plugin enable navaigate-simple` or `navaigate-workspace`) and choose its thread list and theme in **Settings, Appearance** (the values saved in `~/.config/bb-overlay/before-console` show what you had; nothing reads them back).
 
 A `navaigate-skin` you installed from another source (a local path, say) is never replaced, reconfigured or given a preset.
 

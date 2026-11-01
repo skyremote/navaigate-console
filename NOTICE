@@ -30,6 +30,26 @@ MIT licences, and keep their own updates:
 - Agent Board (agent-board), by aaronphifer, MIT licence:
   https://github.com/aaronphifer/bb-plugin-agent-board
 
+Parts under other licences
+--------------------------
+Some parts of this repository are not covered by the PolyForm Internal Use
+License above. Each keeps its own licence, and the restrictions in this
+NOTICE on distributing the software do not apply to them:
+
+- extras/brain-selfhost-kit: MIT licence, Copyright (c) 2026 NavAIgate GmbH &
+  Co. KG. Its own file, extras/brain-selfhost-kit/LICENSE, is the licence.
+- plugins/prompt-stack/claude-plugin/skills/create-prove-it,
+  plugins/prompt-stack/claude-plugin/skills/maintain-prove-it and
+  plugins/prompt-stack/claude-plugin/skills/audit-prove-it: MIT licence,
+  Copyright (c) 2026 Ray Amjad, vendored unchanged from
+  https://github.com/ray-amjad/skills. Each folder has its own LICENSE and a
+  SOURCE.md. The LICENSE copy in plugins/prompt-stack (the PolyForm terms)
+  does not cover these skills.
+- Third-party code and assets inside the plugins are listed, with their
+  licences, in the THIRD_PARTY_NOTICES.md file of the plugin that uses them
+  (plugins/fleet, plugins/helper-desk, plugins/navmotion-skin and
+  plugins/prompt-stack).
+
 Additional permissions
 ----------------------
 NavAIgate GmbH & Co. KG grants the following permissions in addition to

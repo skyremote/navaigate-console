@@ -12,6 +12,8 @@
 > - Keep the NavAIgate name and logo as they are, don't remove the attribution, and don't present it as your own work.
 > - Want to do something else with it? Ask first: [navaigate.dev](https://navaigate.dev).
 >
+> A few parts are under other licences and are not covered by the restrictions above: the brain kit in `extras/brain-selfhost-kit` (MIT, its own LICENSE) and Ray Amjad's three prove-it skills inside Prompt Stack (MIT, see their SOURCE.md). Each plugin's `THIRD_PARTY_NOTICES.md` lists its third-party parts. The PolyForm LICENSE copy in `plugins/prompt-stack` does not cover those skills.
+>
 > The legal terms are in [LICENSE](LICENSE) (PolyForm Internal Use 1.0.0) and [NOTICE](NOTICE). If this box and those files ever disagree, the files win.
 
 ## What you get
@@ -222,7 +224,7 @@ If a companion is missing, the rest still works. Its feature shows greyed out wi
 
 - **Nothing changes unless you ask.** Running the installer again keeps your Simple or Pro setup, its look, its plugin sources and everything you turned off. It updates what is installed, within its pins, and prints one line about `--console`.
 - **Updated plugins you already have.** Helper Desk, the Markdown plugin (NavMotion Skin) and the others update through the normal update, as before.
-- **Move to the Console with `--console`.** The installer saves your current thread list, navigation and theme (in `~/.config/bb-overlay/before-console`), installs the Console, reloads it, and only then switches the look and turns your old Simple or Pro core off. If any step fails it puts your previous settings back and leaves the old core running. Your old core is turned off, never uninstalled, and no data is deleted. Setup starts on the Pro preset if you came from 1.11 Pro, and on the Simple preset if you came from 1.11 Simple. Pass `--edition simple|pro` as well to choose the preset yourself.
+- **Move to the Console with `--console`.** The installer saves your current thread list, navigation and theme (in `~/.config/bb-overlay/before-console`, kept for your reference only; nothing reads it back), installs the Console, reloads it, and only then switches the look and turns your old Simple or Pro core off. If any step fails it puts your previous settings back and leaves the old core running. Your old core is turned off, never uninstalled, and no data is deleted. Setup starts on the Pro preset if you came from 1.11 Pro, and on the Simple preset if you came from 1.11 Simple. Pass `--edition simple|pro` as well to choose the preset yourself.
 - **Going back.** The old core is still installed. Turn it on with `bb plugin enable navaigate-simple` (or `navaigate-workspace`) and choose its thread list and theme in **Settings, Appearance**; the saved values above show what you had.
 - **Your own `navaigate-skin`.** If you installed a `navaigate-skin` from another source, it is left alone, with or without `--console`.
 - **Fleet and Prompt Stack** are new plugins. An existing Pro install does not gain them by itself; add them with `bb plugin install` (see Install by hand), or run the installer with `--edition pro` (together with `--console` if you are moving over). Moving to the Console with `--console` alone installs the Console and the helpers, and adds none of the plugins you left out of 1.11.

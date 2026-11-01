@@ -37,8 +37,8 @@
       "what": "prompt-stack (Claude Code plugin)",
       "sourceRepo": "navaigate-team-plugins",
       "branch": "main",
-      "commit": "aa1fe5b85bbafbe69fbff5269ec9b1539aa15e40",
-      "note": "not yet committed in that repository; content sha256 c29e42e248b9530b07774569e5201e4ab53cdef6cbc52313abfa797d9a87bdff"
+      "commit": "0ce357b6551f262f89a06b565192db8fc424767d",
+      "note": "folder plugins/prompt-stack at that commit"
     }
   ]
 }

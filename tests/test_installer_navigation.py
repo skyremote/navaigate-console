@@ -118,7 +118,7 @@ class InstallerTest(unittest.TestCase):
 
     def test_explicit_simple_switch_disables_only_pro_core_and_never_uninstalls(self):
         calls,_=self.run_installer('--edition=simple',TEST_PLUGINS=PERSONAL+'\nagent-flow@1.0.0  running\n  source: path:/example/flow')
-        self.assertIn(['plugin','disable','navaigate-skin'],calls)
+        self.assertNotIn(['plugin','disable','navaigate-skin'],calls)
         self.assertNotIn(['plugin','disable','agent-flow'],calls)
         self.assertFalse(any(c[:2]==['plugin','remove'] for c in calls))
 
@@ -234,13 +234,28 @@ class InstallerTest(unittest.TestCase):
         self.assertFalse(any(c[:2] in [['plugin','install'],['plugin','disable'],['plugin','config']] for c in calls))
 
     def test_a_navaigate_skin_from_another_source_is_left_alone(self):
-        for flags in [(),('--console',),('--edition','pro')]:
+        for flags in [(),('--edition','pro'),('--edition','simple')]:
             with self.subTest(flags=flags):
                 calls,_=self.run_installer(*flags,TEST_PLUGINS=PERSONAL,TEST_LIST='navaigate-skin/rail')
                 self.assertNotIn('console',self.installs(calls))
                 self.assertFalse(any(c[:3]==['plugin','config','navaigate-skin'] for c in calls))
                 self.assertFalse(any(c[:2] in [['plugin','disable'],['plugin','update']] and 'navaigate-skin' in c for c in calls))
-                self.assertFalse(any(c[:3]==['settings','ui','set'] or c[:2]==['theme','set'] for c in calls))
+                if flags!=('--edition','simple'): self.assertFalse(any(c[:3]==['settings','ui','set'] or c[:2]==['theme','set'] for c in calls))
+
+    def test_console_flag_with_a_navaigate_skin_from_another_source_stops_before_any_change(self):
+        for flags in [('--console',),('--console','--edition','simple'),('--console','--edition','pro')]:
+            with self.subTest(flags=flags):
+                calls,_=self.run_installer(*flags,TEST_PLUGINS=PERSONAL,TEST_LIST='navaigate-skin/rail',code=2)
+                self.assertFalse(any(c[:2] in [['plugin','install'],['plugin','update'],['plugin','disable'],['plugin','enable'],['plugin','reload'],['plugin','config']] or c[:3]==['settings','ui','set'] or c[:2]==['theme','set'] for c in calls))
+
+    def test_plain_rerun_on_an_existing_pro_console_updates_installed_pro_plugins_and_adds_none(self):
+        plugins=CONSOLE+'\nfleet@0.2.0  running\n  source: '+REPO+'\nkanban@1.0.0  running\n  source: '+REPO+'\nprompt-stack@0.1.0  disabled\n  source: '+REPO
+        calls,out=self.run_installer(TEST_PLUGINS=plugins,TEST_LIST='navaigate-skin/rail')
+        self.assertIn(['plugin','update','fleet','--yes'],calls);self.assertIn(['plugin','update','kanban','--yes'],calls)
+        self.assertFalse(any(c[:3]==['plugin','update','prompt-stack'] for c in calls))
+        for absent in ['finder-links','tasks']: self.assertNotIn(absent,self.installs(calls))
+        self.assertFalse(any('bb-plugin-agent-board' in v or 'project-folders' in v for v in self.installs(calls)))
+        self.assertFalse(any(c[:3]==['settings','ui','set'] for c in calls))
 
     def test_a_disabled_console_stays_disabled_without_the_flag(self):
         calls,_=self.run_installer(TEST_PLUGINS=CONSOLE.replace('running','disabled'),TEST_LIST='navaigate-skin/rail')

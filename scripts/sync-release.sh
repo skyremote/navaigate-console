@@ -12,13 +12,18 @@
 # from (repository, branch, commit). The script refuses to run if a source
 # worktree has uncommitted changes to tracked files, and changes nothing then.
 #
-# Worktrees are looked up under $CR_BBWT (default /tmp/bbwt); the Claude Code
-# half of Prompt Stack under $PROMPT_STACK_CLAUDE_SRC.
+# Worktrees are looked up under $CR_BBWT (default /tmp/bbwt). The Claude Code
+# half of Prompt Stack is taken from a committed ref (git archive), never from a
+# working folder: repository $PROMPT_STACK_CLAUDE_REPO (default
+# ~/Documents/GitHub/navaigate-team-plugins), ref $PROMPT_STACK_CLAUDE_REF
+# (default 0ce357b), folder plugins/prompt-stack.
 set -euo pipefail
 
 OVERLAY="$(cd "$(dirname "$0")/.." && pwd)"
 BBWT="${CR_BBWT:-/tmp/bbwt}"
-PS_CLAUDE_SRC="${PROMPT_STACK_CLAUDE_SRC:-$HOME/Documents/GitHub/navaigate-team-plugins/plugins/prompt-stack}"
+PS_REPO="${PROMPT_STACK_CLAUDE_REPO:-$HOME/Documents/GitHub/navaigate-team-plugins}"
+PS_REF="${PROMPT_STACK_CLAUDE_REF:-0ce357b}"
+PS_DIR="plugins/prompt-stack"
 
 # folder | bb plugin id | source worktree | subdirectory of that worktree
 SPEC=(
@@ -95,6 +100,9 @@ for row in "${SPEC[@]}"; do
   if ! git -C "$src" rev-parse --git-dir >/dev/null 2>&1; then
     echo "REFUSED: $folder: $src is not a git worktree" >&2; BAD=1; continue
   fi
+  if [ "$(git -C "$src" ls-files -- "$sub" | wc -l | tr -d ' ')" -eq 0 ]; then
+    echo "REFUSED: $folder: $src has no tracked files under '$sub'" >&2; BAD=1; continue
+  fi
   dirty="$(git -C "$src" status --porcelain --untracked-files=no -- "$sub" | head -n 5)"
   if [ -n "$dirty" ]; then
     echo "REFUSED: $folder: $src has uncommitted changes (commit them, then run this again):" >&2
@@ -102,15 +110,10 @@ for row in "${SPEC[@]}"; do
   fi
 done
 if wanted prompt-stack; then
-  PS_REPO="$(git -C "$PS_CLAUDE_SRC" rev-parse --show-toplevel 2>/dev/null || true)"
-  if [ ! -d "$PS_CLAUDE_SRC" ] || [ -z "$PS_REPO" ]; then
-    echo "REFUSED: prompt-stack: $PS_CLAUDE_SRC is not inside a git repository" >&2; BAD=1
-  else
-    dirty="$(git -C "$PS_REPO" status --porcelain --untracked-files=no -- "$PS_CLAUDE_SRC" | head -n 5)"
-    if [ -n "$dirty" ]; then
-      echo "REFUSED: prompt-stack Claude Code half has uncommitted changes to tracked files:" >&2
-      printf '  %s\n' "$dirty" >&2; BAD=1
-    fi
+  if ! git -C "$PS_REPO" rev-parse --verify --quiet "$PS_REF^{commit}" >/dev/null; then
+    echo "REFUSED: prompt-stack: $PS_REF is not a commit in $PS_REPO" >&2; BAD=1
+  elif [ "$(git -C "$PS_REPO" ls-tree -r --name-only "$PS_REF" -- "$PS_DIR" | wc -l | tr -d ' ')" -eq 0 ]; then
+    echo "REFUSED: prompt-stack: $PS_REF has no tracked files under $PS_DIR" >&2; BAD=1
   fi
 fi
 [ "$BAD" -eq 0 ] || exit 1
@@ -145,6 +148,17 @@ for row in "${SPEC[@]}"; do
   [ "$folder" != "prompt-stack" ] || excl+=(--exclude /claude-plugin)
   rsync -a --delete "${excl[@]}" "$from/" "$dest/"
   cp "$LICENSE_FROM" "$dest/LICENSE"; cp "$NOTICE_FROM" "$dest/NOTICE"
+  if [ "$folder" = "prompt-stack" ]; then
+    # In the overlay the Claude Code half sits next to the panel, so the source
+    # notice's "not in this panel's source" would be false here.
+    python3 - "$dest/THIRD_PARTY_NOTICES.md" <<'PY'
+import sys
+p = sys.argv[1]
+t = open(p).read()
+t = t.replace("`claude-plugin/skills/`), not in this panel's source.", "`claude-plugin/skills/`, a folder of this plugin in BB Overlay).")
+open(p, "w").write(t)
+PY
+  fi
   printf '%s\t%s\t%s\t%s\t%s\n' "plugins/$folder" "$id" "$(repo_name "$src")" "$branch" "$commit" >> "$ROWS"
   echo "synced plugins/$folder  <-  $(repo_name "$src") $branch ${commit:0:9}"
 done
@@ -152,14 +166,13 @@ done
 VENDOR="$TMP/vendor.tsv"; : > "$VENDOR"
 if wanted prompt-stack; then
   cdest="$OVERLAY/plugins/prompt-stack/claude-plugin"
-  mkdir -p "$cdest"
-  rsync -a --delete --exclude __pycache__ --exclude '*.pyc' --exclude .DS_Store "$PS_CLAUDE_SRC/" "$cdest/"
+  mkdir -p "$cdest" "$TMP/psclaude"
+  git -C "$PS_REPO" archive --format=tar "$PS_REF" -- "$PS_DIR" | tar -x -C "$TMP/psclaude"
+  rsync -a --delete --exclude __pycache__ --exclude '*.pyc' --exclude .DS_Store "$TMP/psclaude/$PS_DIR/" "$cdest/"
   cp "$HOOK_SCRIPT" "$cdest/install-hook.sh"; chmod 755 "$cdest/install-hook.sh"
   neutralise_prompt_stack "$cdest"
-  pcommit="$(git -C "$PS_REPO" rev-parse HEAD)"
-  tracked="$(git -C "$PS_REPO" ls-files -- "$PS_CLAUDE_SRC" | wc -l | tr -d ' ')"
-  digest="$(cd "$PS_CLAUDE_SRC" && find . -type f ! -name '*.pyc' ! -name .DS_Store ! -path '*/__pycache__/*' | LC_ALL=C sort | xargs shasum -a 256 | shasum -a 256 | cut -d' ' -f1)"
-  printf '%s\t%s\t%s\t%s\t%s\t%s\n' "plugins/prompt-stack/claude-plugin" "prompt-stack (Claude Code plugin)" "$(repo_name "$PS_REPO")" "$(git -C "$PS_REPO" branch --show-current)" "$pcommit" "$([ "$tracked" -gt 0 ] && echo "tracked" || echo "not yet committed in that repository; content sha256 $digest")" >> "$VENDOR"
+  pcommit="$(git -C "$PS_REPO" rev-parse "$PS_REF^{commit}")"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\n' "plugins/prompt-stack/claude-plugin" "prompt-stack (Claude Code plugin)" "$(repo_name "$PS_REPO")" "$(git -C "$PS_REPO" branch --show-current)" "$pcommit" "folder $PS_DIR at that commit" >> "$VENDOR"
   echo "synced plugins/prompt-stack/claude-plugin  <-  $(repo_name "$PS_REPO")"
 fi
 
