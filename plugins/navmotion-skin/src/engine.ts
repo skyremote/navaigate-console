@@ -7,7 +7,7 @@
 // screen's full rate (60 or 120 Hz) without touching the main thread. JavaScript only
 // switches state (idle, working, done) and adds a short-lived element per click.
 //
-// The look follows NavAIgate's navmotion film engine: the same
+// The look follows the navmotion film engine (skills/navmotion/engine/engine.js): the same
 // grounds, ripple and square-particle burst, at app scale. The active skin is read from the
 // `--nm-skin` CSS variable each NavMotion palette sets, so the layer removes itself the
 // moment another skin is chosen.

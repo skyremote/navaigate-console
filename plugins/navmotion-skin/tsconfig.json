@@ -24,5 +24,6 @@
     "server.ts",
     "app.tsx",
     "src"
-  ]
+  ],
+  "exclude": ["src/**/*.test.ts"]
 }

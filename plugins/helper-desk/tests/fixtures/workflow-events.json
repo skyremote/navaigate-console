@@ -1,0 +1,306 @@
+[
+ {
+  "seq": 396,
+  "type": "item/started",
+  "createdAt": 1792950965157,
+  "data": {
+   "item": {
+    "type": "backgroundTask",
+    "id": "dab3dc397b-i44",
+    "familyId": "wys99b8cu",
+    "taskType": "local_workflow",
+    "description": "Synthetic workflow run",
+    "status": "pending",
+    "taskStatus": "running",
+    "skipTranscript": false,
+    "foreground": false,
+    "workflowName": "demo-workflow-1",
+    "presentation": {
+     "label": {
+      "pending": "Running workflow",
+      "completed": "Workflow finished"
+     },
+     "icon": {
+      "glyph": "Workflow"
+     },
+     "title": "demo-workflow-1"
+    },
+    "parentToolCallId": "dab3dc397b-i43"
+   }
+  }
+ },
+ {
+  "seq": 1141,
+  "type": "item/started",
+  "createdAt": 1792951311572,
+  "data": {
+   "item": {
+    "type": "backgroundTask",
+    "id": "dab3dc397b-i72",
+    "familyId": "wia8pu6xy",
+    "taskType": "local_workflow",
+    "description": "Synthetic workflow run",
+    "status": "pending",
+    "taskStatus": "running",
+    "skipTranscript": false,
+    "foreground": false,
+    "workflowName": "demo-workflow-2",
+    "presentation": {
+     "label": {
+      "pending": "Running workflow",
+      "completed": "Workflow finished"
+     },
+     "icon": {
+      "glyph": "Workflow"
+     },
+     "title": "demo-workflow-2"
+    },
+    "parentToolCallId": "dab3dc397b-i71"
+   }
+  }
+ },
+ {
+  "seq": 1589,
+  "type": "item/backgroundTask/progress",
+  "createdAt": 1792951825612,
+  "data": {
+   "item": {
+    "type": "backgroundTask",
+    "id": "dab3dc397b-i44",
+    "familyId": "wys99b8cu",
+    "taskType": "local_workflow",
+    "description": "Synthetic workflow run",
+    "status": "pending",
+    "taskStatus": "running",
+    "skipTranscript": false,
+    "foreground": false,
+    "workflowName": "demo-workflow-1",
+    "workflow": {
+     "phases": [
+      {
+       "index": 1,
+       "title": "Gather"
+      },
+      {
+       "index": 2,
+       "title": "Critic"
+      }
+     ],
+     "agents": [
+      {
+       "index": 1,
+       "label": "demo-workflow-1 agent 1",
+       "state": "done",
+       "model": "claude-opus-5-5",
+       "attempt": 1,
+       "cached": false,
+       "lastProgressAt": 1792951780357,
+       "phaseIndex": 1,
+       "phaseTitle": "Gather",
+       "queuedAt": 1792950965168,
+       "startedAt": 1792950965175,
+       "lastToolName": "Write",
+       "lastToolSummary": "Searching the web",
+       "promptPreview": "redacted",
+       "resultPreview": "Dossier written",
+       "tokens": 280624,
+       "toolCalls": 43,
+       "durationMs": 815180
+      },
+      {
+       "index": 2,
+       "label": "demo-workflow-1 agent 2",
+       "state": "done",
+       "model": "claude-opus-5-5",
+       "attempt": 1,
+       "cached": false,
+       "lastProgressAt": 1792951672119,
+       "phaseIndex": 1,
+       "phaseTitle": "Gather",
+       "queuedAt": 1792950965168,
+       "startedAt": 1792950965176,
+       "lastToolName": "Write",
+       "lastToolSummary": "Searching the web",
+       "promptPreview": "redacted",
+       "resultPreview": "Dossier written",
+       "tokens": 312529,
+       "toolCalls": 89,
+       "durationMs": 704506
+      },
+      {
+       "index": 3,
+       "label": "demo-workflow-1 agent 3",
+       "state": "running",
+       "model": "claude-opus-5-5",
+       "attempt": 1,
+       "cached": false,
+       "lastProgressAt": 1792951825593,
+       "phaseIndex": 1,
+       "phaseTitle": "Gather",
+       "queuedAt": 1792950965168,
+       "startedAt": 1792950965176,
+       "lastToolName": "Bash",
+       "lastToolSummary": "Searching the web",
+       "promptPreview": "redacted",
+       "tokens": 301829,
+       "toolCalls": 117
+      },
+      {
+       "index": 4,
+       "label": "demo-workflow-1 agent 4",
+       "state": "done",
+       "model": "claude-opus-5-5",
+       "attempt": 1,
+       "cached": false,
+       "lastProgressAt": 1792951755548,
+       "phaseIndex": 1,
+       "phaseTitle": "Gather",
+       "queuedAt": 1792950965168,
+       "startedAt": 1792950965176,
+       "lastToolName": "Write",
+       "lastToolSummary": "Searching the web",
+       "promptPreview": "redacted",
+       "resultPreview": "Dossier written",
+       "tokens": 328844,
+       "toolCalls": 81,
+       "durationMs": 787935
+      },
+      {
+       "index": 5,
+       "label": "demo-workflow-1 agent 5",
+       "state": "running",
+       "model": "claude-opus-5-5",
+       "attempt": 1,
+       "cached": false,
+       "lastProgressAt": 1792951753916,
+       "phaseIndex": 1,
+       "phaseTitle": "Gather",
+       "queuedAt": 1792950965169,
+       "startedAt": 1792950965176,
+       "lastToolName": "Bash",
+       "lastToolSummary": "Searching the web",
+       "promptPreview": "redacted",
+       "tokens": 288278,
+       "toolCalls": 109
+      },
+      {
+       "index": 6,
+       "label": "demo-workflow-1 agent 6",
+       "state": "done",
+       "model": "claude-opus-5-5",
+       "attempt": 1,
+       "cached": false,
+       "lastProgressAt": 1792951719532,
+       "phaseIndex": 1,
+       "phaseTitle": "Gather",
+       "queuedAt": 1792950965169,
+       "startedAt": 1792950965176,
+       "lastToolName": "Write",
+       "lastToolSummary": "Searching the web",
+       "promptPreview": "redacted",
+       "resultPreview": "Dossier written",
+       "tokens": 192888,
+       "toolCalls": 98,
+       "durationMs": 751919
+      }
+     ]
+    },
+    "usage": {
+     "totalTokens": 1704992,
+     "toolUses": 537,
+     "durationMs": 860458
+    },
+    "parentToolCallId": "dab3dc397b-i43"
+   }
+  }
+ },
+ {
+  "seq": 1606,
+  "type": "item/backgroundTask/progress",
+  "createdAt": 1792951900902,
+  "data": {
+   "item": {
+    "type": "backgroundTask",
+    "id": "dab3dc397b-i72",
+    "familyId": "wia8pu6xy",
+    "taskType": "local_workflow",
+    "description": "Synthetic workflow run",
+    "status": "pending",
+    "taskStatus": "running",
+    "skipTranscript": false,
+    "foreground": false,
+    "workflowName": "demo-workflow-2",
+    "workflow": {
+     "phases": [
+      {
+       "index": 1,
+       "title": "Research"
+      }
+     ],
+     "agents": [
+      {
+       "index": 1,
+       "label": "demo-workflow-2 agent 1",
+       "state": "running",
+       "model": "claude-opus-5-5",
+       "attempt": 1,
+       "cached": false,
+       "lastProgressAt": 1792951890608,
+       "phaseIndex": 1,
+       "phaseTitle": "Research",
+       "queuedAt": 1792951311549,
+       "startedAt": 1792951311554,
+       "lastToolName": "WebSearch",
+       "lastToolSummary": "Searching the web",
+       "promptPreview": "redacted",
+       "tokens": 223302,
+       "toolCalls": 98
+      },
+      {
+       "index": 2,
+       "label": "demo-workflow-2 agent 2",
+       "state": "running",
+       "model": "claude-opus-5-5",
+       "attempt": 1,
+       "cached": false,
+       "lastProgressAt": 1792951801577,
+       "phaseIndex": 1,
+       "phaseTitle": "Research",
+       "queuedAt": 1792951311549,
+       "startedAt": 1792951311554,
+       "lastToolName": "WebFetch",
+       "lastToolSummary": "Searching the web",
+       "promptPreview": "redacted",
+       "tokens": 304413,
+       "toolCalls": 77
+      },
+      {
+       "index": 3,
+       "label": "demo-workflow-2 agent 3",
+       "state": "running",
+       "model": "claude-opus-5-5",
+       "attempt": 1,
+       "cached": false,
+       "lastProgressAt": 1792951900887,
+       "phaseIndex": 1,
+       "phaseTitle": "Research",
+       "queuedAt": 1792951311549,
+       "startedAt": 1792951311554,
+       "lastToolName": "WebSearch",
+       "lastToolSummary": "Searching the web",
+       "promptPreview": "redacted",
+       "tokens": 213479,
+       "toolCalls": 87
+      }
+     ]
+    },
+    "usage": {
+     "totalTokens": 741194,
+     "toolUses": 262,
+     "durationMs": 589358
+    },
+    "parentToolCallId": "dab3dc397b-i71"
+   }
+  }
+ }
+]

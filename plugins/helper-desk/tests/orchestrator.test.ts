@@ -40,7 +40,7 @@ describe("activity labels", () => {
 });
 
 describe("lead tracking and nesting from events", () => {
-  it("follows the orchestrator's own items on the synthetic log, ignoring sub-agent items", () => {
+  it("follows the orchestrator's own items on a sample log, ignoring sub-agent items", () => {
     const TYPES = new Set(["client/turn/requested", "item/started", "item/completed", "item/delegation/completed", "item/backgroundTask/completed"]);
     const raw = (JSON.parse(readFileSync(new URL("./fixtures/events.json", import.meta.url), "utf8")) as RawEvent[]).filter((e) => TYPES.has(e.type));
     const s = reduceEvents(emptyState(), raw);

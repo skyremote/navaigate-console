@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, type ReactElement, type RefOb
 import {
   definePluginApp,
   experimental_usePluginId,
+  useBbContext,
   useBbNavigate,
   useComposer,
   useRealtime,
@@ -31,6 +32,7 @@ import {
   type LiveVisibility,
 } from "./model";
 import { z } from "zod";
+import { historyTimeline, type ModelSwitch } from "./conversation";
 import {
   cacheClockLine,
   deskLine,
@@ -43,14 +45,23 @@ import {
 } from "./hubmodel";
 import type { RailOverview } from "./railmodel";
 import "./desk.css";
+import { CoachBot } from "./coach/CoachBot";
+import { useCoachState, type LeadMode } from "./coachstate";
+import { CoachCompanion } from "./companion";
+import { TeamTab } from "./teamtab";
+import { Mascot, PALETTE, colourForId, mascotStateFor } from "./mascots";
+import { N_ID } from "./mascots3d/catalog";
+import { MascotChooser, MascotTrigger, MascotsTabLink, useMascotMenu } from "./mascotpicker";
+import { coachColourStyle, useMascotChoice } from "./mascotchoice";
+import { MascotsTab } from "./mascotstab";
+import { useIsCompactViewport } from "./components/ui/hooks/use-compact-viewport";
 
-/** Agent colours, in launch order: orange, blue, green, pink, red, purple, teal, amber. */
-export const PALETTE = ["#f26b21", "#2f6fe4", "#1f9d55", "#e2457a", "#d93636", "#7c4ddb", "#0e9aa7", "#d99a00"];
+export { PALETTE };
 const colourOf = (i: number) => PALETTE[i % PALETTE.length];
 
 // ---------- Shared per-thread UI state (module level, survives tab switches) ----------
 
-type Tab = "live" | "history";
+type Tab = "live" | "history" | "team" | "mascots";
 const autoOpened = new Map<string, string>(); // threadId -> batch key the panel auto-opened for
 const userOpened = new Set<string>(); // the user opened the panel themselves
 const interacted = new Set<string>(); // the user touched the panel since it auto-opened
@@ -245,70 +256,53 @@ export function Bot({ colour, mode, index = 0, size = 34, label }: { colour: str
   );
 }
 
-function botModeFor(state: AgentState, fresh: boolean): BotMode {
-  if (state === "running") return "run";
-  if (state === "failed" || state === "interrupted") return "slump";
-  return fresh ? "fresh" : "still";
-}
-
-// ---------- Original lead character: the navigator captain (navy, gold cap) ----------
-// 14 x 12 grid: gold cap with a navy badge, dark brim, navy dome head with visor, gold collar, feet.
-type LeadMode = "working" | "waiting" | "needs" | "still";
-const LEAD_BODY = [
-  "....gggggg....",
-  "...gggnnggg...",
-  "..gggggggggg..",
-  ".kkkkkkkkkkkk.",
-  "..nnnnnnnnnn..",
-  ".nnvvvvvvvvnn.",
-  ".nnvvvvvvvvnn.",
-  "..nnnnnnnnnn..",
-  "..nggggggggn..",
-  "...nnnnnnnn...",
-];
-const LEAD_FEET = {
-  a: [[3, 10], [4, 10], [9, 10], [10, 10], [2, 11], [3, 11], [4, 11], [9, 11], [10, 11], [11, 11]],
-  b: [[2, 10], [3, 10], [4, 10], [9, 10], [10, 10], [9, 11], [10, 11], [11, 11]],
-  c: [[3, 10], [4, 10], [2, 11], [3, 11], [4, 11], [9, 10], [10, 10], [11, 10]],
-} as const;
-const NAVY = "#1f2a4d";
-const GOLD = "#e0a526";
-
-export function LeadBot({ mode, size = 46 }: { mode: LeadMode; size?: number }) {
-  const feet = (k: keyof typeof LEAD_FEET, cls: string) => (
-    <g className={cls} fill={NAVY}>
-      {LEAD_FEET[k].map(([x, y]) => <rect key={`${x}-${y}`} x={x} y={y} width={1.02} height={1.02} />)}
-    </g>
-  );
+// ---------- Lead character: the coach (cloud body, round eyes) ----------
+// The platform's own coach (bloub engine, MIT, vendored in ./coach). Working thinks, waiting idles and
+// looks round, needs-you shows the badge, and the moment a turn finishes it winks. Only `live` faces
+// animate (the lead card and the companion); the small ones in headers and history are still frames.
+export function LeadBot({ mode, size = 46, live = false }: { mode: LeadMode; size?: number; live?: boolean }) {
+  const state = useCoachState(mode, live);
+  const choice = useMascotChoice();
   return (
-    <span className={`hd-botwrap hd-lead hd-lmode-${mode}`} aria-hidden="true">
-      {mode === "needs" && <span className="hd-lead-alert">!</span>}
-      <svg className="hd-bot" viewBox="0 0 14 12" width={size} height={Math.round((size * 12) / 14)} shapeRendering="crispEdges">
-        <g className="hd-body">
-          {cellsFor(LEAD_BODY, { g: GOLD, k: "#141b33", n: NAVY, v: "#0d1222" })}
-          <g className="hd-badge-px" fill={NAVY}>
-            <rect x={6} y={1} width={2.02} height={1.02} />
-          </g>
-          <g className="hd-eyes" fill="#ffffff">
-            <rect x={5} y={5} width={1.02} height={2.02} />
-            <rect x={8} y={5} width={1.02} height={2.02} />
-          </g>
-        </g>
-        {feet("a", "hd-feet hd-fa")}
-        {feet("b", "hd-feet hd-fb")}
-        {feet("c", "hd-feet hd-fc")}
-      </svg>
+    <span className="hd-botwrap hd-lead hd-coach" style={coachColourStyle(choice.colour)} aria-hidden="true">
+      <CoachBot size={size} state={state} paused={!live} shape={choice.shape ?? undefined} />
     </span>
   );
 }
 
 const LEAD_STATE_LABEL: Record<DeskLead["state"], string> = { working: "Working", waiting: "Waiting for you", "needs-you": "Needs you" };
 
-function LeadCard({ lead }: { lead: DeskLead }) {
-  const mode: LeadMode = lead.state === "working" ? "working" : lead.state === "needs-you" ? "needs" : "waiting";
+/** "Switched model · GPT-6.1 Sol → Opus 5.5 · Today 14:32", with a note when it moved to a new session. */
+function switchText(change: ModelSwitch, now: number): string {
+  return `${change.fromModel} → ${change.toModel} · ${fmtWhen(change.at, now)}`;
+}
+
+function SwitchMarker({ change, now }: { change: ModelSwitch; now: number }) {
+  return (
+    <li className="hd-switch" aria-label={`Switched model from ${change.fromModel} to ${change.toModel}, ${fmtWhen(change.at, now)}`}>
+      <span className="hd-switch-dot" aria-hidden="true" />
+      <span className="hd-switch-label">Switched model</span>
+      <span className="hd-switch-models">
+        <span>{change.fromModel}</span>
+        <span aria-hidden="true"> → </span>
+        <strong>{change.toModel}</strong>
+      </span>
+      <span className="hd-switch-when">
+        {fmtWhen(change.at, now)}
+        {change.kind === "continuation" ? " · continued in a new session" : ""}
+      </span>
+    </li>
+  );
+}
+
+function LeadCard({ lead, threadId, change }: { lead: DeskLead; threadId: string; change?: ModelSwitch }) {
+  const [picking, togglePicking] = useMascotMenu();
+  const name = `${lead.label} · ${lead.model}`;
   return (
     <article className={"hd-leadcard hd-lead-" + lead.state} aria-label={`${lead.label}, ${LEAD_STATE_LABEL[lead.state]}`}>
-      <LeadBot mode={mode} />
+      <MascotTrigger name={name} open={picking} onToggle={togglePicking}>
+        <Mascot seed={threadId} colour={colourForId(threadId)} state={mascotStateFor(lead.state)} size={48} automatic={N_ID} />
+      </MascotTrigger>
       <div className="hd-card-body">
         <div className="hd-card-top">
           <strong className="hd-name">{lead.label} · {lead.model}</strong>
@@ -318,6 +312,12 @@ function LeadCard({ lead }: { lead: DeskLead }) {
           {lead.state === "working" && <span className="hd-spin hd-spin-navy" aria-hidden="true" />}
           {lead.activity}
         </div>
+        {change && (
+          <div className="hd-lead-switch" title="The latest model change in this conversation">
+            Switched model · {switchText(change, Date.now())}
+          </div>
+        )}
+        {picking && <MascotChooser seed={threadId} name={name} />}
       </div>
       <div className="hd-lead-stats">
         {lead.contextUsed !== null && (
@@ -326,7 +326,7 @@ function LeadCard({ lead }: { lead: DeskLead }) {
             {lead.contextPct !== null ? ` · ${lead.contextPct}%` : ""}
           </span>
         )}
-        {lead.costUsd !== null && <span title="Session cost">{money(lead.costUsd, "USD", lead.costEstimated)}</span>}
+        {lead.costUsd !== null && <span title="The lead's own replies. The panel shows the chat total, with advisor calls listed separately.">{money(lead.costUsd, "USD", lead.costEstimated)}</span>}
       </div>
     </article>
   );
@@ -389,9 +389,12 @@ function AgentCard({ agent, now, freshMs }: { agent: DeskAgent; now: number; fre
   const done = agent.state === "finished";
   const seen = agent.state === "finished" ? seenFor(agent.id, "finished", agent.finishedAt) : 0;
   const fresh = seen > 0 && Math.max(now, Date.now()) - seen < freshMs;
+  const [picking, togglePicking] = useMascotMenu();
   return (
     <article className={"hd-card hd-" + agent.state} style={{ ["--hd-c" as string]: colour }}>
-      <Bot colour={colour} mode={botModeFor(agent.state, fresh)} index={agent.colour} />
+      <MascotTrigger name={agent.name} open={picking} onToggle={togglePicking}>
+        <Mascot seed={agent.id} colour={colour} state={mascotStateFor(agent.state)} fresh={fresh} />
+      </MascotTrigger>
       <div className="hd-card-body">
         <div className="hd-card-top">
           <strong className="hd-name" title={agent.name}>{agent.name}</strong>
@@ -412,6 +415,7 @@ function AgentCard({ agent, now, freshMs }: { agent: DeskAgent; now: number; fre
         <div className="hd-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(agent.progress * 100)}>
           <i style={{ width: `${Math.round(agent.progress * 100)}%` }} />
         </div>
+        {picking && <MascotChooser seed={agent.id} name={agent.name} colour={colour} />}
       </div>
     </article>
   );
@@ -423,7 +427,7 @@ function money(amount: number | null | undefined, currency = "USD", estimated = 
   return `${sym}${amount.toFixed(2)}${estimated ? " est." : ""}`;
 }
 
-function LiveTab({ threadId, data, error, visibility, now, delayMs, onHistory }: { threadId: string; data: DeskSnapshot | null; error: string | null; visibility: LiveVisibility; now: number; delayMs: number; onHistory: () => void }) {
+export function LiveTab({ threadId, data, error, visibility, now, delayMs, onHistory }: { threadId: string; data: DeskSnapshot | null; error: string | null; visibility: LiveVisibility; now: number; delayMs: number; onHistory: () => void }) {
   useDoneToasts(data);
   if (!data) return <p className="hd-empty">{error ? `Could not load: ${error}` : "Loading Helper Desk…"}</p>;
   const showAgents = visibility === "live" || visibility === "fading";
@@ -444,7 +448,7 @@ function LiveTab({ threadId, data, error, visibility, now, delayMs, onHistory }:
   };
   return (
     <div className="hd-live-wrap" data-thread={threadId}>
-      <LeadCard lead={data.lead} />
+      <LeadCard lead={data.lead} threadId={threadId} change={data.conversation?.switches.at(-1)} />
       {showAgents && data.agents.length > 0 ? (
         <div className={visibility === "fading" ? "hd-live hd-leaving" : "hd-live"}>
           <AgentTree agents={data.agents} pulse={pulse} render={(a) => <AgentCard agent={a} now={now} freshMs={a.state === "running" ? delayMs : Math.min(delayMs, 4000)} />} />
@@ -457,7 +461,7 @@ function LiveTab({ threadId, data, error, visibility, now, delayMs, onHistory }:
             <Tile label="Time" value={time} />
             <Tile label="Total chat cost" value={data.cost ? money(data.cost.amount, data.cost.currency, data.cost.estimated) : "—"} />
           </div>
-          <p className="hd-foot">Tokens are each sub-agent's latest context size. Cost is the API-equivalent estimate unless bb reports a real figure. Progress assumes about eight steps until an agent reports back.</p>
+          <p className="hd-foot">Tokens are each sub-agent's latest context size. Cost is the API-equivalent estimate for the whole chat (lead, sub-agents, Workflow agents and advisor calls) unless bb reports a real figure. Progress assumes about eight steps until an agent reports back.</p>
         </div>
       ) : (
         <div className="hd-tree hd-tree-idle">
@@ -471,7 +475,23 @@ function LiveTab({ threadId, data, error, visibility, now, delayMs, onHistory }:
           </div>
         </div>
       )}
+      <CostLine data={data} />
     </div>
+  );
+}
+
+/** The chat total and where it went: lead, sub-agents, Workflow agents, advisor calls. */
+function CostLine({ data }: { data: DeskSnapshot }) {
+  const b = data.costBreakdown;
+  if (!data.cost) return null;
+  const parts = b
+    ? [["Lead", b.lead], ["Sub-agents", b.subagents], ["Workflows", b.workflows], ["Advisor", b.advisor]].filter(([, v]) => (v as number) > 0.005)
+    : [];
+  return (
+    <p className="hd-costline" title="API-equivalent estimate from the local Claude Code transcripts. Nothing is billed per token on a subscription.">
+      <strong>Chat total {money(data.cost.amount, data.cost.currency, data.cost.estimated)}</strong>
+      {parts.map(([label, v]) => <span key={label as string}> · {label} {money(v as number, "USD", false)}</span>)}
+    </p>
   );
 }
 
@@ -507,9 +527,12 @@ function HistoryAgent({ agent }: { agent: HistoryBatch["agents"][number] }) {
   const [more, setMore] = useState(false);
   const colour = colourOf(agent.colour);
   const long = agent.summary.length > 220;
+  const [picking, togglePicking] = useMascotMenu();
   return (
     <div className={"hd-hcard hd-" + agent.state} style={{ ["--hd-c" as string]: colour }}>
-      <Bot colour={colour} mode={agent.state === "failed" || agent.state === "interrupted" ? "slump" : agent.state === "running" ? "run" : "idle"} index={agent.colour} size={24} />
+      <MascotTrigger name={agent.name} open={picking} onToggle={togglePicking}>
+        <Mascot seed={agent.id} colour={colour} state={mascotStateFor(agent.state)} size={24} />
+      </MascotTrigger>
       <div className="hd-card-body">
         <div className="hd-card-top">
           <strong className="hd-name" title={agent.name}>{agent.name}</strong>
@@ -530,6 +553,7 @@ function HistoryAgent({ agent }: { agent: HistoryBatch["agents"][number] }) {
             )}
           </p>
         )}
+        {picking && <MascotChooser seed={agent.id} name={agent.name} colour={colour} />}
       </div>
     </div>
   );
@@ -555,7 +579,7 @@ function HistoryNode({ batch, now, defaultOpen, lead }: { batch: HistoryBatch; n
         <div className="hd-node-agents">
           <div className="hd-hlead">
             <LeadBot mode="still" size={26} />
-            <span className="hd-hlead-text" title={batch.request}><strong>{lead.label} · {lead.model}</strong> · {batch.request}</span>
+            <span className="hd-hlead-text" title={batch.request}><strong>{lead.label} · {batch.model ?? lead.model}</strong> · {batch.request}</span>
           </div>
           <AgentTree agents={batch.agents} render={(a) => <HistoryAgent agent={a} />} />
         </div>
@@ -568,12 +592,24 @@ function HistoryTab({ threadId, active, batchKey }: { threadId: string; active: 
   const { data, error } = useHistory(threadId, active, batchKey);
   const now = Date.now();
   if (!data) return <p className="hd-empty">{error ? `Could not load history: ${error}` : "Loading history…"}</p>;
-  if (data.batches.length === 0) return <p className="hd-empty">No agent runs on this thread yet.</p>;
+  const switches = data.switches ?? [];
+  const where = (data.members ?? 1) > 1 ? `in this conversation (${data.members} sessions)` : "on this thread";
+  if (data.batches.length === 0 && switches.length === 0) return <p className="hd-empty">No agent runs on this thread yet.</p>;
+  const items = historyTimeline(data.batches, switches);
   return (
     <div className="hd-history">
-      <h3 className="hd-title">{data.batches.length} agent {data.batches.length === 1 ? "run" : "runs"} on this thread</h3>
+      <h3 className="hd-title">
+        {data.batches.length} agent {data.batches.length === 1 ? "run" : "runs"} {where}
+        {switches.length > 0 ? ` · ${switches.length} model ${switches.length === 1 ? "switch" : "switches"}` : ""}
+      </h3>
       <ol className="hd-tl">
-        {data.batches.map((b, i) => <HistoryNode key={b.key} batch={b} now={now} lead={data.lead} defaultOpen={i === 0 && data.batches.length === 1} />)}
+        {items.map((item) =>
+          item.type === "switch" ? (
+            <SwitchMarker key={`s${item.change.at}:${item.change.toThreadId}`} change={item.change} now={now} />
+          ) : (
+            <HistoryNode key={item.batch.key} batch={item.batch} now={now} lead={data.lead} defaultOpen={data.batches.length === 1 && item.batch === data.batches[0]} />
+          ),
+        )}
       </ol>
     </div>
   );
@@ -613,12 +649,20 @@ export function DeskPanel({ threadId }: { threadId: string }) {
           Live{data?.running ? <span className="hd-tab-count">{data.agents.filter((a) => a.state === "running").length}</span> : null}
         </button>
         <button type="button" role="tab" aria-selected={tab === "history"} onClick={() => choose("history")}>History</button>
+        <button type="button" role="tab" aria-selected={tab === "team"} onClick={() => choose("team")}>Team</button>
+        <button type="button" role="tab" aria-selected={tab === "mascots"} onClick={() => choose("mascots")}>Mascots</button>
       </div>
+      <MascotsTabLink.Provider value={() => choose("mascots")}>
       {tab === "live" ? (
         <LiveTab threadId={threadId} data={data} error={error} visibility={visibility} now={now} delayMs={settings.delayMs} onHistory={() => choose("history")} />
+      ) : tab === "team" ? (
+        <TeamTab threadId={threadId} active={tab === "team"} />
+      ) : tab === "mascots" ? (
+        <MascotsTab />
       ) : (
         <HistoryTab threadId={threadId} active={tab === "history"} batchKey={data?.turnKey} />
       )}
+      </MascotsTabLink.Provider>
     </div>
   );
 }
@@ -1009,7 +1053,7 @@ function AgentsRailPage() {
                   {title}
                   <span className="hd-rail-go" aria-hidden="true">&#8250;</span>
                 </button>
-                <LeadCard lead={snapshot.lead} />
+                <LeadCard lead={snapshot.lead} threadId={threadId} change={snapshot.conversation?.switches.at(-1)} />
                 <AgentTree
                   agents={snapshot.agents}
                   pulse={(a) => (a.state === "running" ? "loop" : null)}
@@ -1045,6 +1089,21 @@ function AgentsRailPage() {
   );
 }
 
+// ---------- Companion: the coach living on top of bb (behaviour in companion.tsx) ----------
+// One app-wide overlay that follows the chat in view. The "Show the coach companion" setting turns it
+// off, and it hides on phone-sized screens where it would sit on the composer.
+function Companion() {
+  const { values } = useSettings();
+  const enabled = values?.companion === undefined ? true : values.companion === true;
+  const compact = useIsCompactViewport();
+  const show = enabled && !compact;
+  const { threadId } = useBbContext();
+  const { data } = useDesk(show ? threadId : null);
+  const lead = threadId ? data?.lead : undefined;
+  const mode: LeadMode = lead?.state === "working" ? "working" : lead?.state === "needs-you" ? "needs" : "waiting";
+  return show ? <CoachCompanion mode={mode} /> : null;
+}
+
 export default definePluginApp((app) => {
   app.slots.threadPanelAction({
     id: "desk",
@@ -1067,6 +1126,7 @@ export default definePluginApp((app) => {
   app.slots.experimental_threadHeaderAction({ id: "desk-open", title: "Helper Desk", component: HeaderButton });
   // Left-rail destination (bb's navigation rail and Customise rail list plugin nav panels).
   app.slots.navPanel({ id: "agents", title: "Agents", icon: "Bot", path: "agents", component: AgentsRailPage });
+  app.slots.experimental_appOverlay({ id: "coach-companion", component: Companion });
   app.composer.customize({
     id: "helper-desk",
     scopes: ["thread"],

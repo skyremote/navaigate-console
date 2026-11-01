@@ -1,0 +1,48 @@
+.ht-root{--ht-run:var(--hd-live,#234fe8);--ht-wait:var(--muted-foreground);--ht-need:var(--hd-warn,#a8370a);--ht-done:var(--muted-foreground);--ht-dirty:var(--hd-warn,#a8370a);font-size:13px;color:var(--foreground)}
+.ht-summary{margin:0 0 8px;color:var(--muted-foreground);font-size:12px}
+.ht-h{margin:12px 0 6px;font-size:14px;font-weight:500;color:var(--foreground)}
+.ht-empty{color:var(--muted-foreground);font-size:12px;margin:4px 2px 8px}
+.ht-sessions{margin:0 0 8px;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.ht-session{display:inline-flex;align-items:center;gap:4px;font-size:12px}
+.ht-session-model{border:1px solid var(--border);border-radius:999px;padding:1px 8px;font-weight:600}
+.ht-session-now .ht-session-model{border-color:var(--ht-run);color:var(--ht-run)}
+.ht-session-role{font-size:11px;color:var(--muted-foreground)}
+.ht-session-arrow{color:var(--muted-foreground)}
+.ht-group{margin-bottom:6px}
+.ht-group-h{margin:8px 0 4px;font-size:12px;font-weight:500;display:flex;flex-direction:column}
+.ht-group-sub{font-weight:400;color:var(--muted-foreground);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ht-tree,.ht-kids{list-style:none;margin:0;padding:0}
+.ht-kids{margin-left:10px;padding-left:9px;border-left:1.5px solid var(--border)}
+.ht-node{margin:0 0 5px}
+.ht-agent{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--border);border-radius:var(--radius,6px);padding:8px 10px;background:var(--card,transparent);min-width:0}
+.ht-agent-main{flex:1;min-width:0}
+.ht-agent .hd-botwrap{margin-top:1px}
+.ht-kind-lead{border-color:var(--input,var(--border))}
+.ht-agent-top{display:flex;align-items:center;gap:6px;min-width:0}
+.ht-state-dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--ht-done)}
+.ht-running .ht-state-dot{background:var(--ht-run)}
+.ht-waiting .ht-state-dot{background:var(--ht-wait)}
+.ht-needs-you .ht-state-dot,.ht-failed .ht-state-dot{background:var(--ht-need)}
+.ht-name{flex:1;min-width:0;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ht-kind{flex:none;font-size:11px;color:var(--muted-foreground);border:1px solid var(--border);border-radius:4px;padding:0 4px}
+.ht-meta{font-size:12px;color:var(--muted-foreground);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ht-wt{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:5px;margin-top:4px;font-size:12px;min-width:0;border-radius:5px;padding:2px 6px;background:var(--muted,rgba(0,0,0,.04))}
+.ht-wt-dirty{background:var(--muted,rgba(0,0,0,.04))}
+.ht-wt-unknown,.ht-wt-none{background:var(--muted,rgba(0,0,0,.04));color:var(--muted-foreground)}
+.ht-wt-dot{width:6px;height:6px;border-radius:50%;flex:none;background:var(--ht-run);align-self:center}
+.ht-wt-dirty .ht-wt-dot{background:var(--ht-dirty)}
+.ht-wt-unknown .ht-wt-dot{background:var(--ht-done)}
+.ht-wt-name{font-weight:500;flex:none;font-family:var(--font-mono,ui-monospace,monospace)}
+.ht-wt-line{min-width:0;flex-basis:100%;padding-left:11px;color:var(--muted-foreground);overflow-wrap:anywhere}
+.ht-also,.ht-note{font-size:11px;color:var(--muted-foreground);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ht-link{margin-top:4px;font-size:12px}
+.ht-link{display:flex;gap:10px;flex-wrap:wrap}
+.ht-link a,.ht-link button{font:inherit;color:var(--foreground);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
+.ht-earlier{margin-top:10px}
+.ht-earlier summary{cursor:pointer;font-size:13px;font-weight:500;color:var(--muted-foreground);margin-bottom:6px}
+.ht-wtlist{list-style:none;margin:0;padding:0}
+.ht-wtlist li{margin-bottom:6px}
+.ht-wt-users{display:block;font-size:11px;color:var(--muted-foreground);margin:2px 0 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ht-foot{color:var(--muted-foreground);font-size:11px;margin-top:10px;line-height:1.4}
+.ht-session-step{display:inline-flex;align-items:center;gap:4px}
+.ht-session-sep{font-size:11px;color:var(--muted-foreground);margin-left:4px}

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "edition": "community",
+  "owner": { "name": "", "username": "" },
+  "thisMachine": null,
+  "machines": [
+    { "id": "this-mac", "label": "This Mac", "role": "primary", "restricted": false, "workloads": [], "hostnames": [], "sshAlias": null, "bbUrl": null, "home": null }
+  ],
+  "hosts": { "fleet": null, "brainMcp": null, "brainDb": null, "hooks": null, "bbRemotes": [] },
+  "paths": { "home": "~", "nas": null, "nasLocal": null },
+  "workloads": [],
+  "brain": { "url": null, "tokenSecret": null },
+  "ids": { "projects": {}, "threads": {} },
+  "features": { "preset": null, "picks": {} },
+  "setup": { "completedAt": null, "version": 1 },
+  "plugins": {}
+}

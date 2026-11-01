@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+"""prompt-stack CLI: show and edit the stack.
+
+  prompt-stack list                      every entry you can stack
+  prompt-stack show [--json]             the stack this thread will use, and where it comes from
+  prompt-stack add <ids...> [--thread]   add to the project stack (or this thread only)
+  prompt-stack drop <ids...> [--thread]
+  prompt-stack set <ids...> [--thread]   replace the whole stack
+  prompt-stack clear [--thread]          empty it (--thread removes the thread override)
+  prompt-stack preview "<prompt>"        print exactly what the hook would inject
+
+--cwd <path> and --session <id> override the detected project and thread.
+"""
+import json
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "lib"))
+import pstack  # noqa: E402
+
+
+def main(argv):
+    if not argv or argv[0] in ("-h", "--help", "help"):
+        print(__doc__.strip())
+        return 0
+    cmd, rest = argv[0], argv[1:]
+    thread = "--thread" in rest
+    as_json = "--json" in rest
+    cwd = session = None
+    args = []
+    i = 0
+    while i < len(rest):
+        a = rest[i]
+        if a in ("--cwd", "--session") and i + 1 < len(rest):
+            if a == "--cwd":
+                cwd = rest[i + 1]
+            else:
+                session = rest[i + 1]
+            i += 2
+            continue
+        if not a.startswith("--"):
+            args.append(a)
+        i += 1
+
+    data, by_name = pstack.load_manifest()
+
+    if cmd == "list":
+        if as_json:
+            print(json.dumps([{k: e[k] for k in ("id", "label", "aliases", "skill", "summary") if k in e} for e in data["entries"]], indent=1))
+        else:
+            for e in data["entries"]:
+                print(f"{e['id']:<10} {e['label']:<22} aliases: {', '.join(e.get('aliases', [])) or '-'}   skill: {e['skill']}")
+        return 0
+
+    if cmd == "show":
+        stack, scope = pstack.resolve(cwd, session)
+        pf, root = pstack.project_file(cwd)
+        tf = pstack.thread_file(session)
+        if as_json:
+            print(json.dumps({"stack": stack, "scope": scope, "project": str(root),
+                              "thread": pstack.thread_id(session)}, indent=1))
+        else:
+            print("stack:   " + (", ".join(stack) or "(empty)"))
+            print("from:    " + scope)
+            print("project: " + str(root))
+            print("thread:  " + (pstack.thread_id(session) or "(none)") + (" (override active)" if scope == "thread" else ""))
+        return 0
+
+    if cmd == "preview":
+        stack, scope = pstack.resolve(cwd, session)
+        prompt = " ".join(args)
+        inline = pstack.apply_inline(stack, prompt, by_name)
+        print(pstack.render(inline, data, by_name, scope + (" + inline" if inline != stack else "")) or "(nothing injected)")
+        return 0
+
+    if cmd not in ("add", "drop", "set", "clear"):
+        print(f"unknown command: {cmd}", file=sys.stderr)
+        return 2
+
+    unknown = [a for a in args if a.lower() not in by_name]
+    if unknown:
+        print("unknown entries: " + ", ".join(unknown) + " (run: prompt-stack list)", file=sys.stderr)
+        return 2
+    ids = [by_name[a.lower()]["id"] for a in args]
+
+    if thread:
+        path = pstack.thread_file(session)
+        if not path:
+            print("no thread id (BB_THREAD_ID or CLAUDE_CODE_SESSION_ID) found", file=sys.stderr)
+            return 2
+        if cmd == "clear":
+            path.unlink(missing_ok=True)
+            print("thread override removed")
+            return 0
+        current = pstack.read_stack(path)
+        if current is None:
+            current, _ = pstack.resolve(cwd, session)  # start the override from what the thread uses now
+        meta = {"thread": pstack.thread_id(session)}
+    else:
+        path, root = pstack.project_file(cwd)
+        current = pstack.read_stack(path) or []
+        meta = {"project": str(root)}
+
+    if cmd == "add":
+        new = current + [x for x in ids if x not in current]
+    elif cmd == "drop":
+        new = [x for x in current if x not in ids]
+    elif cmd == "set":
+        new = list(dict.fromkeys(ids))
+    else:
+        new = []
+    pstack.write_stack(path, new, **meta)
+    print(("thread" if thread else "project") + " stack: " + (", ".join(new) or "(empty)"))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

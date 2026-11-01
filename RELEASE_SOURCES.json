@@ -1,0 +1,44 @@
+{
+  "about": "Where each release plugin folder was copied from. Written by scripts/sync-release.sh; do not edit by hand.",
+  "release": "1.12.0",
+  "plugins": [
+    {
+      "folder": "plugins/fleet",
+      "pluginId": "fleet",
+      "sourceRepo": "navaigate-bb-mods",
+      "branch": "navaigate/community-release-fleet-20261101",
+      "commit": "ea6c1d978a408e09907edd241748d8030c63d706"
+    },
+    {
+      "folder": "plugins/helper-desk",
+      "pluginId": "helper-desk",
+      "sourceRepo": "navaigate-bb-mods",
+      "branch": "navaigate/community-release-hd-20261101",
+      "commit": "aec5dd2f0a41781fb6f5c305a741e2cf65b95ed2"
+    },
+    {
+      "folder": "plugins/navmotion-skin",
+      "pluginId": "navmotion-skin",
+      "sourceRepo": "bb-plugin-navmotion-skin",
+      "branch": "navaigate/community-release-20261101",
+      "commit": "cb4e1d7003f38122661d2b9b212a9eaf3d33c483"
+    },
+    {
+      "folder": "plugins/prompt-stack",
+      "pluginId": "prompt-stack",
+      "sourceRepo": "bb-plugin-prompt-stack",
+      "branch": "navaigate/community-release-20261101",
+      "commit": "665188fc8a6f75a57e3af03ef968a2433688e196"
+    }
+  ],
+  "vendored": [
+    {
+      "folder": "plugins/prompt-stack/claude-plugin",
+      "what": "prompt-stack (Claude Code plugin)",
+      "sourceRepo": "navaigate-team-plugins",
+      "branch": "main",
+      "commit": "aa1fe5b85bbafbe69fbff5269ec9b1539aa15e40",
+      "note": "not yet committed in that repository; content sha256 c29e42e248b9530b07774569e5201e4ab53cdef6cbc52313abfa797d9a87bdff"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+2026-11-01 12:45:18 +0100 
+Assertion status system-wide:
+   BackgroundTask                 0
+   ApplePushServiceTask           0
+   UserIsActive                   1
+   PreventUserIdleDisplaySleep    1
+   SoftwareUpdateTask             0
+   PreventSystemSleep             1
+   PreventSystemSleepSecurityIndicator 0
+   ExternalMedia                  0
+   InternalPreventDisplaySleep    0
+   PreventUserIdleSystemSleep     1
+   NetworkClientActive            0
+Listed by owning process:
+   pid 366(powerd): [0x0000005a00018007] 77:49:12 PreventUserIdleSystemSleep named: "Powerd - Prevent sleep while display is on"  
+   pid 416(bluetoothd): [0x000446af00018c83] 00:00:00 PreventUserIdleSystemSleep named: "com.apple.BTStack"  
+   pid 1086(Amphetamine): [0x0000006300018281] 77:49:03 PreventUserIdleSystemSleep named: "Amphetamine (Single-Use - System)"  
+   pid 1086(Amphetamine): [0x0000006300058282] 77:49:03 PreventUserIdleDisplaySleep named: "Amphetamine (Single-Use - Display)"  
+   pid 1075(Caffeine): [0x000446ac00058c82] 00:00:03 PreventUserIdleDisplaySleep named: "Caffeine is Active"  
+   pid 52311(caffeinate): [0x0000a1cc00019c86] 00:04:10 PreventSystemSleep named: "caffeinate command-line tool"  
+   pid 52311(caffeinate): [0x0000a1cc00059c87] 00:04:10 PreventUserIdleSystemSleep named: "caffeinate command-line tool"  
+Kernel Assertions: 0x4=USB

@@ -1,0 +1,423 @@
+[
+{
+"seq": 620,
+"type": "item/started",
+"createdAt": 1793399180419,
+"data": {
+"item": {
+"type": "backgroundTask",
+"id": "dexample01-i129",
+"familyId": "wexample1",
+"taskType": "local_workflow",
+"description": "(description removed)",
+"status": "pending",
+"taskStatus": "running",
+"skipTranscript": false,
+"foreground": false,
+"workflowName": "example-wave-1",
+"presentation": {
+"label": {
+"pending": "Running workflow",
+"completed": "Workflow finished"
+},
+"icon": {
+"glyph": "Workflow"
+},
+"title": "example-wave-1"
+},
+"parentToolCallId": "dexample01-i128"
+},
+"providerThreadId": "provider-session-example"
+}
+},
+{
+"seq": 955,
+"type": "client/turn/requested",
+"createdAt": 1793399429473,
+"data": {
+"initiator": "user",
+"input": [
+{
+"type": "text",
+"text": "(request removed)"
+}
+],
+"execution": {
+"model": "claude-opus-5-5"
+}
+}
+},
+{
+"seq": 1068,
+"type": "client/turn/requested",
+"createdAt": 1793399563332,
+"data": {
+"initiator": "user",
+"input": [
+{
+"type": "text",
+"text": "(request removed)"
+}
+],
+"execution": {
+"model": "claude-opus-5-5"
+}
+}
+},
+{
+"seq": 1212,
+"type": "item/started",
+"createdAt": 1793399653013,
+"data": {
+"item": {
+"type": "backgroundTask",
+"id": "dexample01-i176",
+"familyId": "wexample2",
+"taskType": "local_workflow",
+"description": "(description removed)",
+"status": "pending",
+"taskStatus": "running",
+"skipTranscript": false,
+"foreground": false,
+"workflowName": "example-wave-2",
+"presentation": {
+"label": {
+"pending": "Running workflow",
+"completed": "Workflow finished"
+},
+"icon": {
+"glyph": "Workflow"
+},
+"title": "example-wave-2"
+},
+"parentToolCallId": "dexample01-i175"
+},
+"providerThreadId": "provider-session-example"
+}
+},
+{
+"seq": 1495,
+"type": "item/backgroundTask/progress",
+"createdAt": 1793399853013,
+"data": {
+"item": {
+"type": "backgroundTask",
+"id": "dexample01-i176",
+"familyId": "wexample2",
+"taskType": "local_workflow",
+"description": "(description removed)",
+"status": "pending",
+"taskStatus": "running",
+"skipTranscript": false,
+"foreground": false,
+"workflowName": "example-wave-2",
+"workflow": {
+"phases": [
+{
+"index": 1,
+"title": "Integrate"
+},
+{
+"index": 2,
+"title": "Review"
+},
+{
+"index": 3,
+"title": "Helper Desk"
+}
+],
+"agents": [
+{
+"index": 1,
+"label": "integrate:release",
+"state": "running",
+"model": "claude-opus-5-5",
+"attempt": 1,
+"cached": false,
+"lastProgressAt": 1793399832330,
+"phaseIndex": 1,
+"phaseTitle": "Integrate",
+"queuedAt": 1793399653040,
+"startedAt": 1793399653048,
+"lastToolName": "Bash",
+"lastToolSummary": "ls /tmp/example-project",
+"promptPreview": "(removed)",
+"tokens": 91464,
+"toolCalls": 28
+},
+{
+"index": 2,
+"label": "build:team-tab",
+"state": "running",
+"model": "claude-opus-5-5",
+"attempt": 1,
+"cached": false,
+"lastProgressAt": 1793399852497,
+"phaseIndex": 3,
+"phaseTitle": "Team",
+"queuedAt": 1793399653040,
+"startedAt": 1793399653049,
+"lastToolName": "Bash",
+"lastToolSummary": "ls /tmp/example-project",
+"promptPreview": "(removed)",
+"tokens": 134150,
+"toolCalls": 38
+}
+]
+},
+"usage": {
+"totalTokens": 225614,
+"toolUses": 66,
+"durationMs": 199548
+},
+"parentToolCallId": "dexample01-i175"
+},
+"providerThreadId": "provider-session-example"
+}
+},
+{
+"seq": 1500,
+"type": "item/backgroundTask/progress",
+"createdAt": 1793399862395,
+"data": {
+"item": {
+"type": "backgroundTask",
+"id": "dexample01-i129",
+"familyId": "wexample1",
+"taskType": "local_workflow",
+"description": "(description removed)",
+"status": "pending",
+"taskStatus": "running",
+"skipTranscript": false,
+"foreground": false,
+"workflowName": "example-wave-1",
+"workflow": {
+"phases": [
+{
+"index": 1,
+"title": "Fix"
+},
+{
+"index": 2,
+"title": "Plan"
+},
+{
+"index": 3,
+"title": "Build"
+}
+],
+"agents": [
+{
+"index": 1,
+"label": "fix:usage-card",
+"state": "done",
+"model": "claude-opus-5-5",
+"attempt": 1,
+"cached": false,
+"lastProgressAt": 1793399708797,
+"phaseIndex": 1,
+"phaseTitle": "Fix",
+"queuedAt": 1793399180420,
+"startedAt": 1793399180441,
+"lastToolName": "Bash",
+"lastToolSummary": "ls /tmp/example-project",
+"promptPreview": "(removed)",
+"tokens": 144875,
+"toolCalls": 60,
+"durationMs": 528354
+},
+{
+"index": 2,
+"label": "fix:running-chip",
+"state": "done",
+"model": "claude-opus-5-5",
+"attempt": 1,
+"cached": false,
+"lastProgressAt": 1793399457613,
+"phaseIndex": 1,
+"phaseTitle": "Fix",
+"queuedAt": 1793399180420,
+"startedAt": 1793399180441,
+"lastToolName": "Bash",
+"lastToolSummary": "ls /tmp/example-project",
+"promptPreview": "(removed)",
+"tokens": 122629,
+"toolCalls": 44,
+"durationMs": 276170
+},
+{
+"index": 3,
+"label": "fix:model-switch",
+"state": "running",
+"model": "claude-opus-5-5",
+"attempt": 1,
+"cached": false,
+"lastProgressAt": 1793399819102,
+"phaseIndex": 1,
+"phaseTitle": "Fix",
+"queuedAt": 1793399180420,
+"startedAt": 1793399180442,
+"lastToolName": "Bash",
+"lastToolSummary": "ls /tmp/example-project",
+"promptPreview": "(removed)",
+"tokens": 185112,
+"toolCalls": 61
+},
+{
+"index": 4,
+"label": "fix:theme-polish",
+"state": "running",
+"model": "claude-opus-5-5",
+"attempt": 1,
+"cached": false,
+"lastProgressAt": 1793399851512,
+"phaseIndex": 1,
+"phaseTitle": "Fix",
+"queuedAt": 1793399180420,
+"startedAt": 1793399180442,
+"lastToolName": "Read",
+"lastToolSummary": "Reading notes.md",
+"promptPreview": "(removed)",
+"tokens": 203771,
+"toolCalls": 94
+},
+{
+"index": 5,
+"label": "plan:next-wave",
+"state": "done",
+"model": "claude-opus-5-5",
+"attempt": 1,
+"cached": false,
+"lastProgressAt": 1793399565879,
+"phaseIndex": 2,
+"phaseTitle": "Plan",
+"queuedAt": 1793399180420,
+"startedAt": 1793399180442,
+"lastToolName": "StructuredOutput",
+"promptPreview": "(removed)",
+"tokens": 130887,
+"toolCalls": 50,
+"durationMs": 385434,
+"lastToolSummary": "Returning the result"
+},
+{
+"index": 6,
+"label": "build:task-a",
+"state": "running",
+"model": "claude-opus-5-5",
+"attempt": 1,
+"cached": false,
+"lastProgressAt": 1793399856050,
+"phaseIndex": 3,
+"phaseTitle": "Build",
+"queuedAt": 1793399566009,
+"startedAt": 1793399566034,
+"lastToolName": "Bash",
+"lastToolSummary": "ls /tmp/example-project",
+"promptPreview": "(removed)",
+"tokens": 86417,
+"toolCalls": 33
+},
+{
+"index": 7,
+"label": "build:task-b",
+"state": "running",
+"model": "claude-opus-5-5",
+"attempt": 1,
+"cached": false,
+"lastProgressAt": 1793399796573,
+"phaseIndex": 3,
+"phaseTitle": "Build",
+"queuedAt": 1793399566009,
+"startedAt": 1793399566035,
+"lastToolName": "Bash",
+"lastToolSummary": "ls /tmp/example-project",
+"promptPreview": "(removed)",
+"tokens": 110502,
+"toolCalls": 35
+},
+{
+"index": 8,
+"label": "build:task-c",
+"state": "running",
+"model": "claude-opus-5-5",
+"attempt": 1,
+"cached": false,
+"lastProgressAt": 1793399862132,
+"phaseIndex": 3,
+"phaseTitle": "Build",
+"queuedAt": 1793399566009,
+"startedAt": 1793399566036,
+"lastToolName": "Bash",
+"lastToolSummary": "ls /tmp/example-project",
+"promptPreview": "(removed)",
+"tokens": 127179,
+"toolCalls": 57
+},
+{
+"index": 9,
+"label": "build:task-d",
+"state": "running",
+"model": "claude-opus-5-5",
+"attempt": 1,
+"cached": false,
+"lastProgressAt": 1793399830430,
+"phaseIndex": 3,
+"phaseTitle": "Build",
+"queuedAt": 1793399566009,
+"startedAt": 1793399566037,
+"lastToolName": "Bash",
+"lastToolSummary": "ls /tmp/example-project",
+"promptPreview": "(removed)",
+"tokens": 143089,
+"toolCalls": 41
+},
+{
+"index": 10,
+"label": "build:task-e",
+"state": "running",
+"model": "claude-opus-5-5",
+"attempt": 1,
+"cached": false,
+"lastProgressAt": 1793399799553,
+"phaseIndex": 3,
+"phaseTitle": "Build",
+"queuedAt": 1793399566009,
+"startedAt": 1793399566037,
+"lastToolName": "Bash",
+"lastToolSummary": "ls /tmp/example-project",
+"promptPreview": "(removed)",
+"tokens": 101932,
+"toolCalls": 34
+},
+{
+"index": 11,
+"label": "build:task-f",
+"state": "running",
+"model": "claude-opus-5-5",
+"attempt": 1,
+"cached": false,
+"lastProgressAt": 1793399858510,
+"phaseIndex": 3,
+"phaseTitle": "Build",
+"queuedAt": 1793399566009,
+"startedAt": 1793399566039,
+"lastToolName": "Bash",
+"lastToolSummary": "ls /tmp/example-project",
+"promptPreview": "(removed)",
+"tokens": 119186,
+"toolCalls": 36
+}
+]
+},
+"usage": {
+"totalTokens": 1475579,
+"toolUses": 545,
+"durationMs": 681746
+},
+"parentToolCallId": "dexample01-i128"
+},
+"providerThreadId": "provider-session-example"
+}
+}
+]

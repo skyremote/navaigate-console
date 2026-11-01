@@ -1,0 +1,80 @@
+worktree /home/example/code/example-app
+HEAD aa692dc6fca21b408f950d41b2c215b9471cc770
+branch refs/heads/main
+
+worktree /private/tmp/bbwt/alpha
+HEAD 5fb1d59393132a9d91fc933803e974ee06fec3a5
+branch refs/heads/feature/alpha
+
+worktree /private/tmp/bbwt/bravo
+HEAD 38a3360767879ef46bb460d778cc4f592e06e75f
+branch refs/heads/feature/bravo
+
+worktree /private/tmp/bbwt/charlie
+HEAD b002869a9c77446e35aa7ddc90989c8d37b6df42
+branch refs/heads/feature/charlie
+
+worktree /private/tmp/bbwt/delta
+HEAD fb517163add063699b2ddae5ee6e0959a9de0dd8
+branch refs/heads/feature/delta
+
+worktree /private/tmp/bbwt/echo
+HEAD e5e63a64fa8c3872c006fb557efbd41fada7bde3
+branch refs/heads/feature/echo
+
+worktree /private/tmp/bbwt/foxtrot
+HEAD ea5b7db610978d72986d902664f65432faf8212c
+branch refs/heads/feature/foxtrot
+
+worktree /private/tmp/bbwt/golf
+HEAD e275a9cc6e2baa5ddcc414662d0fe207b268af93
+branch refs/heads/feature/golf
+
+worktree /private/tmp/bbwt/continuation
+HEAD 0e549bcadd22397769f6f6df6f600363c03bcc14
+branch refs/heads/feature/continuation
+
+worktree /private/tmp/bbwt/hotel
+HEAD 6799b7f7c3274d704b9f37926704d2f5966c0b17
+branch refs/heads/feature/hotel
+
+worktree /private/tmp/bbwt/india
+HEAD 078655a220f740fa8bc701644713c80b0dc32001
+branch refs/heads/feature/india
+
+worktree /private/tmp/bbwt/juliet
+HEAD a507f5137ced56f5d17bff6fbbfe2ddc105ecbe9
+branch refs/heads/feature/juliet
+
+worktree /home/example/code/example-app-one
+HEAD 40d29d77b9f10a35c37911e205ce0607870abc55
+branch refs/heads/feat/one
+
+worktree /home/example/code/example-app-two
+HEAD 7a9d118641b843c7b93548f6bb3cf54d9ecf6cfd
+branch refs/heads/feat/two
+
+worktree /home/example/code/example-app-three
+HEAD 4b9c7e70485a7b4db0c1b3a889e51ca60dd20d60
+branch refs/heads/feat/three
+
+worktree /home/example/code/example-app-four
+HEAD c65de88f8d448e68e8ec9150d762987ed04b1b8c
+branch refs/heads/feat/four
+
+worktree /home/example/code/example-app-five
+HEAD f7b955ef286fdc056e84500991855137211cd32d
+branch refs/heads/feat/five
+
+worktree /home/example/code/example-app-six
+HEAD fe8a20d87b79cc9424c4f1d5a579d36db09d0a4f
+branch refs/heads/feat/six
+
+worktree /home/example/code/example-app-seven
+HEAD fdbc9f46b804667bbc6ed01d80e1569ad02aea23
+branch refs/heads/feat/seven
+
+worktree /home/example/code/example-app-eight
+HEAD 69d3b5720a3c3debd5d11168f7ad7d1689e2e722
+branch refs/heads/feat/eight
+

@@ -1,0 +1,3 @@
+{"type": "launched"}
+{"type": "started", "key": "v2:d39376fc2b58e0f2600e22c2291b10f1ce72b631e438c61b6282640bedea07c5", "agentId": "a7c1747a56b0dde14", "label": "integrate:release", "phase": "Integrate"}
+{"type": "started", "key": "v2:f0cc244acec07059598c9463f5c0f5b86ac2d1df4c1437f9971d6eb55799db7d", "agentId": "a0000000000000002", "label": "build:team-tab", "phase": "Team"}

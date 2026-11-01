@@ -21,10 +21,12 @@
     "skipLibCheck": false
   },
   "include": [
+    "profile",
     "server.ts",
     "app.tsx",
     "components",
     "lib",
-    "hooks"
+    "hooks",
+    "coach"
   ]
 }

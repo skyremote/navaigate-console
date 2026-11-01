@@ -1,0 +1,10 @@
+# branch.oid d0c92c764c5647d43d7166efc3e7d350751de063
+# branch.head feature/team
+1 .M N... 100644 100644 100644 ca978112ca1bbdcafac231b39a23dc4da786eff8 ca978112ca1bbdcafac231b39a23dc4da786eff8 app/view.tsx
+1 .M N... 100644 100644 100644 3e23e8160039594a33894f6564e1b1348bbd7a00 3e23e8160039594a33894f6564e1b1348bbd7a00 app/server.ts
+? app/team.css
+? app/team.ts
+? app/teamserver.ts
+? app/teamtab.tsx
+? app/tests/fixtures/team/
+? app/worktrees.ts

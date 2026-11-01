@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "edition": "community",
+  "owner": {
+    "name": "Test Owner",
+    "username": "testowner"
+  },
+  "thisMachine": null,
+  "machines": [
+    {
+      "id": "laptop",
+      "label": "Laptop",
+      "role": "laptop",
+      "hostnames": [
+        "laptop-host"
+      ]
+    },
+    {
+      "id": "studio",
+      "label": "Studio",
+      "role": "always-on",
+      "sshAlias": "studio",
+      "hostnames": [
+        "studio-host"
+      ]
+    },
+    {
+      "id": "work",
+      "label": "Work",
+      "role": "restricted",
+      "restricted": true,
+      "workloads": [
+        "client-a"
+      ],
+      "hostnames": [
+        "work-host"
+      ]
+    }
+  ],
+  "paths": {
+    "home": "/home/tester",
+    "nas": "/Volumes/ExampleShare",
+    "nasLocal": null
+  },
+  "workloads": [
+    {
+      "id": "client-a",
+      "label": "Client A",
+      "machine": "work",
+      "match": []
+    }
+  ],
+  "plugins": {
+    "fleet": {
+      "nasHost": "192.0.2.10",
+      "installUrl": "https://example.invalid/fleet",
+      "defaultProject": "Demo Project"
+    }
+  }
+}

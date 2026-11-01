@@ -5,18 +5,18 @@ import {
   reduceEvents, restoreState, serialiseState, summariseBatch, type RawEvent,
 } from "../model";
 
-// A synthetic thread log (tests/fixtures/make-events.mjs), filtered to the event types the server asks bb for.
+// The sample log (176 events), filtered to the event types the server asks bb for.
 const TYPES = new Set(["client/turn/requested", "item/started", "item/completed", "item/delegation/completed", "item/backgroundTask/completed"]);
 const raw = JSON.parse(readFileSync(new URL("./fixtures/events.json", import.meta.url), "utf8")) as RawEvent[];
 const events = raw.filter((e) => TYPES.has(e.type));
 
-describe("batch grouping on a synthetic thread log", () => {
+describe("batch grouping on the sample log", () => {
   const state = reduceEvents(emptyState(), events);
   const batches = buildBatches(state);
   it("groups every agent into exactly one batch", () => {
     const total = batches.reduce((n, b) => n + b.agents.length, 0);
     expect(total).toBe(state.agents.size);
-    expect(state.agents.size).toBe(22); // 21 background agents plus one foreground check
+    expect(state.agents.size).toBe(27); // 21 launches plus 6 parked agents continued by a message
   });
   it("orders batches newest first, each keyed by the user request that launched it", () => {
     for (let i = 1; i < batches.length; i++) expect(batches[i - 1].seq).toBeGreaterThan(batches[i].seq);
@@ -33,7 +33,7 @@ describe("batch grouping on a synthetic thread log", () => {
     expect(s.totals.tokens).toBe(s.agents.reduce((n, a) => n + a.tokens, 0));
     expect(s.totals.costUsd).toBeNull();
     expect(s.endedAt).toBeGreaterThanOrEqual(s.startedAt);
-    const folding = buildBatches(state).flatMap((b) => b.agents).find((a) => a.name === "Draft the onboarding guide")!;
+    const folding = buildBatches(state).flatMap((b) => b.agents).find((a) => a.name === "Sample folding agent")!;
     expect(folding.summary.length).toBeGreaterThan(400); // full result summary kept for "Show more"
   });
   it("round-trips through the history cache", () => {
@@ -43,7 +43,7 @@ describe("batch grouping on a synthetic thread log", () => {
     expect(JSON.stringify(serialiseState(state)).length).toBeLessThan(240_000);
   });
   it("continues incrementally from a restored cache", () => {
-    const half = events.filter((e) => e.seq <= Math.floor(raw.at(-1)!.seq / 2));
+    const half = events.filter((e) => e.seq <= 9000);
     const restored = restoreState(serialiseState(reduceEvents(emptyState(), half)))!;
     reduceEvents(restored, events.filter((e) => e.seq > restored.afterSeq));
     expect(buildBatches(restored).map((b) => b.agents.length)).toEqual(batches.map((b) => b.agents.length));

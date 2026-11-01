@@ -1,6 +1,7 @@
 // Pure model for Helper Desk: turns bb thread events and Claude Code sub-agent
 // transcripts into the cards, tiles and taskbar the UI draws. No I/O here.
 import { z } from "zod";
+import { switchSchema, type TurnModel } from "./conversation";
 
 export const agentStateSchema = z.enum(["running", "finished", "failed", "interrupted"]);
 export type AgentState = z.infer<typeof agentStateSchema>;
@@ -53,12 +54,26 @@ export const snapshotSchema = z.object({
   agents: z.array(agentSchema).max(40),
   todos: z.array(todoSchema).max(60),
   cost: z.object({ amount: z.number(), estimated: z.boolean(), currency: z.string() }).nullable(),
+  /** Where the estimated total comes from. Null when bb reports its own figure or nothing is known. */
+  costBreakdown: z.object({ lead: z.number(), subagents: z.number(), workflows: z.number(), advisor: z.number() }).nullable().optional(),
   subagentTokens: z.number(),
   startedAt: z.number().nullable(),
   endedAt: z.number().nullable(),
   running: z.boolean(),
   todosUpdatedAt: z.number().nullable(),
   lead: leadSchema,
+  /** Set when this chat is one logical conversation across native model continuations. */
+  conversation: z
+    .object({
+      rootThreadId: z.string(),
+      /** The member whose live work this snapshot shows. */
+      followedThreadId: z.string(),
+      members: z.number().int(),
+      /** Newest last. */
+      switches: z.array(switchSchema).max(20),
+    })
+    .nullable()
+    .optional(),
   updatedAt: z.number(),
 });
 export type DeskSnapshot = z.infer<typeof snapshotSchema>;
@@ -112,10 +127,14 @@ export interface ThreadState {
   agents: Map<string, AgentRecord>;
   order: number;
   lead: LeadItem | null;
+  /** The model each turn asked for, oldest first (the first turn is always kept). */
+  turns: TurnModel[];
 }
 
+export const TURNS_MAX = 500;
+
 export function emptyState(): ThreadState {
-  return { afterSeq: 0, lastUserSeq: 0, lastUserText: "", userRequests: [], agents: new Map(), order: 0, lead: null };
+  return { afterSeq: 0, lastUserSeq: 0, lastUserText: "", userRequests: [], agents: new Map(), order: 0, lead: null, turns: [] };
 }
 
 export const SUMMARY_MAX = 2000;
@@ -156,6 +175,11 @@ export function reduceEvents(state: ThreadState, events: RawEvent[]): ThreadStat
     if (e.seq > state.afterSeq) state.afterSeq = e.seq;
     const data = obj(e.data);
     if (e.type === "client/turn/requested") {
+      const model = str(obj(data.execution).model);
+      if (model) {
+        state.turns.push({ seq: e.seq, at: e.createdAt, model });
+        if (state.turns.length > TURNS_MAX) state.turns.splice(1, 1);
+      }
       // A new request from the user or from another agent starts a new batch; system notices do not.
       if (data.initiator !== "system") {
         const text = userText(data).replace(/^\[bb message from thread:[^\]]*\]\s*/, "");
@@ -237,12 +261,26 @@ export function reduceEvents(state: ThreadState, events: RawEvent[]): ThreadStat
       }
       continue;
     }
+    if (itemType === "backgroundTask" && str(item.taskType) === "local_workflow") {
+      reduceWorkflow(state, e, item);
+      continue;
+    }
     if (itemType === "backgroundTask" && str(item.taskType) === "local_agent") {
       const parent = str(item.parentToolCallId);
       let rec = parent ? state.agents.get(parent) : undefined;
       if (!rec) {
         const desc = str(item.description);
         rec = [...state.agents.values()].reverse().find((a) => a.background && a.name === desc && a.state === "running");
+        // A parked agent continued by a message starts again with no new delegation.
+        // It gets its own card in the batch of the request that woke it.
+        if (!rec && e.type === "item/started" && str(item.taskStatus) === "running") {
+          const earlier = [...state.agents.values()].reverse().find((a) => a.name === desc);
+          rec = newRecord(state, parent || str(item.id) || `resumed-${e.seq}`, desc || "Sub-agent", e.createdAt, state.lastUserSeq);
+          rec.agentType = earlier?.agentType ?? "agent";
+          rec.model = earlier?.model ?? "";
+          rec.outputFile = earlier?.outputFile ?? null; // the same agent carries on writing the same transcript
+          state.agents.set(rec.id, rec);
+        }
       }
       if (!rec) continue;
       const outputFile = str(item.outputFile);
@@ -265,6 +303,91 @@ export function reduceEvents(state: ThreadState, events: RawEvent[]): ThreadStat
     }
   }
   return state;
+}
+
+const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+
+function newRecord(state: ThreadState, id: string, name: string, at: number, groupSeq: number): AgentRecord {
+  return {
+    id, name, agentType: "workflow", model: "", background: true, state: "running",
+    startedAt: at, finishedAt: null, groupSeq, outputFile: null, finalUsage: null, summary: "",
+    order: state.order++, childSteps: 0, childRecent: [], lastActivityAt: at, derived: null, parentId: null,
+  };
+}
+
+/**
+ * A Workflow run (backgroundTask, taskType local_workflow). The run becomes one card and each of
+ * its agents hangs beneath it. Every progress event carries the full agent list with tokens, tool
+ * calls and the latest tool, so no transcript is needed.
+ */
+function reduceWorkflow(state: ThreadState, e: RawEvent, item: Record<string, unknown>) {
+  const id = str(item.id);
+  if (!id) return;
+  let run = state.agents.get(id);
+  if (!run) {
+    run = newRecord(state, id, str(item.workflowName) || str(item.description) || "Workflow", e.createdAt, state.lastUserSeq);
+    run.agentType = "workflow";
+    state.agents.set(id, run);
+  }
+  const parentOf = str(item.parentToolCallId);
+  if (parentOf && state.agents.has(parentOf) && parentOf !== id) run.parentId = parentOf;
+  run.lastActivityAt = Math.max(run.lastActivityAt, e.createdAt);
+  const list = Array.isArray(obj(item.workflow).agents) ? (obj(item.workflow).agents as unknown[]) : [];
+  let steps = 0;
+  for (const raw of list) {
+    const a = obj(raw);
+    const childId = `${id}:a${num(a.index)}`;
+    let child = state.agents.get(childId);
+    if (!child) {
+      child = newRecord(state, childId, str(a.label) || `Agent ${num(a.index)}`, num(a.startedAt) || e.createdAt, run.groupSeq);
+      child.agentType = str(a.phaseTitle) || "workflow agent";
+      child.parentId = id;
+      state.agents.set(childId, child);
+    }
+    if (str(a.model)) child.model = str(a.model);
+    if (!run.model && child.model) run.model = child.model;
+    child.childSteps = num(a.toolCalls);
+    steps += child.childSteps;
+    child.lastActivityAt = Math.max(child.lastActivityAt, num(a.lastProgressAt), e.createdAt);
+    const tool = str(a.lastToolSummary) || str(a.lastToolName);
+    if (tool && child.childRecent.at(-1) !== tool) {
+      child.childRecent.push(clip(tool, 70));
+      if (child.childRecent.length > 3) child.childRecent.shift();
+    }
+    child.finalUsage = { totalTokens: num(a.tokens), toolUses: num(a.toolCalls), durationMs: num(a.durationMs) };
+    const agentState = str(a.state);
+    if (agentState === "done" || agentState === "completed") {
+      if (child.state === "running") child.finishedAt = num(a.lastProgressAt) || e.createdAt;
+      child.state = "finished";
+      if (str(a.resultPreview)) child.summary = clip(str(a.resultPreview), SUMMARY_MAX);
+    } else if (agentState === "failed" || agentState === "error") {
+      if (child.state === "running") child.finishedAt = e.createdAt;
+      child.state = "failed";
+    } else if (agentState === "cancelled" || agentState === "killed" || agentState === "stopped") {
+      if (child.state === "running") child.finishedAt = e.createdAt;
+      child.state = "interrupted";
+    }
+  }
+  run.childSteps = Math.max(run.childSteps, steps);
+  if (list.length) {
+    const done = list.filter((raw) => ["done", "completed"].includes(str(obj(raw).state))).length;
+    const phase = str(obj(list.find((raw) => str(obj(raw).state) === "running")).phaseTitle);
+    run.childRecent = [`${done} of ${list.length} agents done${phase ? ` · ${phase}` : ""}`];
+  }
+  if (e.type === "item/backgroundTask/completed" || e.type === "item/completed") {
+    const taskStatus = str(item.taskStatus) || str(item.status);
+    const end: AgentState =
+      taskStatus === "failed" ? "failed" : taskStatus === "killed" || taskStatus === "stopped" || taskStatus === "interrupted" ? "interrupted" : "finished";
+    run.state = end;
+    run.finishedAt = e.createdAt;
+    run.summary = clip(str(item.summary), SUMMARY_MAX);
+    for (const child of state.agents.values()) {
+      if (child.parentId === id && child.state === "running") {
+        child.state = end === "finished" ? "finished" : "interrupted";
+        child.finishedAt = e.createdAt;
+      }
+    }
+  }
 }
 
 /** Plain-English label for a sub-agent item streamed into the parent thread. */
@@ -357,11 +480,16 @@ export interface TranscriptState {
   model: string;
   steps: number;
   recent: string[];
+  /** Everything this transcript cost, advisor calls included. */
   costUsd: number;
+  /** The part of costUsd spent on advisor (and any other non-message) iterations. */
+  advisorUsd: number;
+  /** Recent message ids, so a reply split across reads is still counted once. */
+  seenIds: string[];
 }
 
 export function emptyTranscript(): TranscriptState {
-  return { offset: 0, remainder: "", tokens: 0, model: "", steps: 0, recent: [], costUsd: 0 };
+  return { offset: 0, remainder: "", tokens: 0, model: "", steps: 0, recent: [], costUsd: 0, advisorUsd: 0, seenIds: [] };
 }
 
 const base = (p: string) => p.split("/").filter(Boolean).pop() ?? p;
@@ -411,6 +539,8 @@ export function priceFor(model: string): { input: number; output: number; cacheR
   const m = model.toLowerCase();
   if (m.includes("haiku")) return { input: 1, output: 5, cacheRead: 0.1, write5m: 1.25, write1h: 2 };
   if (m.includes("sonnet")) return { input: 3, output: 15, cacheRead: 0.3, write5m: 3.75, write1h: 6 };
+  // Fable: $10/$50 matches Claude Code's own cost-state figures exactly; cache rates follow the usual 0.1x/1.25x/2x.
+  if (m.includes("fable")) return { input: 10, output: 50, cacheRead: 1, write5m: 12.5, write1h: 20 };
   return { input: 5, output: 25, cacheRead: 0.5, write5m: 6.25, write1h: 10 };
 }
 
@@ -420,7 +550,25 @@ export function usageCost(model: string, usage: Record<string, unknown>): number
   const creation = obj(usage.cache_creation);
   const w1h = typeof creation.ephemeral_1h_input_tokens === "number" ? (creation.ephemeral_1h_input_tokens as number) : 0;
   const w5m = typeof creation.ephemeral_5m_input_tokens === "number" ? (creation.ephemeral_5m_input_tokens as number) : Math.max(0, n("cache_creation_input_tokens") - w1h);
-  return (n("input_tokens") * p.input + n("output_tokens") * p.output + n("cache_read_input_tokens") * p.cacheRead + w5m * p.write5m + w1h * p.write1h) / 1e6;
+  const searches = num(obj(usage.server_tool_use).web_search_requests); // $10 per 1,000 web searches
+  return (n("input_tokens") * p.input + n("output_tokens") * p.output + n("cache_read_input_tokens") * p.cacheRead + w5m * p.write5m + w1h * p.write1h) / 1e6 + searches * 0.01;
+}
+
+/**
+ * Cost of the extra model calls folded into one reply, such as advisor consultations. Claude Code
+ * lists them as usage.iterations with their own type and model. "message" iterations mirror the
+ * top-level usage, so they are skipped here.
+ */
+export function extraIterationsCost(usage: Record<string, unknown>, fallbackModel: string): number {
+  const list = Array.isArray(usage.iterations) ? usage.iterations : [];
+  let total = 0;
+  for (const raw of list) {
+    const it = obj(raw);
+    const type = str(it.type);
+    if (!type || type === "message") continue;
+    total += usageCost(str(it.model) || fallbackModel, { ...it, server_tool_use: undefined });
+  }
+  return total;
 }
 
 /** Feed newly read bytes (as text) into the transcript state. Handles a partial trailing line. */
@@ -430,7 +578,7 @@ export function feedTranscript(state: TranscriptState, chunk: string, bytes: num
   const lines = text.split("\n");
   state.remainder = lines.pop() ?? "";
   if (state.remainder.length > 4_000_000) state.remainder = ""; // pathological line; drop it
-  const seen = new Set<string>();
+  const seen = new Set<string>(state.seenIds);
   for (const line of lines) {
     if (!line.trim()) continue;
     let row: Record<string, unknown>;
@@ -443,10 +591,16 @@ export function feedTranscript(state: TranscriptState, chunk: string, bytes: num
     // Claude Code writes one row per content block of the same API reply; count usage once per message id.
     const msgId = str(message.id) || str(row.requestId);
     if (Object.keys(usage).length && !(msgId && seen.has(msgId))) {
-      if (msgId) seen.add(msgId);
+      if (msgId) {
+        seen.add(msgId);
+        state.seenIds.push(msgId);
+        if (state.seenIds.length > 64) state.seenIds.shift();
+      }
       const n = (k: string) => (typeof usage[k] === "number" ? (usage[k] as number) : 0);
       state.tokens = n("input_tokens") + n("cache_creation_input_tokens") + n("cache_read_input_tokens") + n("output_tokens");
-      state.costUsd += usageCost(state.model, usage);
+      const extra = extraIterationsCost(usage, state.model);
+      state.costUsd += usageCost(state.model, usage) + extra;
+      state.advisorUsd += extra;
     }
     const content = Array.isArray(message.content) ? message.content : [];
     for (const block of content) {
@@ -571,10 +725,22 @@ export const historyBatchSchema = z.object({
   endedAt: z.number(),
   request: z.string(),
   running: z.boolean(),
+  /** The session (bb thread) the batch ran in, and the lead's model for it, in a multi-model conversation. */
+  threadId: z.string().optional(),
+  model: z.string().optional(),
   totals: z.object({ agents: z.number(), tokens: z.number(), durationMs: z.number(), costUsd: z.number().nullable() }),
   agents: z.array(historyAgentSchema).max(60),
 });
-export const historySchema = z.object({ threadId: z.string(), lead: z.object({ label: z.string(), model: z.string() }), batches: z.array(historyBatchSchema).max(200), updatedAt: z.number() });
+export const historySchema = z.object({
+  threadId: z.string(),
+  lead: z.object({ label: z.string(), model: z.string() }),
+  batches: z.array(historyBatchSchema).max(200),
+  /** Model changes across the logical conversation, newest last. */
+  switches: z.array(switchSchema).max(200).optional(),
+  /** Sessions in the logical conversation (1 for an ordinary chat). */
+  members: z.number().int().optional(),
+  updatedAt: z.number(),
+});
 export type HistoryBatch = z.infer<typeof historyBatchSchema>;
 export type DeskHistory = z.infer<typeof historySchema>;
 
@@ -667,7 +833,7 @@ export function nextVisibilityChange(args: Parameters<typeof liveVisibility>[0])
 
 /** Serialised thread state for the plugin's history cache (kept under 256 KB). */
 export interface CachedThread {
-  version: 3;
+  version: 4;
   afterSeq: number;
   lastUserSeq: number;
   lastUserText: string;
@@ -675,13 +841,14 @@ export interface CachedThread {
   order: number;
   agents: AgentRecord[];
   lead: LeadItem | null;
+  turns: TurnModel[];
 }
 
 export function serialiseState(state: ThreadState): CachedThread {
   const agents = [...state.agents.values()].slice(-300);
   const wanted = new Set(agents.map((a) => a.groupSeq));
   return {
-    version: 3,
+    version: 4,
     afterSeq: state.afterSeq,
     lastUserSeq: state.lastUserSeq,
     lastUserText: clip(state.lastUserText, 300),
@@ -689,11 +856,12 @@ export function serialiseState(state: ThreadState): CachedThread {
     order: state.order,
     agents: agents.map((a) => ({ ...a, summary: clip(a.summary, 1200), childRecent: a.childRecent.slice(-3) })),
     lead: state.lead,
+    turns: state.turns,
   };
 }
 
 export function restoreState(cached: CachedThread | undefined): ThreadState | null {
-  if (!cached || cached.version !== 3 || !Array.isArray(cached.agents)) return null; // older parses are rebuilt from the event log
+  if (!cached || cached.version !== 4 || !Array.isArray(cached.agents)) return null; // older parses are rebuilt from the event log
   const state = emptyState();
   state.afterSeq = cached.afterSeq;
   state.lastUserSeq = cached.lastUserSeq;
@@ -701,6 +869,7 @@ export function restoreState(cached: CachedThread | undefined): ThreadState | nu
   state.userRequests = cached.userRequests;
   state.order = cached.order;
   state.lead = cached.lead ?? null;
+  state.turns = Array.isArray(cached.turns) ? cached.turns : [];
   for (const a of cached.agents) state.agents.set(a.id, { ...a, lastActivityAt: a.lastActivityAt ?? a.startedAt, derived: a.derived ?? null, childRecent: a.childRecent ?? [], childSteps: a.childSteps ?? 0, parentId: a.parentId ?? null });
   return state;
 }

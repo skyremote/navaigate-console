@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "brief_order": [
+    "Objective",
+    "Surface",
+    "Answer key",
+    "Comparison",
+    "User actions",
+    "Voice",
+    "Design",
+    "Done when",
+    "Boundaries",
+    "Skills to invoke"
+  ],
+  "entries": [
+    {
+      "id": "prove",
+      "aliases": [
+        "verify",
+        "verifier"
+      ],
+      "label": "Prove it",
+      "card": "Decide the verifier before writing code. Surface: where a real user or program meets this change (page, API, MCP, CLI, app). Answer key: what right looks like, written by someone other than you (best to worst: the old system, a snapshot, an independent test suite, the spec's user-action table, nothing). Comparison: how what happened is checked against the answer key. Green unit tests you wrote are not proof. If the repo has a prove-<app> skill (a prove-* folder with the prove-it: marker), run it before saying done. If it has none and this is a real change, offer create-prove-it.",
+      "skill": "prove-<app> if present, else create-prove-it",
+      "brief_fields": [
+        "Surface",
+        "Answer key",
+        "Comparison"
+      ],
+      "summary": "Before any code, Claude names where the change shows (page, API, app), what 'right' looks like from a source it did not write, and how it checks the two match. It runs the repo's prove skill before saying done."
+    },
+    {
+      "id": "spec",
+      "aliases": [
+        "plan"
+      ],
+      "label": "Spec table",
+      "card": "Plan before building, and end the plan with a table of user actions and expected results (for example: 'user adds a tag to a note' / 'the tag shows on the note at once'). Cover every path a user can take, including delete and empty states. This table is the answer key for a new feature, so the agent that builds must not change it afterwards.",
+      "skill": "superpowers:writing-plans",
+      "brief_fields": [
+        "User actions"
+      ],
+      "summary": "The plan ends with a table: each thing a user does, and what they should see. That table becomes the test the finished work must pass."
+    },
+    {
+      "id": "audit",
+      "aliases": [
+        "mutate"
+      ],
+      "label": "Audit prove-it",
+      "card": "Audit the verifier, not the feature: plant one realistic bug in a recent change (off by one, a dropped field, a wrong default), hand the flow to a fresh agent that is not told what broke, and see whether the prove skill catches it. A miss means the prove skill needs fixing.",
+      "skill": "audit-prove-it",
+      "brief_fields": [
+        "Answer key",
+        "Comparison"
+      ],
+      "summary": "Tests your checker, not your feature: Claude plants a small realistic bug, and a fresh agent must find it without being told. A miss means the prove skill needs fixing."
+    },
+    {
+      "id": "maintain",
+      "aliases": [
+        "upstream"
+      ],
+      "label": "Maintain prove-it",
+      "card": "A bug reached a user, so fix the class of bug upstream: read the report, the previous prove runs and the fix, then add the missing surface, browser, device or case to the prove skill so the next agent catches it before production.",
+      "skill": "maintain-prove-it",
+      "brief_fields": [
+        "Surface"
+      ],
+      "summary": "After a user finds a bug, Claude adds that case (browser, device, flow) to the prove skill, so the same kind of bug is caught before release next time."
+    },
+    {
+      "id": "voice",
+      "aliases": [
+        "dan"
+      ],
+      "label": "Daniel's voice",
+      "card": "Anything written in Daniel's name follows the daniel-voice skill: flowing spoken rhythm, 'we' does the work, no metaphors, no startup jargon, proof over promises. Invoke it before drafting.",
+      "skill": "daniel-voice",
+      "brief_fields": [
+        "Voice"
+      ],
+      "summary": "Anything written as Daniel (email, post, lesson, site copy) uses daniel-voice: his spoken rhythm, 'we', no metaphors, no jargon, real names and numbers."
+    },
+    {
+      "id": "design",
+      "aliases": [
+        "ui"
+      ],
+      "label": "Design brain",
+      "card": "Visual work is designed from fundamentals and measured: invoke design-brain before building, and check the rendered page against WCAG and the corpus before calling it done. Cite entry numbers for design choices.",
+      "skill": "design-brain",
+      "brief_fields": [
+        "Design"
+      ],
+      "summary": "Visual work follows design-brain: Claude designs from sourced rules, then measures the finished page for contrast and accessibility before calling it done."
+    },
+    {
+      "id": "ship",
+      "aliases": [
+        "done"
+      ],
+      "label": "Evidence before done",
+      "card": "Do not say done, fixed or passing until you have run the check and read its output in this session. Report what you ran and what it showed.",
+      "skill": "superpowers:verification-before-completion",
+      "brief_fields": [
+        "Done when"
+      ],
+      "summary": "Claude may not say done, fixed or passing until it runs the check in this chat and shows you the result."
+    }
+  ]
+}

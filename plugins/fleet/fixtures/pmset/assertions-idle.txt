@@ -1,0 +1,7 @@
+2026-11-01 12:45:18 +0100 
+Assertion status system-wide:
+   BackgroundTask                 0
+   PreventUserIdleSystemSleep     1
+   PreventSystemSleep             0
+Listed by owning process:
+   pid 366(powerd): [0x0000005a00018007] 77:49:12 PreventUserIdleSystemSleep named: "Powerd - Prevent sleep while display is on"  

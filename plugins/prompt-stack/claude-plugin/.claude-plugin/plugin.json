@@ -1,0 +1,9 @@
+{
+  "name": "prompt-stack",
+  "version": "0.1.0",
+  "description": "Stack the skills you want (prove, spec, voice, design...) and a hook injects their cards beside every prompt, so the agent opens with a rewritten brief. Ships Ray Amjad's create, maintain and audit prove-it skills (MIT).",
+  "author": {
+    "name": "Daniel Wright",
+    "email": "dw@navaigate.dev"
+  }
+}

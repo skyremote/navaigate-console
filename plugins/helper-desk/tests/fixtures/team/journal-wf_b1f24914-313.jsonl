@@ -1,0 +1,20 @@
+{"type": "launched"}
+{"type": "started", "key": "v2:f890aec30362a8e2738f0db69762eea7384e8e12fc63b8502885928d3432ea82", "agentId": "a7353d74acfbc315b", "label": "fix:usage-card", "phase": "Fix"}
+{"type": "started", "key": "v2:152629e1b6ff6e692c1fb6b64bd0d588b9b5bea9edbf71cf6fca09a8855b69e7", "agentId": "ad0cab09bf968c57c", "label": "plan:next-wave", "phase": "Plan"}
+{"type": "started", "key": "v2:1d9e9b33353785e92779667af622ea3c4d69f7267004de092cbb529323d3081e", "agentId": "a038aa8bb1525a473", "label": "fix:running-chip", "phase": "Fix"}
+{"type": "started", "key": "v2:19658724847fd7bfe1aeeb9ea39c242b89d308bee6d2fcfe729d8e4baf603579", "agentId": "a0000000000000001", "label": "fix:model-switch", "phase": "Fix"}
+{"type": "started", "key": "v2:d00ab88dddf7c4bcf2f6425a5183bcc6f28ab8c244ad9c9dc07f9b21fa8cd04f", "agentId": "a2300ef3c05d1b97b", "label": "fix:theme-polish", "phase": "Fix"}
+{"type": "result", "key": "v2:1d9e9b33353785e92779667af622ea3c4d69f7267004de092cbb529323d3081e", "agentId": "a038aa8bb1525a473", "result": "(result text removed for the fixture)", "toolsUsed": ["Bash", "Read", "Edit"]}
+{"type": "result", "key": "v2:152629e1b6ff6e692c1fb6b64bd0d588b9b5bea9edbf71cf6fca09a8855b69e7", "agentId": "ad0cab09bf968c57c", "result": "(result text removed for the fixture)", "toolsUsed": ["Bash", "Read", "Edit"]}
+{"type": "started", "key": "v2:9f080edd58cc25995c2f12830c14db5563401ecc579c0aaf1dbd2b6a10208319", "agentId": "a729e225024e47b08", "label": "build:task-a", "phase": "Build"}
+{"type": "started", "key": "v2:d2f1b5dfe795a77d1deeb05ad1a581ccf0318d5e01f63b6677f273949349c6b4", "agentId": "a83d92334905f6ba6", "label": "build:task-b", "phase": "Build"}
+{"type": "started", "key": "v2:1ba9a39920b583b40587cebfebafdd94be9a9ec7bcab6be8b81110495b1efc6d", "agentId": "a7b1d682121056691", "label": "build:task-c", "phase": "Build"}
+{"type": "started", "key": "v2:588e9a0395276d7e86b9f461df855677c92b5fd49bed51b774f50099b0132ac8", "agentId": "a7972fb40d941f521", "label": "build:task-d", "phase": "Build"}
+{"type": "started", "key": "v2:4728af472ffc725bd57f1779fc9a596a35102bb37859fe8f6a597df53b78fd12", "agentId": "aa64655aeac9db9bc", "label": "build:task-e", "phase": "Build"}
+{"type": "started", "key": "v2:8b048e794899e27ae5746cdee0faa869d4ded1977e0be28578c8c2a78784f3c6", "agentId": "ab2145426cfc627a0", "label": "build:task-f", "phase": "Build"}
+{"type": "result", "key": "v2:f890aec30362a8e2738f0db69762eea7384e8e12fc63b8502885928d3432ea82", "agentId": "a7353d74acfbc315b", "result": "(result text removed for the fixture)", "toolsUsed": ["Bash", "Read", "Edit"]}
+{"type": "result", "key": "v2:19658724847fd7bfe1aeeb9ea39c242b89d308bee6d2fcfe729d8e4baf603579", "agentId": "a0000000000000001", "result": "(result text removed for the fixture)", "toolsUsed": ["Bash", "Read", "Edit"]}
+{"type": "result", "key": "v2:d00ab88dddf7c4bcf2f6425a5183bcc6f28ab8c244ad9c9dc07f9b21fa8cd04f", "agentId": "a2300ef3c05d1b97b", "result": "(result text removed for the fixture)", "toolsUsed": ["Bash", "Read", "Edit"]}
+{"type": "result", "key": "v2:d2f1b5dfe795a77d1deeb05ad1a581ccf0318d5e01f63b6677f273949349c6b4", "agentId": "a83d92334905f6ba6", "result": "(result text removed for the fixture)", "toolsUsed": ["Bash", "Read", "Edit"]}
+{"type": "result", "key": "v2:8b048e794899e27ae5746cdee0faa869d4ded1977e0be28578c8c2a78784f3c6", "agentId": "ab2145426cfc627a0", "result": "(result text removed for the fixture)", "toolsUsed": ["Bash", "Read", "Edit"]}
+{"type": "result", "key": "v2:9f080edd58cc25995c2f12830c14db5563401ecc579c0aaf1dbd2b6a10208319", "agentId": "a729e225024e47b08", "result": "(result text removed for the fixture)", "toolsUsed": ["Bash", "Read", "Edit"]}

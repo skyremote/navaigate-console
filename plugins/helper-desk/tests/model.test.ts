@@ -23,14 +23,14 @@ describe("todo progress", () => {
   });
 });
 
-describe("agent parsing from a synthetic thread log", () => {
+describe("agent parsing from a real thread log", () => {
   const state = reduceEvents(emptyState(), events);
   const agents = [...state.agents.values()];
   it("finds every delegation", () => {
     expect(agents.length).toBeGreaterThanOrEqual(18);
   });
   it("marks background agents running at launch and finished on backgroundTask completion", () => {
-    const folding = agents.find((a) => a.name === "Draft the onboarding guide")!;
+    const folding = agents.find((a) => a.name === "Sample folding agent")!;
     expect(folding.background).toBe(true);
     expect(folding.state).toBe("finished");
     expect(folding.finalUsage).toEqual({ totalTokens: 188565, toolUses: 58, durationMs: 519945 });
@@ -94,6 +94,31 @@ describe("JSONL usage parsing", () => {
     const t = feedTranscript(emptyTranscript(), text, Buffer.byteLength(text));
     const once = feedTranscript(emptyTranscript(), text.split("\n").filter((l) => !l.includes('"text":"thinking"')).join("\n"), 1);
     expect(t.costUsd).toBeCloseTo(once.costUsd, 10);
+  });
+  it("counts a reply split across two reads once", () => {
+    const row = JSON.stringify({ type: "assistant", message: { id: "m1", model: "claude-sonnet-5-5", content: [], usage: { input_tokens: 1_000_000, output_tokens: 0 } } });
+    const t = emptyTranscript();
+    feedTranscript(t, row + "\n", 1);
+    feedTranscript(t, row + "\n", 1);
+    expect(t.costUsd).toBeCloseTo(3, 6);
+  });
+  it("prices advisor iterations at the advisor's model and keeps them apart", () => {
+    const row = JSON.stringify({
+      type: "assistant",
+      message: {
+        id: "m2", model: "claude-opus-5-5", content: [],
+        usage: {
+          input_tokens: 0, output_tokens: 1_000_000,
+          iterations: [
+            { type: "message", input_tokens: 0, output_tokens: 1_000_000 },
+            { type: "advisor_message", model: "claude-fable-5-1", input_tokens: 340206, output_tokens: 12823 },
+          ],
+        },
+      },
+    });
+    const t = feedTranscript(emptyTranscript(), row + "\n", 1);
+    expect(t.advisorUsd).toBeCloseTo(4.04321, 5); // Claude Code's own cost-state figure for these tokens
+    expect(t.costUsd).toBeCloseTo(25 + 4.04321, 5);
   });
 });
 

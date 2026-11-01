@@ -1,0 +1,1 @@
+{"agentType": "workflow-subagent", "isBuiltIn": true, "description": "fix:model-switch", "workflowPhase": "Fix", "spawnDepth": 1, "requestShape": "foreground", "requestNonInteractive": true}

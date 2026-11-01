@@ -1,6 +1,6 @@
 {
   "name": "bb-plugin-navmotion-skin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "engines": {
     "bb": ">=0.47",
@@ -8,7 +8,7 @@
   },
   "bb": {
     "name": "NavMotion Skin",
-    "description": "Three NavMotion skins with moving grounds (Dots, Live, Tunnel), a Skin button in the sidebar footer that keeps every skin one click away, and Markdown in the chat box with a live Preview tab on the side.",
+    "description": "Three NavMotion skins with moving grounds (Dots, Live, Tunnel), a Skin button in the sidebar footer that keeps every skin one click away, and a live Markdown preview in the chat box (Md button) with a Preview tab on the side.",
     "branding": {
       "icon": "Palette"
     },
@@ -59,14 +59,14 @@
     "@types/react-dom": "^19.0.0",
     "better-sqlite3": "^12.0.0",
     "hono": "^4.11.9",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.1"
   },
   "description": "The NavMotion look for bb: three moving skins (Dots, Live, Tunnel), a one-click Skin button, and Markdown formatting in the chat box with a live side preview.",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/skyremote/bb-overlay.git",
-    "directory": "plugins/navmotion-skin"
-  },
   "author": "NavAIgate",
-  "private": true
+  "private": true,
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  }
 }

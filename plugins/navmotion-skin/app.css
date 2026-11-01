@@ -19,7 +19,51 @@
 .nm-md-mark { color: var(--subtle-foreground); }
 .nm-md-fence { font-family: var(--font-mono); font-size: 0.92em; color: var(--muted-foreground); }
 
-/* ---------- the Md button in the chat box ---------- */
+/* ---------- live preview: only while the Md button is on (html[data-nm-md-live="on"]) ----------
+   bb adds nm-md-hidden to marker text and nm-md-grid to a table's grid only while the caret is
+   outside the construct, so these rules never hide text the caret is in. */
+html[data-nm-md-live="on"] .nm-md-hidden { display: none; }
+html[data-nm-md-live="on"] .nm-md-bullet { font-size: 0; }
+html[data-nm-md-live="on"] .nm-md-bullet::before { content: "\2022"; font-size: 1rem; color: var(--ring); }
+html[data-nm-md-live="on"] .nm-md-unchecked,
+html[data-nm-md-live="on"] .nm-md-checked { font-size: 0; }
+html[data-nm-md-live="on"] .nm-md-unchecked::before,
+html[data-nm-md-live="on"] .nm-md-checked::before { font-size: 1rem; color: var(--ring); }
+html[data-nm-md-live="on"] .nm-md-unchecked::before { content: "\2610"; }
+html[data-nm-md-live="on"] .nm-md-checked::before { content: "\2611"; }
+html[data-nm-md-live="on"] .nm-md-heading { font-size: 1.14em; }
+html[data-nm-md-live="on"] .nm-md-code { padding: 0 0.28em; }
+html[data-nm-md-live="on"] .nm-md-table { font-family: inherit; font-size: inherit; }
+html[data-nm-md-live="off"] .nm-md-grid { display: none !important; }
+
+.nm-md-grid { margin: 4px 0; max-width: 100%; overflow-x: auto; }
+.nm-md-grid table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.94em;
+  line-height: 1.4;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.nm-md-grid th, .nm-md-grid td { padding: 5px 12px; text-align: left; vertical-align: top; }
+.nm-md-grid th {
+  font-weight: 650;
+  background: color-mix(in oklch, var(--foreground) 6%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+.nm-md-grid td + td, .nm-md-grid th + th { border-left: 1px solid var(--border); }
+.nm-md-grid tbody tr + tr td { border-top: 1px solid var(--border); }
+.nm-md-grid code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  background: color-mix(in oklch, var(--foreground) 7%, transparent);
+  border-radius: 4px;
+  padding: 0 0.28em;
+}
+
+/* ---------- the Md and eye buttons in the chat box ---------- */
+.nm-md-live-btn,
 .nm-md-preview-btn {
   display: inline-flex;
   align-items: center;
@@ -35,8 +79,11 @@
   cursor: pointer;
   transition: background-color 160ms ease, color 160ms ease, transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+.nm-md-live-btn:hover,
 .nm-md-preview-btn:hover { background: var(--accent); color: var(--foreground); }
+.nm-md-live-btn:active,
 .nm-md-preview-btn:active { transform: scale(0.92); }
+.nm-md-live-btn[data-active],
 .nm-md-preview-btn[data-active] { color: var(--ring); }
 
 /* ---------- the Preview tab on the side ---------- */
@@ -142,3 +189,4 @@
 .nm-skin-foot { margin-top: 2px; border-top: 1px solid var(--border-hairline, var(--border)); border-radius: 0 0 8px 8px; }
 .nm-skin-error { margin: 4px 6px; padding: 6px 8px; border-radius: 8px; font-size: 11.5px; color: var(--destructive-text); background: color-mix(in oklch, var(--destructive) 8%, transparent); }
 .nm-skin-empty { padding: 8px; font-size: 12px; color: var(--muted-foreground); }
+.nm-md-live-btn[aria-pressed="true"] { background: color-mix(in oklch, var(--ring) 14%, transparent); }

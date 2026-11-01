@@ -1,13 +1,17 @@
-// Markdown in the chat box: live formatting while you type, quick inserts in the + menu,
-// and a Preview tab on the side that renders the draft the way the chat will show it.
+// Markdown in the chat box: live preview while you type (markers hidden until the caret is in
+// them, tables drawn as grids), quick inserts in the + menu, and a Preview tab on the side that
+// renders the draft the way the chat will show it.
 //
-// The live formatting is paint-only (bb's richText effects): the text you send stays plain
+// The live preview is paint-only (bb's richText effects): the text you send stays plain
 // Markdown, so bold, italics, tables and the rest render in the timeline once sent.
+import { useSyncExternalStore } from "react";
 import type { ComposerPlusMenuItem } from "@get-bb/plugin-sdk/app";
-import { Markdown, useBbNavigate, useComposer } from "@get-bb/plugin-sdk/app";
+import { Markdown, experimental_useAppPanel, useComposer } from "@get-bb/plugin-sdk/app";
+import { liveState } from "./live-state";
+import { openPreviewTab } from "./open-preview";
+import { HIDDEN_CLASS, TABLE_CLASS, repairPastedTables, scanConstructs, scanTables } from "./markdown-live";
 
-export const PREVIEW_TAB_ID = "md-preview";
-export const PREVIEW_NEW_ID = "md-preview-new";
+export const PREVIEW_ID = "md-preview";
 
 type Range = { from: number; to: number };
 
@@ -54,6 +58,14 @@ const effect = (id: string, className: string, match: (text: string) => Range[])
   },
 });
 
+const liveEffect = (id: string, match: (text: string) => ReturnType<typeof scanConstructs>) => ({
+  id,
+  className: `nm-md-${id}`,
+  hiddenClassName: HIDDEN_CLASS,
+  tableClassName: TABLE_CLASS,
+  match,
+});
+
 export const MARKDOWN_EFFECTS = [
   effect("md-bold", "nm-md-bold", (t) => scan(t, /(\*\*|__)(?=\S)([^\n]*?\S)\1/g, (m) => [{ from: m.index + 2, to: m.index + m[0].length - 2 }])),
   effect("md-italic", "nm-md-italic", (t) => [
@@ -91,7 +103,13 @@ export const MARKDOWN_EFFECTS = [
       return [...f.marks, ...f.body];
     },
   },
+  liveEffect("live-marks", scanConstructs),
+  liveEffect("live-table", scanTables),
 ];
+
+/** Pasted tables are only repaired while the Md switch is on; with it off a paste is left as it came. */
+export const transformPaste = (text: string, context: { before: string; after: string }): string =>
+  liveState.get() ? repairPastedTables(text, context) : text;
 
 const TABLE = "| Column | Column | Column |\n| --- | --- | --- |\n|  |  |  |";
 
@@ -121,14 +139,32 @@ export const PLUS_MENU: ComposerPlusMenuItem[] = [
 
 const HAS_MARKDOWN = /(\*\*|__|~~|`|^#{1,6}\s|^>\s?|^\s*[-*+]\s|^\s*\d+[.)]\s|^\s*\|.*\||\[[^\]]+\]\()/m;
 
+/** The Md button in the chat box: switches live preview on and off. */
+export function LiveToggle() {
+  const on = useSyncExternalStore(liveState.subscribe, liveState.get);
+  const label = on ? "Live preview is on. Click to show the Markdown as typed." : "Live preview is off. Click to render Markdown while you type.";
+  return (
+    <button
+      type="button"
+      className="nm-md-live-btn"
+      data-active={on || undefined}
+      aria-pressed={on}
+      onClick={() => liveState.set(!on)}
+      aria-label={label}
+      title={label}
+    >
+      <span>Md</span>
+    </button>
+  );
+}
+
 /** The eye button in the chat box: opens the Preview tab on the side. */
 export function PreviewAction() {
   const composer = useComposer();
-  const nav = useBbNavigate();
-  const isNew = composer.scope.kind === "new-thread";
+  const panel = experimental_useAppPanel();
   const active = HAS_MARKDOWN.test(composer.text);
   const open = () => {
-    nav.openThreadPanel({ actionId: isNew ? PREVIEW_NEW_ID : PREVIEW_TAB_ID, title: "Preview" });
+    openPreviewTab(panel, PREVIEW_ID);
   };
   return (
     <button
@@ -143,7 +179,6 @@ export function PreviewAction() {
         <path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8Z" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
         <circle cx="8" cy="8" r="2" fill="none" stroke="currentColor" strokeWidth="1.3" />
       </svg>
-      <span>Md</span>
     </button>
   );
 }
