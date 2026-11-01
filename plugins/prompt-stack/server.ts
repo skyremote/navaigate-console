@@ -6,7 +6,7 @@
 // Claude Code thread. Every call runs the CLI with BB_THREAD_ID set to the
 // thread's id and --cwd set to the thread's workspace, exactly as the hook sees it.
 import { execFile } from "node:child_process";
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, statSync, watch } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -186,6 +186,25 @@ export default async function plugin(bb: BbPluginApi) {
     set: ({ threadId, ids }) => serial(threadId, () => write(threadId, ["set", ...ids])),
     useProjectDefault: ({ threadId }) => serial(threadId, () => write(threadId, ["clear"])),
   });
+
+  // The hook deletes a thread's stack file after one prompt uses it. Watch the
+  // threads folder so the panel unticks itself as soon as that happens.
+  const watchHome = async () => {
+    const { stackHome } = await settings.get();
+    const home = stackHome || process.env.PROMPT_STACK_HOME || join(homedir(), ".claude", "prompt-stack");
+    const dir = join(home, "threads");
+    try {
+      mkdirSync(dir, { recursive: true });
+      const watcher = watch(dir, (_event, file) => {
+        const name = file ? String(file) : "";
+        if (name.endsWith(".json")) bb.realtime.publish("stack-changed", { threadId: name.slice(0, -5) });
+      });
+      watcher.on("error", (cause) => bb.log.warn("stack watch stopped: " + String(cause)));
+    } catch (cause) {
+      bb.log.warn("could not watch " + dir + ": " + String(cause));
+    }
+  };
+  void watchHome();
 
   bb.log.info("loaded: Prompt stack panel");
 }

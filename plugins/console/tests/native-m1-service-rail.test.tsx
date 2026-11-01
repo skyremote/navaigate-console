@@ -21,7 +21,7 @@ const board: FleetBoard = {
   serverId: "sky", serverKey: "laptop",
   columns: [
     { key: "laptop", label: "laptop home", serverId: "sky", online: true, lastSeenAt: NOW, threads: [] },
-    { key: "studio", label: "Studio home", serverId: "macbookm1", online: true, lastSeenAt: NOW, threads: [] },
+    { key: "studio", label: "Studio home", serverId: "srv-studio", online: true, lastSeenAt: NOW, threads: [] },
     { key: "work", label: "work Client", serverId: "sky-m4", online: false, lastSeenAt: NOW, threads: [] },
   ],
 };
@@ -36,7 +36,7 @@ function renderRail(calls: { n: number }) {
     { component: () => <Rail activeThreadId="t1" activeProjectId="p1" onNavigate={() => {}} /> },
     {},
     {
-      sidebarThreads: { status: "ready", threads: [thread], projects: [{ id: "p1", name: "NavAIgate", isPersonal: false }] as never, sections: [] },
+      sidebarThreads: { status: "ready", threads: [thread], projects: [{ id: "p1", name: "Atlas", isPersonal: false }] as never, sections: [] },
       rpc: { fleet_board: () => ({ available: true, board, error: null }), m1_service: () => { calls.n++; return service; } } as never,
       context: { projectId: "p1", threadId: "t1" },
     },

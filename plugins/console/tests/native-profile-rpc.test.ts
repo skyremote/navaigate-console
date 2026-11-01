@@ -149,4 +149,24 @@ describe("saving the profile", () => {
       expect(() => profile.save({ profile: dup })).toThrow(/profile not saved: /);
     });
   });
+
+  it("refuses a token where a secret's name belongs, and a credential in any address, and writes nothing", () => {
+    inTempProfile((file) => {
+      const profile = createProfile();
+      // Built from parts, so no secret-shaped literal sits in the repository.
+      const token = ["sk", "-ant-", "api03-AbCdEf0123456789AbCdEf0123456789"].join("");
+      const bad: Array<[Partial<typeof COMMUNITY_DEFAULTS>, RegExp]> = [
+        [{ brain: { url: null, tokenSecret: token } }, /brain\.tokenSecret: .*secret itself/],
+        [{ brain: { url: "https://user:pass@brain.example.test", tokenSecret: null } }, /brain\.url: .*user name and password/],
+        [{ hosts: { ...COMMUNITY_DEFAULTS.hosts, hooks: "https://hooks.example.test/?token=abc" } }, /hosts\.hooks: .*keys and tokens/],
+        [{ hosts: { ...COMMUNITY_DEFAULTS.hosts, bbRemotes: ["https://ok.example.test", "https://u:p@remote.example.test"] } }, /hosts\.bbRemotes\[1\]/],
+        [{ machines: [{ ...COMMUNITY_DEFAULTS.machines[0]!, bbUrl: "https://a:b@mac.example.test" }] }, /machines\.this-mac\.bbUrl/],
+      ];
+      for (const [over, message] of bad) expect(() => profile.save({ profile: { ...COMMUNITY_DEFAULTS, ...over } }), message.source).toThrow(message);
+      expect(() => readFileSync(file, "utf8")).toThrow(); // nothing was written
+      // The name of a secret, and plain host names, are fine.
+      const ok = profile.save({ profile: { ...COMMUNITY_DEFAULTS, brain: { url: "https://brain.example.test", tokenSecret: "BRAIN_TOKEN" }, hosts: { ...COMMUNITY_DEFAULTS.hosts, bbRemotes: ["laptop.getbb.example"] } } });
+      expect(ok.profile.brain.tokenSecret).toBe("BRAIN_TOKEN");
+    });
+  });
 });

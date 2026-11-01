@@ -181,12 +181,16 @@ function StepFeatures({ draft, set, preview }: { draft: SetupDraft; set: (d: Set
   return (
     <div className="nav-su-card">
       <h2>Features</h2>
-      <p className="nav-su-muted">Start from a preset, then change any box. Simple is the everyday set. Pro adds everything that suits several Macs and heavier work.</p>
-      <div className="nav-su-actions" role="group" aria-label="Preset" data-tour="console-setup-presets">
-        <button type="button" data-pressed={draft.preset === "simple"} aria-pressed={draft.preset === "simple"} onClick={() => set(applyPreset(draft, "simple"))}>Simple</button>
-        <button type="button" data-pressed={draft.preset === "pro"} aria-pressed={draft.preset === "pro"} onClick={() => set(applyPreset(draft, "pro"))}>Pro</button>
-        {draft.preset === "custom" ? <span className="nav-su-hint">Custom choice</span> : null}
-      </div>
+      <p className="nav-su-muted">{preview.edition === "private" ? "Change any box." : "Start from a preset, then change any box. Simple is the everyday set. Pro adds everything that suits several Macs and heavier work."}</p>
+      {preview.edition === "private" ? (
+        <p className="nav-su-hint">Every feature is on unless you untick it. The Simple and Pro presets are not offered here because they would switch features off.</p>
+      ) : (
+        <div className="nav-su-actions" role="group" aria-label="Preset" data-tour="console-setup-presets">
+          <button type="button" data-pressed={draft.preset === "simple"} aria-pressed={draft.preset === "simple"} onClick={() => set(applyPreset(draft, "simple"))}>Simple</button>
+          <button type="button" data-pressed={draft.preset === "pro"} aria-pressed={draft.preset === "pro"} onClick={() => set(applyPreset(draft, "pro"))}>Pro</button>
+          {draft.preset === "custom" ? <span className="nav-su-hint">Custom choice</span> : null}
+        </div>
+      )}
       {FEATURE_AREAS.map((area) => {
         const rows = features.map((f) => ({ f, s: featureState(preview, f.id, probes) })).filter((x) => x.f.area === area && x.s.kind !== "hidden");
         if (rows.length === 0) return null;
@@ -248,7 +252,7 @@ export function SetupPage() {
   const nav = useBbNavigate();
   const state = useProfileState();
   const [draft, setDraft] = useState<SetupDraft | null>(null);
-  const [hint, setHint] = useState<"simple" | "pro" | null | undefined>(undefined);
+  const [hint, setHint] = useState<{ preset: "simple" | "pro" | null; hostname: string | null } | undefined>(undefined);
   const [step, setStep] = useState(0);
   const [attempted, setAttempted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -259,12 +263,12 @@ export function SetupPage() {
 
   useEffect(() => {
     let live = true;
-    rpc.call("setup_hint", null).then((h) => live && setHint(h.preset), () => live && setHint(null));
+    rpc.call("setup_hint", null).then((h) => live && setHint({ preset: h.preset, hostname: h.hostname ?? null }), () => live && setHint({ preset: null, hostname: null }));
     return () => { live = false; };
   }, [rpc]);
   useEffect(() => {
     if (draft === null && state.loaded && hint !== undefined) {
-      setDraft(draftFromProfile(state.profile, hint));
+      setDraft(draftFromProfile(state.profile, hint.preset, hint.hostname));
       setLoadedStamp(state.stamp);
     }
   }, [draft, state.loaded, state.profile, hint]);

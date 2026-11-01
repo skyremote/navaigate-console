@@ -180,8 +180,8 @@ describe("routed request mapping refuses what another Mac cannot honour", () => 
   it("maps only the away mirror alias to the NAS project name", () => {
     expect(nativeDestinationProjectName("Shared (away)")).toBe("Shared");
     expect(nativeDestinationProjectName("Shared")).toBe("Shared");
-    expect(nativeDestinationProjectName("navaigate (away)")).toBe("navaigate (away)");
-    expect(nativeDestinationProjectName("BluPlai (away)")).toBe("BluPlai (away)");
+    expect(nativeDestinationProjectName("atlas (away)")).toBe("atlas (away)");
+    expect(nativeDestinationProjectName("Survey app (away)")).toBe("Survey app (away)");
   });
 
   it("copies native project uploads exactly, including another source project and the composer's file name", () => {

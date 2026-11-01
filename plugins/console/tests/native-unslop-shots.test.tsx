@@ -37,11 +37,11 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); document.body.innerHTML = ""; vi.restoreAllMocks(); });
 
-const remote: RemoteThread = { id: "thr_a", machine: "studio", title: "Fix the invoice export", via: "macbookm1", url: "https://studio.example.test/threads/thr_a", state: "idle", projectName: "NavAIgate", providerId: "codex", updatedAt: NOW - 3_600_000 } as RemoteThread;
+const remote: RemoteThread = { id: "thr_a", machine: "studio", title: "Fix the invoice export", via: "srv-studio", url: "https://studio.example.test/threads/thr_a", state: "idle", projectName: "Atlas", providerId: "codex", updatedAt: NOW - 3_600_000 } as RemoteThread;
 
 describe.skipIf(!OUT)("unslop preview pages", () => {
   it("the remote row with Ask and Tell", async () => {
-    const view = renderSlot({ component: () => <RemoteList sections={[{ name: "NavAIgate", threads: [remote, { ...remote, id: "thr_b", title: "Nightly render", state: "running" } as RemoteThread] }]} now={NOW} onOpen={() => {}} /> }, {}, { rpc: { fleet_tell: () => ({ offered: true, requestId: "r", delivered: true, delivery: "delivered", url: remote.url }) } as never });
+    const view = renderSlot({ component: () => <RemoteList sections={[{ name: "Atlas", threads: [remote, { ...remote, id: "thr_b", title: "Nightly render", state: "running" } as RemoteThread] }]} now={NOW} onOpen={() => {}} /> }, {}, { rpc: { fleet_tell: () => ({ offered: true, requestId: "r", delivered: true, delivery: "delivered", url: remote.url }) } as never });
     page("remote-row", view.container.innerHTML);
     fireEvent.click(screen.getAllByRole("button", { name: /Ask or tell Studio about Fix the invoice export/ })[0]);
     await screen.findByText("Tell Studio about Fix the invoice export");

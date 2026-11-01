@@ -17,7 +17,7 @@ function mount() {
       context_drafts_list: () => [], context_reviews_list: () => [],
       context_review_create: (input: unknown) => { created.push(input); return { id: "rev_1", url: "https://example.test/review/abc", expiresAt: Date.now() + 86_400_000 }; },
     } as never,
-    sdk: { projects: { get: async () => ({ id: "proj_test", name: "NavAIgate" }) } } as never,
+    sdk: { projects: { get: async () => ({ id: "proj_test", name: "Atlas" }) } } as never,
   });
   return { view, created };
 }

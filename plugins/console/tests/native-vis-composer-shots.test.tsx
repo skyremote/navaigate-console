@@ -67,7 +67,7 @@ afterEach(() => { cleanup(); document.body.innerHTML = ""; unpublishComposerHand
 const NOW = Date.now();
 const clockTime = (offsetMinutes: number) => NOW - offsetMinutes * 60_000;
 const COMMIT = "5dc2c537ad2762caa162adb34aff7d1e9cecc081";
-const project = { id: "proj_test", name: "NavAIgate", kind: "standard", createdAt: 1, updatedAt: 1, gitRemoteUrl: null, sources: [] };
+const project = { id: "proj_test", name: "Atlas", kind: "standard", createdAt: 1, updatedAt: 1, gitRemoteUrl: null, sources: [] };
 const route = (machine: string | null, reason: string) => ({ machine, serverId: machine ? "srv" : null, hostId: null, mode: "auto" as const, reason, warnings: [], candidates: [] });
 const previewFixture = {
   route: route("studio", "Selected Studio's independent owner from fresh eligible CPU/RAM capacity"), refusal: null, checkedAt: NOW,

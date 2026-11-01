@@ -88,10 +88,6 @@
     "@testing-library/react": "^16.3.3"
   },
   "description": "Turn bb's sidebar into a run sheet: see what every harness is working on, tag and flag chats, and track to-dos that move on their own.",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/OWNER/bb-plugin-navaigate-skin.git"
-  },
   "author": "NavAIgate",
   "private": false,
   "files": [

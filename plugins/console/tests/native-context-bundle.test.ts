@@ -108,7 +108,7 @@ function fixture(options: { exportCommit?: string; exportError?: Error; importOu
     projects: { get: async () => ({ id: "proj_test", name: "Native acceptance", kind: "standard" as const, sources: [], createdAt: 1, updatedAt: 1, gitRemoteUrl: null }) },
   } });
   hosts.push(host);
-  const route = { machine: "studio", serverId: "macbookm1", hostId: "host_m1", mode: "manual" as const, reason: "Chosen", warnings: [], candidates: [] };
+  const route = { machine: "studio", serverId: "srv-studio", hostId: "host_m1", mode: "manual" as const, reason: "Chosen", warnings: [], candidates: [] };
   const fleet: NativeWorkDependencies["fleet"] = {
     route: vi.fn(async () => route),
     start: vi.fn(async () => ({ outcome: "started" as const, threadId: "thr_m1", url: null, route })),
@@ -116,7 +116,7 @@ function fixture(options: { exportCommit?: string; exportError?: Error; importOu
     mirrorOpen: vi.fn(async () => ({ localThreadId: "thr_mirror" })),
   };
   const sourceTarget: OwnerTarget = { serverId: "sky", machineKey: "laptop", hostId: "host_m5", environmentId: "env_m5", projectId: "proj_test", threadId: "thr_root" };
-  const ownerTarget: OwnerTarget = { serverId: "macbookm1", machineKey: "studio", hostId: "host_m1", environmentId: "env_m1", projectId: "proj_m1", threadId: "thr_m1" };
+  const ownerTarget: OwnerTarget = { serverId: "srv-studio", machineKey: "studio", hostId: "host_m1", environmentId: "env_m1", projectId: "proj_m1", threadId: "thr_m1" };
   let exported: PortableBundle | null = null;
   const link: ContextBundleLink = {
     events: vi.fn(async () => ({ events: events(), complete: true })),

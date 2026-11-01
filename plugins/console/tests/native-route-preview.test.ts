@@ -27,8 +27,8 @@ function fleet(over: { route?: () => unknown; owner?: (machine: string) => unkno
 describe("route preview before sending", () => {
   it("reports the chosen Mac and why each other Mac is not eligible", async () => {
     const link = fleet();
-    const out = await createRoutePreview(link, () => 5_000)({ machine: "Auto", providerId: "codex", destinationProjectName: "NavAIgate", routing: { workload: "general", unattended: true } });
-    expect(link.route).toHaveBeenCalledWith({ machine: "Auto", providerId: "codex", projectName: "NavAIgate", routing: { workload: "general", unattended: true } });
+    const out = await createRoutePreview(link, () => 5_000)({ machine: "Auto", providerId: "codex", destinationProjectName: "Atlas", routing: { workload: "general", unattended: true } });
+    expect(link.route).toHaveBeenCalledWith({ machine: "Auto", providerId: "codex", projectName: "Atlas", routing: { workload: "general", unattended: true } });
     expect(out.checkedAt).toBe(5_000);
     expect(out.route?.machine).toBe("studio");
     expect(out.machines.find((item) => item.machine === "studio")).toMatchObject({ chosen: true, eligible: true, score: 6.2 });

@@ -92,7 +92,7 @@ describe("one definition of running", () => {
     const withRow = (age: number) => {
       const fresh = structuredClone(board);
       for (const c of fresh.columns) c.threads = [];
-      fresh.columns[1]!.threads = [{ id: "thr_x", title: "X", state: "running", machine: "studio", projectName: null, providerId: "codex", updatedAt: NOW - age, url: null, via: "macbookm1" }];
+      fresh.columns[1]!.threads = [{ id: "thr_x", title: "X", state: "running", machine: "studio", projectName: null, providerId: "codex", updatedAt: NOW - age, url: null, via: "srv-studio" }];
       return runningView({ threads: [], serverKey: "laptop", board: fresh, now: NOW });
     };
     expect(withRow(STUCK_AFTER_MS - 1_000).running).toHaveLength(1);
@@ -122,7 +122,7 @@ describe("one definition of running", () => {
 
   it("counts a running chat that only another Mac's bb knows, on that Mac", () => {
     const fresh = structuredClone(board);
-    fresh.columns[1]!.threads.unshift({ id: "thr_m1_live", title: "Live on Studio", state: "running", machine: "studio", projectName: null, providerId: "codex", updatedAt: NOW - 60_000, url: null, via: "macbookm1" });
+    fresh.columns[1]!.threads.unshift({ id: "thr_m1_live", title: "Live on Studio", state: "running", machine: "studio", projectName: null, providerId: "codex", updatedAt: NOW - 60_000, url: null, via: "srv-studio" });
     const v = runningView({ threads: folded, ownIds: ownIdsOf(physical, conversations), serverKey: "laptop", board: fresh, now: NOW });
     expect(v.running.map((i) => `${i.machine}:${i.id}`)).toEqual(["studio:thr_m1_live", "laptop:thr_root"]);
     expect(v.byMachine.studio).toMatchObject({ running: 1, stuck: 1 });

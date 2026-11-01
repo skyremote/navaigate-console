@@ -1,8 +1,8 @@
 // The first-run setup screen without the screen: the draft the steps edit, the
 // checks on what is typed, and how a draft becomes a profile. Pure, so it is
 // tested without rendering.
-import { COMMUNITY_DEFAULTS, setupDone, type MachineRole, type Preset, type Profile, type ProfileMachine } from "../profile/schema";
-import { presetPicks } from "./features-enabled";
+import { COMMUNITY_DEFAULTS, featureOn, setupDone, thisMachine, type MachineRole, type Preset, type Profile, type ProfileMachine } from "../profile/schema";
+import { pickerFeatures, presetPicks } from "./features-enabled";
 
 export const SETUP_PATH = "setup";
 export const SETUP_HREF = `/plugins/navaigate-skin/${SETUP_PATH}`;
@@ -22,7 +22,9 @@ export type SetupDraft = {
   name: string;
   /** This Mac's name. */
   thisMac: string;
-  /** Further Macs, in the order they are listed. */
+  /** The id of the machine that is this Mac in the saved profile; null on a first run with nothing saved. */
+  thisMacId: string | null;
+  /** Every other Mac, in the order the profile lists them. */
   machines: MachineDraft[];
   workloads: WorkloadDraft[];
   hooks: string;
@@ -73,6 +75,22 @@ export function secretNameProblem(value: string): string | null {
   return null;
 }
 
+const CREDENTIAL_REFUSAL = "Leave the user name and password out of the address. Only the name of a secret is stored.";
+const KEY_REFUSAL = "Leave keys and tokens out of the address. Only the name of a secret is stored.";
+
+/** The credential an address carries (a user name, a password, a key or token in the query), in plain words; null when it carries none or is not an address. */
+export function addressCredentialProblem(value: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(value.trim());
+  } catch {
+    return null;
+  }
+  if (url.username || url.password) return CREDENTIAL_REFUSAL;
+  for (const [k, val] of url.searchParams) if (/token|key|secret|password|auth/i.test(k) || looksLikeSecret(val)) return KEY_REFUSAL;
+  return null;
+}
+
 /** The problem with a typed address; null when it is fine (or empty). Addresses must not carry credentials. */
 export function addressProblem(value: string): string | null {
   const v = value.trim();
@@ -84,9 +102,7 @@ export function addressProblem(value: string): string | null {
     return "Write the full address, starting with https://";
   }
   if (url.protocol !== "https:" && url.protocol !== "http:") return "Write the full address, starting with https://";
-  if (url.username || url.password) return "Leave the user name and password out of the address. Only the name of a secret is stored.";
-  for (const [k, val] of url.searchParams) if (/token|key|secret|password|auth/i.test(k) || looksLikeSecret(val)) return "Leave keys and tokens out of the address. Only the name of a secret is stored.";
-  return null;
+  return addressCredentialProblem(v);
 }
 
 export type SetupProblems = Partial<Record<"name" | "thisMac" | "hooks" | "brainUrl" | "brainTokenSecret", string>> & { machines: Array<{ label?: string; sshAlias?: string; bbUrl?: string }>; workloads: Array<{ name?: string; machine?: string }> };
@@ -126,13 +142,19 @@ export function hasProblems(p: SetupProblems): boolean {
 
 const roleOf = (m: ProfileMachine): SetupRole => (m.restricted || m.role === "restricted" ? "restricted" : m.role === "always-on" ? "always-on" : "laptop");
 
-/** The draft a profile stands for. `preset` is the installer's choice, used only when no preset was saved. */
-export function draftFromProfile(profile: Profile, installerPreset: "simple" | "pro" | null = null): SetupDraft {
-  const [first, ...rest] = profile.machines;
+/**
+ * The draft a profile stands for. `hostname` is this Mac's own name, read by the
+ * server, and is how "This Mac" is found when the profile does not say. `preset`
+ * is the installer's choice, used only when no preset was saved (never for the
+ * private edition, where it would switch features off).
+ */
+export function draftFromProfile(profile: Profile, installerPreset: "simple" | "pro" | null = null, hostname: string | null = null): SetupDraft {
+  const here = thisMachine(profile, hostname) ?? profile.machines[0];
   const draft: SetupDraft = {
     name: profile.owner.name,
-    thisMac: first?.label ?? COMMUNITY_DEFAULTS.machines[0]!.label,
-    machines: rest.map((m) => ({ id: m.id, label: m.label, role: roleOf(m), sshAlias: m.sshAlias ?? "", bbUrl: m.bbUrl ?? "" })),
+    thisMac: here?.label ?? COMMUNITY_DEFAULTS.machines[0]!.label,
+    thisMacId: here?.id ?? null,
+    machines: profile.machines.filter((m) => m !== here).map((m) => ({ id: m.id, label: m.label, role: roleOf(m), sshAlias: m.sshAlias ?? "", bbUrl: m.bbUrl ?? "" })),
     workloads: profile.workloads.map((w) => ({ id: w.id, name: w.label || w.id, machine: profile.machines.find((m) => m.id === w.machine)?.label ?? "", match: w.match.join(", ") })),
     hooks: profile.hosts.hooks ?? "",
     brainUrl: profile.brain.url ?? "",
@@ -140,7 +162,7 @@ export function draftFromProfile(profile: Profile, installerPreset: "simple" | "
     preset: profile.features.preset,
     picks: { ...profile.features.picks },
   };
-  if (!profile.features.preset && Object.keys(profile.features.picks).length === 0 && installerPreset) return applyPreset(draft, installerPreset);
+  if (profile.edition !== "private" && !profile.features.preset && Object.keys(profile.features.picks).length === 0 && installerPreset) return applyPreset(draft, installerPreset);
   return draft;
 }
 
@@ -156,8 +178,10 @@ export function setPick(draft: SetupDraft, id: string, on: boolean): SetupDraft 
 
 /**
  * The profile a draft stands for, on top of the one already saved. Nothing the
- * screen does not ask about is lost (hostnames, homes, paths, plugin sections),
- * and plugin settings are never touched. Machine ids stay once they exist; on a
+ * screen does not ask about is lost (hostnames, homes, paths, plugin sections,
+ * the order and the role of every Mac), and plugin settings are never touched.
+ * Machine ids stay once they exist, and the Mac the profile says it sits on stays
+ * the one it says (a save on the second Mac never becomes the first Mac). On a
  * first run the placeholder id is replaced by one derived from the Mac's name.
  */
 export function buildProfile(base: Profile, draft: SetupDraft, now: number | null): Profile {
@@ -166,18 +190,21 @@ export function buildProfile(base: Profile, draft: SetupDraft, now: number | nul
   const taken = new Set<string>();
   const claim = (id: string) => (taken.add(id), id);
 
-  const firstOld = base.machines[0];
-  const firstId = claim(firstOld && (done || firstOld.id !== COMMUNITY_DEFAULTS.machines[0]!.id) ? firstOld.id : uniqueId(slug(draft.thisMac), taken));
-  const first: ProfileMachine = { ...(firstOld ?? COMMUNITY_DEFAULTS.machines[0]!), id: firstId, label: draft.thisMac.trim() };
+  const hereOld = (draft.thisMacId ? old.get(draft.thisMacId) : undefined) ?? base.machines[0];
+  const hereId = claim(hereOld && (done || hereOld.id !== COMMUNITY_DEFAULTS.machines[0]!.id) ? hereOld.id : uniqueId(slug(draft.thisMac), taken));
+  // Workload ids are rebuilt below from the workloads that remain, so a removed workload leaves no id behind.
+  const here: ProfileMachine = { ...(hereOld ?? COMMUNITY_DEFAULTS.machines[0]!), id: hereId, label: draft.thisMac.trim(), workloads: [] };
 
   const others: ProfileMachine[] = draft.machines.map((m) => {
     const prev = m.id ? old.get(m.id) : undefined;
     const id = claim(prev ? prev.id : uniqueId(slug(m.label), taken));
+    // A role the screen cannot show (primary, other) is kept as it was unless the role is changed here.
+    const same = prev && roleOf(prev) === m.role;
     return {
       id,
       label: m.label.trim(),
-      role: m.role as MachineRole,
-      restricted: m.role === "restricted",
+      role: same ? prev.role : (m.role as MachineRole),
+      restricted: same ? prev.restricted : m.role === "restricted",
       workloads: [],
       hostnames: prev?.hostnames ?? [],
       sshAlias: m.sshAlias.trim() || null,
@@ -186,26 +213,50 @@ export function buildProfile(base: Profile, draft: SetupDraft, now: number | nul
     };
   });
 
-  const machines = [first, ...others];
+  // Keep the order the profile had: this Mac goes after the other Macs that came before it, and new Macs go last.
+  const hereAt = base.machines.findIndex((m) => m.id === hereOld?.id);
+  const before = draft.machines.filter((m) => { const at = m.id ? base.machines.findIndex((x) => x.id === m.id) : -1; return at >= 0 && hereAt >= 0 && at < hereAt; }).length;
+  const machines = [...others.slice(0, before), here, ...others.slice(before)];
   const workloadIds = new Set<string>();
   const workloads = draft.workloads.map((w) => {
     const id = uniqueId(w.id ?? (slug(w.name) || "workload"), workloadIds);
     workloadIds.add(id);
     const wanted = w.machine.trim().toLowerCase();
-    const target = wanted ? (machines.find((m) => m.label.toLowerCase() === wanted) ?? null) : null;
+    // A Mac renamed on the same screen no longer matches the label the workload was drawn with: it keeps the Mac it had, so a restriction is never lifted by a rename.
+    const was = w.id ? base.workloads.find((x) => x.id === w.id)?.machine : null;
+    const target = wanted ? (machines.find((m) => m.label.toLowerCase() === wanted) ?? machines.find((m) => m.id === was) ?? null) : null;
     if (target && !target.workloads.includes(id)) target.workloads = [...target.workloads, id];
     return { id, label: w.name.trim(), machine: target ? target.id : null, match: w.match.split(",").map((x) => x.trim()).filter(Boolean) };
   });
 
+  // A profile that names its Mac keeps naming it. One that does not is left to the hostnames, except
+  // when it had a single Mac (a first run), which is this one and must stay so once Macs are added.
+  const thisMachineId = base.thisMachine !== null ? hereId : base.machines.length === 1 ? hereId : null;
+
   return {
     ...base,
     owner: { ...base.owner, name: draft.name.trim() },
-    thisMachine: first.id,
+    thisMachine: thisMachineId,
     machines,
     hosts: { ...base.hosts, hooks: draft.hooks.trim() || null },
     workloads,
     brain: { url: draft.brainUrl.trim() || null, tokenSecret: draft.brainTokenSecret.trim() || null },
-    features: { preset: draft.preset, picks: { ...draft.picks } },
+    features: { preset: draft.preset, picks: picksFor(base, draft) },
     setup: { ...base.setup, completedAt: now ?? base.setup.completedAt },
   };
+}
+
+/**
+ * Every community picker feature gets an explicit pick, so the other plugins, which treat a missing pick as on,
+ * agree with the boxes. A separate plugin has no pick; an always-on feature is true. The private edition keeps
+ * its picks as they were (a missing pick means on there) apart from the boxes that were touched.
+ */
+function picksFor(base: Profile, draft: SetupDraft): Record<string, boolean> {
+  if (base.edition === "private") return { ...draft.picks };
+  const picks: Record<string, boolean> = {};
+  for (const f of pickerFeatures()) {
+    if (!f.picker || f.picker.enforced === "plugin") continue;
+    picks[f.id] = f.picker.enforced === "always" ? true : featureOn(base, f.id, f.picker.default);
+  }
+  return { ...picks, ...draft.picks };
 }

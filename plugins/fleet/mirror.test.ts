@@ -82,7 +82,7 @@ describe("mapItem", () => {
 
   it("maps tools, messages, reasoning, reads, file changes and sub-agents", () => {
     const items: Record<string, unknown>[] = [
-      { type: "toolCall", id: "i2", tool: "list_whiteboards", server: "bluplai", arguments: { limit: 2 }, result: "[]", status: "completed", presentation: { label: { pending: "Running", completed: "Ran" }, icon: { glyph: "Toolbox" } } },
+      { type: "toolCall", id: "i2", tool: "list_boards", server: "boards", arguments: { limit: 2 }, result: "[]", status: "completed", presentation: { label: { pending: "Running", completed: "Ran" }, icon: { glyph: "Toolbox" } } },
       { type: "agentMessage", id: "i3", text: "| a | b |\n|---|---|\n| 1 | 2 |" },
       { type: "reasoning", id: "i4", content: ["thinking"], summary: [] },
       { type: "fileRead", id: "i5", path: "/tmp/a.txt", status: "completed" },

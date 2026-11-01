@@ -89,8 +89,10 @@ export function featureState(profile: Profile, id: string, probes: Probes): Feat
   const f = BY_ID.get(id);
   const picker = f?.picker;
   if (!f || !picker) return { kind: "hidden" };
-  if (coreMissing(picker, probes)) return { kind: "hidden" };
   if (picker.enforced === "plugin") return { kind: "plugin", plugin: picker.plugin };
+  // The private edition runs everything unless a box says otherwise: no requirement greys a box and no missing core change hides one.
+  if (profile.edition === "private") return picker.enforced === "always" ? { kind: "locked" } : profile.features.picks[id] === false ? { kind: "off" } : { kind: "on" };
+  if (coreMissing(picker, probes)) return { kind: "hidden" };
   const reason = firstUnmet(profile, picker, probes, new Set([id]));
   if (reason) return { kind: "greyed", reason };
   if (picker.enforced === "always") return { kind: "locked" };

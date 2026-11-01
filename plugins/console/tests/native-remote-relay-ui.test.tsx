@@ -8,7 +8,7 @@ import type { RemoteThread } from "../src/machines";
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), loading: vi.fn(() => "t"), dismiss: vi.fn() } }));
 import { RemoteList } from "../src/machine-row";
 
-const thread: RemoteThread = { id: "thr_a", machine: "studio", title: "Fix the invoice export", via: "macbookm1", url: "https://studio.example.test/threads/thr_a", state: "idle", projectName: "10_NavAIgate", providerId: "codex", updatedAt: 1 };
+const thread: RemoteThread = { id: "thr_a", machine: "studio", title: "Fix the invoice export", via: "srv-studio", url: "https://studio.example.test/threads/thr_a", state: "idle", projectName: "10_Atlas", providerId: "codex", updatedAt: 1 };
 const NOW = 100_000;
 
 function mount(rpc: Record<string, unknown> = {}, remote: RemoteThread = thread) {
@@ -110,11 +110,11 @@ describe("Ask and Tell on a remote chat row", () => {
     });
     fireEvent.click(relayButton());
     fireEvent.click(screen.getByRole("button", { name: "Ask Studio" }));
-    expect(await screen.findByText(/Starts a new chat on Studio in 10_NavAIgate/)).toBeTruthy();
+    expect(await screen.findByText(/Starts a new chat on Studio in 10_Atlas/)).toBeTruthy();
     type("How many invoices are unpaid?");
     send();
     await waitFor(() => expect(starts).toHaveLength(1));
-    expect(starts[0]).toMatchObject({ machine: "studio", prompt: "How many invoices are unpaid?", projectName: "10_NavAIgate" });
+    expect(starts[0]).toMatchObject({ machine: "studio", prompt: "How many invoices are unpaid?", projectName: "10_Atlas" });
     expect((starts[0] as { requestId: string }).requestId).toMatch(/^[0-9a-f-]{36}$/);
     expect((await screen.findByRole("status")).textContent).toContain("Started on Studio");
     fireEvent.click(screen.getByRole("button", { name: "Read the answer" }));

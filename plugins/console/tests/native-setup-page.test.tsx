@@ -66,11 +66,11 @@ describe("opening setup on a first run", () => {
 });
 
 describe("the setup page", () => {
-  function rpcFor(profile: Profile, preset: "simple" | "pro" | null = null, failWith: string | null = null) {
+  function rpcFor(profile: Profile, preset: "simple" | "pro" | null = null, failWith: string | null = null, hostname = "some-host") {
     const saved: Profile[] = [];
     const stamps: (string | undefined)[] = [];
     const rpc = {
-      setup_hint: () => ({ preset }),
+      setup_hint: () => ({ preset, hostname }),
       profile_save: (input: { profile: Profile; expectedStamp?: string }) => {
         saved.push(input.profile);
         stamps.push(input.expectedStamp);
@@ -207,6 +207,61 @@ describe("the setup page", () => {
     fireEvent.change(await screen.findByLabelText("Your name"), { target: { value: "Pat" } });
     next(); next(); next();
     expect(screen.getByRole("button", { name: "Pro" }).getAttribute("aria-pressed")).toBe("true");
+  });
+});
+
+describe("the setup page on the second Mac and in the private edition", () => {
+  const three = (over: Partial<Profile> = {}): Profile => resolveProfile({
+    ...COMMUNITY_DEFAULTS, setup: { completedAt: 1, version: 1 }, owner: { name: "Pat", username: "pat" }, thisMachine: null,
+    machines: [
+      { id: "desk", label: "Desk", role: "primary", hostnames: ["pats-desk"] },
+      { id: "annex", label: "Annex", role: "restricted", restricted: true, hostnames: ["annex-mac"] },
+      { id: "rack", label: "Rack", role: "always-on", hostnames: ["rack"] },
+    ],
+    ...over,
+  }).profile;
+  const next = () => fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+  const rpcFor = (hostname: string) => {
+    const saved: Profile[] = [];
+    return { saved, rpc: { setup_hint: () => ({ preset: null, hostname }), profile_save: (i: { profile: Profile }) => (saved.push(i.profile), { profile: i.profile, source: "file", errors: [], path: "p", stamp: "x" }) } };
+  };
+
+  it("uses the hostname the server gave to show this Mac, and saves unchanged without moving its identity or lifting its restriction", async () => {
+    const profile = three();
+    seed(profile);
+    const { rpc, saved } = rpcFor("annex-mac");
+    renderSlot({ component: SetupPage }, {}, { rpc: rpc as never });
+    await screen.findByLabelText("Your name");
+    next(); // Your Macs
+    expect((screen.getByLabelText("This Mac") as HTMLInputElement).value).toBe("Annex");
+    expect(screen.getAllByDisplayValue("Desk")).toHaveLength(1);
+    expect(screen.getAllByDisplayValue("Rack")).toHaveLength(1);
+    next(); next(); next();
+    fireEvent.click(screen.getByRole("button", { name: "Save and finish" }));
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(saved[0]!.machines.map((m) => [m.id, m.role, m.restricted])).toEqual([["desk", "primary", false], ["annex", "restricted", true], ["rack", "always-on", false]]);
+    expect(saved[0]!.thisMachine).toBeNull(); // it was not set, and a guess is not written
+    expect(resolveProfile(saved[0]).errors).toEqual([]);
+  });
+
+  it("offers no Simple or Pro button for the private edition, shows every feature on and never greys one, and saves no pick it did not touch", async () => {
+    const profile = three({ edition: "private", features: { preset: "pro", picks: { F55: false } } });
+    seed(profile);
+    const { rpc, saved } = rpcFor("rack");
+    renderSlot({ component: SetupPage }, {}, { rpc: rpc as never });
+    await screen.findByLabelText("Your name");
+    next(); next(); next();
+    expect(screen.queryByRole("button", { name: "Simple" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Pro" })).toBeNull();
+    const box = (id: string) => document.querySelector(`[data-feature="${id}"]`) as HTMLElement | null;
+    expect(box("F51")?.getAttribute("data-state")).toBe("on"); // needs a public address, none given: still on, not greyed
+    expect((box("F51")?.querySelector("input") as HTMLInputElement).checked).toBe(true);
+    expect(box("F55")?.getAttribute("data-state")).toBe("off");
+    expect(document.querySelector('[data-state="greyed"]')).toBeNull();
+    next();
+    fireEvent.click(screen.getByRole("button", { name: "Save and finish" }));
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(saved[0]!.features).toEqual({ preset: "pro", picks: { F55: false } });
   });
 });
 

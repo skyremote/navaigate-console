@@ -39,7 +39,7 @@ function preview(over: Partial<RoutePreview> = {}): RoutePreview {
     ...over,
   };
 }
-const project = { id: "proj_test", name: "NavAIgate", kind: "standard", createdAt: 1, updatedAt: 1, gitRemoteUrl: null, sources: [] };
+const project = { id: "proj_test", name: "Atlas", kind: "standard", createdAt: 1, updatedAt: 1, gitRemoteUrl: null, sources: [] };
 function mount(rpc: Record<string, (input: unknown) => unknown> = {}, props: Record<string, unknown> = {}) {
   const calls: unknown[] = [];
   const view = renderSlot({ component: NativeWorkComposer }, { rootThreadId: "thr_root", sourceThreadId: "thr_source", projectId: "proj_test", defaultSelection: { providerId: "codex", model: "gpt-5", reasoningLevel: "high" }, ...props }, {
@@ -63,7 +63,7 @@ describe("route preview in the New work dialog", () => {
     choose("Auto");
     const panel = await screen.findByTestId("route-preview");
     await waitFor(() => expect(panel.textContent).toContain("Auto would start on Studio"));
-    expect(calls[0]).toMatchObject({ machine: "Auto", providerId: "codex", model: "gpt-5", reasoningLevel: "high", destinationProjectName: "NavAIgate", routing: { workload: "general" } });
+    expect(calls[0]).toMatchObject({ machine: "Auto", providerId: "codex", model: "gpt-5", reasoningLevel: "high", destinationProjectName: "Atlas", routing: { workload: "general" } });
     expect(panel.textContent).toContain("Selected Studio's independent owner");
     const m1 = within(panel).getByTestId("route-preview-studio");
     expect(m1.textContent).toContain("Chosen");
@@ -142,8 +142,8 @@ describe("a Mac with Xcode as a placement choice", () => {
   });
 
   it("builds the preview request from the same choices", () => {
-    expect(buildRoutePreviewInput({ machine: "Auto", selection: { providerId: "codex", model: "gpt-5", reasoningLevel: "high" }, destination: "NavAIgate", routing: { workload: "client", needsNas: true, unattended: false, needsXcode: true }, environment: { type: "host", hostId: "h", workspace: { type: "managed-worktree", baseBranch: { kind: "named", name: "main" } } } })).toEqual({
-      machine: "Auto", providerId: "codex", model: "gpt-5", reasoningLevel: "high", destinationProjectName: "NavAIgate",
+    expect(buildRoutePreviewInput({ machine: "Auto", selection: { providerId: "codex", model: "gpt-5", reasoningLevel: "high" }, destination: "Atlas", routing: { workload: "client", needsNas: true, unattended: false, needsXcode: true }, environment: { type: "host", hostId: "h", workspace: { type: "managed-worktree", baseBranch: { kind: "named", name: "main" } } } })).toEqual({
+      machine: "Auto", providerId: "codex", model: "gpt-5", reasoningLevel: "high", destinationProjectName: "Atlas",
       routing: { workload: "client", needsNas: true, requiredCapabilities: ["xcode"] }, workspace: { type: "managed-worktree", baseBranch: { kind: "named", name: "main" } },
     });
     expect(buildRoutePreviewInput({ machine: "studio", routing: { workload: "general", needsNas: false, unattended: false }, destination: "" })).toEqual({ machine: "studio", routing: { workload: "general" } });

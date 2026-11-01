@@ -20,7 +20,7 @@ function deferred<T>() {
   const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; });
   return { promise, resolve, reject };
 }
-const remote = (id: string): RemoteThread => ({ id, machine: "studio", title: id, via: "macbookm1", url: `https://studio.example.test/threads/${id}`, state: "idle", projectName: null, providerId: "codex", updatedAt: 1 });
+const remote = (id: string): RemoteThread => ({ id, machine: "studio", title: id, via: "srv-studio", url: `https://studio.example.test/threads/${id}`, state: "idle", projectName: null, providerId: "codex", updatedAt: 1 });
 function Openers() {
   const open = useOpenRemote();
   return <><button onClick={() => open(remote("thr_a"))}>Open A</button><button onClick={() => open(remote("thr_b"))}>Open B</button><a href="/threads/thr_root" onClick={(event) => event.preventDefault()}>Current chat</a><input aria-label="Current draft" /></>;

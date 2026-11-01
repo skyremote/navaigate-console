@@ -35,7 +35,7 @@ describe("file panel for a chat file link", () => {
   });
 
   it("shows a file from another project folder with a card, an inline Markdown preview and both actions", async () => {
-    const real = "/Volumes/Shared/00_NavAIgate_WIP/Customers/Clientco/Training_Catalogue/Email_to_Pat_Training_v4.md";
+    const real = "/Volumes/Shared/00_Work_WIP/Customers/Clientco/Training_Catalogue/Email_to_Pat_Training_v4.md";
     const openFilePreview = vi.fn(() => true);
     const calls = mount({ ...base, status: "found", realPath: real, via: "project folder /Volumes/Shared", kind: "markdown", size: 40, content: "Hi Albert, the online sessions are added." }, undefined, { openFilePreview });
     expect(await screen.findByText("This file is outside this chat's project")).toBeTruthy();

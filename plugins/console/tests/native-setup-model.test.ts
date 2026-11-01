@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { COMMUNITY_DEFAULTS, resolveProfile } from "../profile/schema";
+import { COMMUNITY_DEFAULTS, featureOn, isRestricted, resolveProfile, thisMachine, type Profile } from "../profile/schema";
+import { pickerFeatures } from "../src/features-enabled";
 import {
   TOKEN_REFUSAL, addressProblem, applyPreset, buildProfile, draftFromProfile, hasProblems, looksLikeSecret, problemsOf, secretNameProblem, setPick, slug,
 } from "../src/setup-model";
@@ -136,7 +137,21 @@ describe("presets and boxes in the draft", () => {
     const custom = setPick(simple, "EXTRA-I", true);
     expect(custom.preset).toBe("custom");
     expect(custom.picks["EXTRA-I"]).toBe(true);
-    expect(buildProfile(COMMUNITY_DEFAULTS, { ...custom, name: "Pat" }, 1).features).toEqual({ preset: "custom", picks: custom.picks });
+    const built = buildProfile(COMMUNITY_DEFAULTS, { ...custom, name: "Pat" }, 1).features;
+    expect(built.preset).toBe("custom");
+    expect(built.picks).toMatchObject(custom.picks); // the boxes ticked or unticked are kept as they are
+  });
+
+  it("writes an explicit pick for every community picker feature, so a missing pick is never read as on", () => {
+    const profile = buildProfile(COMMUNITY_DEFAULTS, { ...fresh(), name: "Pat" }, 1);
+    for (const f of pickerFeatures()) {
+      if (f.picker!.enforced === "plugin") expect(profile.features.picks[f.id], f.id).toBeUndefined();
+      else if (f.picker!.enforced === "always") expect(profile.features.picks[f.id], f.id).toBe(true);
+      else expect(profile.features.picks[f.id], f.id).toBe(featureOn(COMMUNITY_DEFAULTS, f.id, f.picker!.default));
+    }
+    // A box the draft changed wins over the default.
+    const off = pickerFeatures().find((f) => f.picker!.enforced !== "plugin" && f.picker!.enforced !== "always" && f.picker!.default === "on")!;
+    expect(buildProfile(COMMUNITY_DEFAULTS, setPick({ ...fresh(), name: "Pat" }, off.id, false), 1).features.picks[off.id]).toBe(false);
   });
 
   it("starts from the installer's preset on a first run, but never over a saved choice", () => {
@@ -149,5 +164,112 @@ describe("presets and boxes in the draft", () => {
   it("does not touch plugin settings: building a profile only returns a profile", () => {
     const next = buildProfile(COMMUNITY_DEFAULTS, { ...applyPreset(fresh(), "simple"), name: "Pat" }, 1);
     expect(Object.keys(next).sort()).toEqual(Object.keys(COMMUNITY_DEFAULTS).sort());
+  });
+});
+
+// A profile as it sits on the second Mac of three: this Mac is not the first one listed, the first Mac has a
+// role the screen cannot show, and the Mac it sits on is restricted. Neutral names throughout.
+const second = (): Profile => resolveProfile({
+  schemaVersion: 1, edition: "community", owner: { name: "Pat", username: "pat" }, thisMachine: "annex",
+  machines: [
+    { id: "desk", label: "Desk", role: "primary", restricted: false, workloads: [], hostnames: ["pats-desk"], sshAlias: null, bbUrl: "https://desk.example.test", home: "/Users/pat" },
+    { id: "annex", label: "Annex", role: "restricted", restricted: true, workloads: ["client"], hostnames: ["annex-mac"], sshAlias: null, bbUrl: null, home: null },
+    { id: "rack", label: "Rack", role: "always-on", restricted: false, workloads: [], hostnames: ["rack"], sshAlias: "rack", bbUrl: "https://rack.example.test", home: "/Users/rack" },
+    { id: "spare", label: "Spare", role: "other", restricted: false, workloads: [], hostnames: [], sshAlias: null, bbUrl: null, home: null },
+  ],
+  workloads: [{ id: "client", label: "Client", machine: "annex", match: ["clientco"] }],
+  setup: { completedAt: 1, version: 1 },
+  features: { preset: "custom", picks: { F56: false } },
+  plugins: { console: { x: 1 } },
+}).profile;
+const stripDone = (p: Profile) => ({ ...p, setup: { ...p.setup, completedAt: null } });
+
+describe("saving Setup on the second or third Mac", () => {
+  it("starts from the Mac the profile sits on, not the first one listed, and lists the rest as other Macs", () => {
+    const p = second();
+    expect(p.machines.map((m) => m.id)).toEqual(["desk", "annex", "rack", "spare"]); // the fixture really is valid
+    const draft = draftFromProfile(p, null, "something-else");
+    expect(draft.thisMac).toBe("Annex");
+    expect(draft.thisMacId).toBe("annex");
+    expect(draft.machines.map((m) => m.label)).toEqual(["Desk", "Rack", "Spare"]);
+  });
+
+  it("finds this Mac from the hostname the server gave when the profile does not say", () => {
+    const p = { ...second(), thisMachine: null };
+    expect(draftFromProfile(p, null, "rack.local").thisMac).toBe("Rack");
+    expect(draftFromProfile(p, null, "annex-mac").thisMacId).toBe("annex");
+  });
+
+  it("round-trips with no change to identity, order, role, restriction or anything else", () => {
+    const p = second();
+    const next = buildProfile(p, draftFromProfile(p, null, null), null);
+    // Only the picks differ: every box is now written down, and the one that was unticked still is.
+    expect({ ...next, features: p.features }).toEqual(p);
+    expect(next.features.preset).toBe("custom");
+    expect(next.features.picks.F56).toBe(false);
+    expect(next.thisMachine).toBe("annex");
+    expect(next.machines.map((m) => [m.id, m.role, m.restricted])).toEqual([["desk", "primary", false], ["annex", "restricted", true], ["rack", "always-on", false], ["spare", "other", false]]);
+    expect(isRestricted(next, thisMachine(next, "x")!.id)).toBe(true);
+    const saved = stripDone({ ...buildProfile(p, draftFromProfile(p, null, null), 77), features: p.features });
+    expect(JSON.stringify(saved)).toBe(JSON.stringify(stripDone(p))); // same keys in the same order
+  });
+
+  it("keeps a restricted Mac restricted when only its name is changed", () => {
+    const p = second();
+    const next = buildProfile(p, { ...draftFromProfile(p, null, null), thisMac: "Annex two" }, 5);
+    expect(next.thisMachine).toBe("annex");
+    expect(next.machines[1]).toMatchObject({ id: "annex", label: "Annex two", role: "restricted", restricted: true, workloads: ["client"], hostnames: ["annex-mac"] });
+  });
+
+  it("changes a role only when the role was changed on the screen", () => {
+    const p = second();
+    const d = draftFromProfile(p, null, null);
+    const next = buildProfile(p, { ...d, machines: d.machines.map((m) => (m.id === "rack" ? { ...m, role: "restricted" as const } : m)) }, 5);
+    expect(next.machines.find((m) => m.id === "rack")).toMatchObject({ role: "restricted", restricted: true });
+    expect(next.machines.find((m) => m.id === "desk")).toMatchObject({ role: "primary" });
+  });
+
+  it("keeps the order when a Mac is removed or added, and puts a new Mac last", () => {
+    const p = second();
+    const d = draftFromProfile(p, null, null);
+    const removed = buildProfile(p, { ...d, machines: d.machines.filter((m) => m.id !== "desk") }, 5);
+    expect(removed.machines.map((m) => m.id)).toEqual(["annex", "rack", "spare"]);
+    const added = buildProfile(p, { ...d, machines: [...d.machines, { id: null, label: "New Mac", role: "laptop", sshAlias: "", bbUrl: "" }] }, 5);
+    expect(added.machines.map((m) => m.id)).toEqual(["desk", "annex", "rack", "spare", "new-mac"]);
+    expect(added.thisMachine).toBe("annex");
+  });
+
+  it("drops a workload id from every Mac when the workload is removed", () => {
+    const p = second();
+    const next = buildProfile(p, { ...draftFromProfile(p, null, null), workloads: [] }, 5);
+    expect(next.workloads).toEqual([]);
+    expect(next.machines.every((m) => m.workloads.length === 0)).toBe(true);
+    expect(resolveProfile(next).errors).toEqual([]);
+  });
+
+  it("does not pin a guess: with no explicit Mac and nothing matching, thisMachine stays unset", () => {
+    const p = { ...second(), thisMachine: null };
+    expect(buildProfile(p, draftFromProfile(p, null, "unknown-host"), 5).thisMachine).toBeNull();
+    // A first run (one Mac) is this Mac and stays so once more are added.
+    const added = buildProfile(COMMUNITY_DEFAULTS, { ...fresh(), name: "Pat", thisMac: "Desk", machines: [{ id: null, label: "Rack", role: "always-on", sshAlias: "", bbUrl: "" }] }, 1);
+    expect(added.thisMachine).toBe("desk");
+  });
+});
+
+describe("the private edition in Setup", () => {
+  const priv = (): Profile => ({ ...second(), edition: "private", features: { preset: "pro", picks: { F56: false } } });
+
+  it("does not apply the installer's preset, which would switch features off", () => {
+    const fresh = { ...priv(), features: { preset: null, picks: {} } };
+    expect(draftFromProfile(fresh, "simple").preset).toBeNull();
+    expect(draftFromProfile(fresh, "simple").picks).toEqual({});
+  });
+
+  it("saves no pick it did not touch", () => {
+    const p = priv();
+    expect(buildProfile(p, draftFromProfile(p, null, null), null).features).toEqual(p.features);
+    const unset = { ...p, features: { preset: null, picks: {} } };
+    expect(buildProfile(unset, draftFromProfile(unset, null, null), null).features.picks).toEqual({});
+    expect(buildProfile(unset, setPick(draftFromProfile(unset, null, null), "F56", false), null).features.picks).toEqual({ F56: false });
   });
 });

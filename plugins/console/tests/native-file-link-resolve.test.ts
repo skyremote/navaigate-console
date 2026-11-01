@@ -9,7 +9,7 @@ let top: string;
 let home: string;
 let workspace: string;
 let nas: string;
-const folder = "00_NavAIgate_WIP/Customers/Clientco/Training_Catalogue";
+const folder = "00_Work_WIP/Customers/Clientco/Training_Catalogue";
 const file = "Email_to_Pat_Training_v4.md";
 
 function put(root: string, rel: string, text: string) {
@@ -25,7 +25,7 @@ beforeAll(() => {
   top = realpathSync(mkdtempSync(path.join(os.tmpdir(), "file-link-")));
   home = path.join(top, "home");
   workspace = path.join(home, "Shared_Local");
-  nas = path.join(home, "NavAIgate");
+  nas = path.join(home, "Atlas");
   mkdirSync(workspace, { recursive: true });
   put(workspace, "notes/inside.md", "# inside");
   put(nas, `${folder}/${file}`, "Subject: Updated statement of work");

@@ -41,22 +41,22 @@ function thread(id: string, title: string, projectId: string, over: Partial<Plug
 }
 
 const threads = [
-  thread("t1", "Portal judging dry run", "p1", { status: "active", runtimeStatus: "active", updatedAt: NOW - 60_000 } as Partial<PluginSidebarThread>),
+  thread("t1", "Release dry run", "p1", { status: "active", runtimeStatus: "active", updatedAt: NOW - 60_000 } as Partial<PluginSidebarThread>),
   thread("t2", "Ember theme polish", "p1", { status: "active", runtimeStatus: "active", providerId: "codex", updatedAt: NOW - 120_000 } as Partial<PluginSidebarThread>),
-  thread("t3", "Invoice NAVAI-041", "p2", { hasPendingInteraction: true, indicator: "waiting-for-input", updatedAt: NOW - 30 * 60_000 }),
-  thread("t4", "Skool lesson cover", "p2", { updatedAt: NOW - 2 * HOUR }),
-  thread("t5", "BluPlai survey export", "p3", { isUnread: true, updatedAt: NOW - 3 * HOUR }),
+  thread("t3", "Invoice INV-041", "p2", { hasPendingInteraction: true, indicator: "waiting-for-input", updatedAt: NOW - 30 * 60_000 }),
+  thread("t4", "Course lesson cover", "p2", { updatedAt: NOW - 2 * HOUR }),
+  thread("t5", "Survey export", "p3", { isUnread: true, updatedAt: NOW - 3 * HOUR }),
 ];
 const projects = [
-  { id: "p1", name: "NavAIgate", isPersonal: false },
+  { id: "p1", name: "Atlas", isPersonal: false },
   { id: "p2", name: "Admin", isPersonal: false },
-  { id: "p3", name: "BluPlai", isPersonal: false },
+  { id: "p3", name: "Survey app", isPersonal: false },
 ];
 const board: FleetBoard = {
   serverId: "sky", serverKey: "laptop",
   columns: [
     { key: "laptop", label: "laptop home", serverId: "sky", online: true, lastSeenAt: NOW, threads: [], resources: { observedAt: NOW, cpuCount: 12, cpuUtilization: 0.18, totalMemoryBytes: 32 * 1024 ** 3, availableMemoryBytes: 14 * 1024 ** 3 } },
-    { key: "studio", label: "Studio home", serverId: "macbookm1", online: true, lastSeenAt: NOW, threads: [{ id: "r1", title: "Nightly render", state: "running", machine: "studio", projectName: null, providerId: "claude-code", updatedAt: NOW, url: "", via: "macbookm1" }] },
+    { key: "studio", label: "Studio home", serverId: "srv-studio", online: true, lastSeenAt: NOW, threads: [{ id: "r1", title: "Nightly render", state: "running", machine: "studio", projectName: null, providerId: "claude-code", updatedAt: NOW, url: "", via: "srv-studio" }] },
     { key: "work", label: "work Client", serverId: "sky-m4", online: false, lastSeenAt: NOW - 2 * HOUR, threads: [] },
   ],
 };
@@ -79,7 +79,7 @@ function usageWindow(over: Partial<TrendWindow> = {}): TrendWindow {
 const usageAccount: TrendAccount = {
   id: "local-pool", harness: "claude", email: "pat@example.com", plan: "Max", status: "ok", observedAt: NOW, burn: 11,
   windows: [usageWindow(), usageWindow({ id: "week", label: "Week", span: "long", pct: 41, startsAt: NOW - 3 * 24 * HOUR, resetsAt: NOW + 4 * 24 * HOUR, series: [[NOW - 3 * 24 * HOUR, 0], [NOW - 24 * HOUR, 30], [NOW, 41]] })],
-  busiest: { mode: "tokens", since: NOW - 2 * HOUR, sinceLabel: "since 09:00", rows: [{ threadId: "t1", title: "Portal judging dry run", share: 0.62, tokens: 400, turns: 4 }, { threadId: "t2", title: "Ember theme polish", share: 0.38, tokens: 250, turns: 2 }] },
+  busiest: { mode: "tokens", since: NOW - 2 * HOUR, sinceLabel: "since 09:00", rows: [{ threadId: "t1", title: "Release dry run", share: 0.62, tokens: 400, turns: 4 }, { threadId: "t2", title: "Ember theme polish", share: 0.38, tokens: 250, turns: 2 }] },
 } as TrendAccount;
 
 function renderUsage() {

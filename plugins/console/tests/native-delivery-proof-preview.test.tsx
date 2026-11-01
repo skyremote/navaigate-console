@@ -16,7 +16,7 @@ const out = process.env.VIS_NONE_OUT;
 const fixture = out ? readFileSync(join(out, "fixture-console.png")) : Buffer.alloc(0);
 const dataUrl = `data:image/png;base64,${fixture.toString("base64")}`;
 const pr: PullRequest = {
-  number: 214, title: "Console: Stash view for quiet chats", state: "open", url: "https://github.com/example/console/pull/214", baseRefName: "main", headRefName: "navaigate/stash", updatedAt: "2026-11-01T09:30:00Z",
+  number: 214, title: "Console: Stash view for quiet chats", state: "open", url: "https://github.com/example/console/pull/214", baseRefName: "main", headRefName: "feature/stash", updatedAt: "2026-11-01T09:30:00Z",
   autoMerge: false, inMergeQueue: false,
   checks: { state: "passing", totalCount: 6, passedCount: 6, failedCount: 0, pendingCount: 0 },
   review: { state: "approved", reviewRequestCount: 0 },

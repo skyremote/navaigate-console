@@ -48,7 +48,7 @@ const board: FleetBoard = {
   serverId: "sky", serverKey: "laptop",
   columns: [
     { key: "laptop", label: "laptop home", serverId: "sky", online: true, lastSeenAt: NOW, threads: [], resources: { observedAt: NOW, cpuCount: 12, cpuUtilization: 0.18, totalMemoryBytes: 32 * 1024 ** 3, availableMemoryBytes: 14 * 1024 ** 3 } },
-    { key: "studio", label: "Studio home", serverId: "macbookm1", online: true, lastSeenAt: NOW, threads: [{ id: "r1", title: "Nightly render", state: "running", machine: "studio", projectName: null, providerId: "claude-code", updatedAt: NOW, url: "", via: "macbookm1" }], resources: { observedAt: NOW, cpuCount: 8, cpuUtilization: 0.31, totalMemoryBytes: 16 * 1024 ** 3, availableMemoryBytes: 9 * 1024 ** 3 } },
+    { key: "studio", label: "Studio home", serverId: "srv-studio", online: true, lastSeenAt: NOW, threads: [{ id: "r1", title: "Nightly render", state: "running", machine: "studio", projectName: null, providerId: "claude-code", updatedAt: NOW, url: "", via: "srv-studio" }], resources: { observedAt: NOW, cpuCount: 8, cpuUtilization: 0.31, totalMemoryBytes: 16 * 1024 ** 3, availableMemoryBytes: 9 * 1024 ** 3 } },
     { key: "work", label: "work Client", serverId: "sky-m4", online: false, lastSeenAt: NOW - 2 * HOUR, threads: [] },
   ],
 };
@@ -77,7 +77,7 @@ describe.skipIf(!OUT)("vis-core preview pages", () => {
       { component: () => <Rail activeThreadId="t1" activeProjectId="p1" onNavigate={() => {}} /> },
       {},
       {
-        sidebarThreads: { status: "ready", threads: [thread("t1", "Portal judging dry run", { status: "active", runtimeStatus: "active" }), thread("t2", "Invoice NAVAI-041")], projects: [{ id: "p1", name: "NavAIgate", isPersonal: false }] as never, sections: [] },
+        sidebarThreads: { status: "ready", threads: [thread("t1", "Release dry run", { status: "active", runtimeStatus: "active" }), thread("t2", "Invoice INV-041")], projects: [{ id: "p1", name: "Atlas", isPersonal: false }] as never, sections: [] },
         rpc: { fleet_board: () => ({ available: true, board, error: null }), m1_service: () => probe() } as never,
         context: { projectId: "p1", threadId: "t1" },
       },

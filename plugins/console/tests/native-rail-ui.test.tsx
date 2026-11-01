@@ -45,13 +45,13 @@ function thread(id: string, title: string, projectId: string, over: Record<strin
 }
 
 const threads = [
-  thread("t1", "Portal judging dry run", "p1"),
-  thread("t2", "Invoice NAVAI-041", "p2", { updatedAt: NOW - 2 * HOUR }),
+  thread("t1", "Release dry run", "p1"),
+  thread("t2", "Invoice INV-041", "p2", { updatedAt: NOW - 2 * HOUR }),
   thread("t3", "Old idea", "p2", { updatedAt: NOW - 9 * DAY }),
   thread("t3kid", "Old idea helper", "p2", { updatedAt: NOW - 9 * DAY, parentThreadId: "t3" }),
 ];
 const projects = [
-  { id: "p1", name: "NavAIgate", isPersonal: false, href: "/p1", settingsHref: "/s/p1", experimental_icon: { imageUrl: "/api/v1/projects/p1/files/logo.svg", monogram: "N", hue: 260 } },
+  { id: "p1", name: "Atlas", isPersonal: false, href: "/p1", settingsHref: "/s/p1", experimental_icon: { imageUrl: "/api/v1/projects/p1/files/logo.svg", monogram: "N", hue: 260 } },
   { id: "p2", name: "Admin", isPersonal: false, href: "/p2", settingsHref: "/s/p2", experimental_icon: { imageUrl: null, monogram: "AD", hue: 150 } },
 ];
 const policy = { autoMerge: false, requiredPrUrls: [], requiredPrEnvironments: {}, acceptancePending: true, inactiveAfterMs: null };
@@ -153,9 +153,9 @@ describe("F38 the pull request the owning Mac sees shows on its remote row", () 
     serverId: "sky", serverKey: "laptop",
     columns: [
       { key: "laptop", label: "laptop", serverId: "sky", online: true, lastSeenAt: NOW, threads: [] },
-      { key: "studio", label: "studio", serverId: "macbookm1", online: true, lastSeenAt: NOW, mirror: true, threads: [
-        { id: "r1", title: "Nightly render", state: "idle", machine: "studio", projectName: "Admin", providerId: "claude-code", updatedAt: NOW - HOUR, url: "https://m1/threads/r1", via: "macbookm1" },
-        { id: "r2", title: "No PR here", state: "idle", machine: "studio", projectName: "Admin", providerId: "claude-code", updatedAt: NOW - HOUR, url: "https://m1/threads/r2", via: "macbookm1" },
+      { key: "studio", label: "studio", serverId: "srv-studio", online: true, lastSeenAt: NOW, mirror: true, threads: [
+        { id: "r1", title: "Nightly render", state: "idle", machine: "studio", projectName: "Admin", providerId: "claude-code", updatedAt: NOW - HOUR, url: "https://m1/threads/r1", via: "srv-studio" },
+        { id: "r2", title: "No PR here", state: "idle", machine: "studio", projectName: "Admin", providerId: "claude-code", updatedAt: NOW - HOUR, url: "https://m1/threads/r2", via: "srv-studio" },
       ] },
     ],
   };
@@ -163,7 +163,7 @@ describe("F38 the pull request the owning Mac sees shows on its remote row", () 
 
   it("draws the badge with its number and failing checks on Studio row, not on a row without a PR", async () => {
     localStorage.setItem("nav-skin:machine", JSON.stringify("studio"));
-    renderRail({ board, rows: [row("r1", "reviewable", { remote: true, machine: "studio", ownerServerId: "macbookm1", ownerHostId: "h1", pr })] });
+    renderRail({ board, rows: [row("r1", "reviewable", { remote: true, machine: "studio", ownerServerId: "srv-studio", ownerHostId: "h1", pr })] });
     const badge = await waitFor(() => {
       const el = sidebar().querySelector('[data-nav-part="pr-badge"]') as HTMLElement | null;
       expect(el).toBeTruthy();
@@ -254,7 +254,7 @@ describe("F74 and EX-b logos for projects and folders", () => {
     renderRail();
     await waitFor(() => expect(sidebar().querySelectorAll('[data-nav-part="project-icon"]')).toHaveLength(2));
     const heads = [...sidebar().querySelectorAll('[data-nav-part="section-head"]')];
-    const nav = heads.find((h) => h.textContent?.includes("NavAIgate")) as HTMLElement;
+    const nav = heads.find((h) => h.textContent?.includes("Atlas")) as HTMLElement;
     const admin = heads.find((h) => h.textContent?.includes("Admin")) as HTMLElement;
     const img = nav.querySelector('img[data-project-icon="image"]') as HTMLImageElement;
     expect(img.getAttribute("src")).toBe("/api/v1/projects/p1/files/logo.svg");
@@ -268,7 +268,7 @@ describe("F74 and EX-b logos for projects and folders", () => {
     renderRail({ styles: { "p:p1": { icon: "emoji:🚀" }, "f:f1": { icon: "emoji:💼" } } });
     await waitFor(() => expect(sidebar().querySelector('[data-project-icon="emoji"]')).toBeTruthy());
     const heads = [...sidebar().querySelectorAll('[data-nav-part="section-head"]')];
-    const nav = heads.find((h) => h.textContent?.includes("NavAIgate")) as HTMLElement;
+    const nav = heads.find((h) => h.textContent?.includes("Atlas")) as HTMLElement;
     expect(nav.querySelector('[data-project-icon="emoji"]')?.textContent).toBe("🚀");
     expect(nav.querySelector('img')).toBeNull();
     const folder = await waitFor(() => {
@@ -284,7 +284,7 @@ describe("F74 and EX-b logos for projects and folders", () => {
     const sdk = { projects: { get: vi.fn(async () => ({ icon: null })), iconCandidates: vi.fn(async () => ({ candidates: ["public/logo.svg", "favicon.ico"] })), update } };
     renderRail({ sdk });
     const head = await waitFor(() => {
-      const el = [...sidebar().querySelectorAll('[data-nav-part="section-head"]')].find((h) => h.textContent?.includes("NavAIgate")) as HTMLElement | undefined;
+      const el = [...sidebar().querySelectorAll('[data-nav-part="section-head"]')].find((h) => h.textContent?.includes("Atlas")) as HTMLElement | undefined;
       expect(el).toBeTruthy();
       return el as HTMLElement;
     });
@@ -302,7 +302,7 @@ describe("F74 and EX-b logos for projects and folders", () => {
     const sdk = { projects: { get: vi.fn(async () => ({ icon: null })), iconCandidates: vi.fn(async () => ({ candidates: [] })), update } };
     const { callRpc } = renderRail({ sdk });
     const head = await waitFor(() => {
-      const el = [...sidebar().querySelectorAll('[data-nav-part="section-head"]')].find((h) => h.textContent?.includes("NavAIgate")) as HTMLElement | undefined;
+      const el = [...sidebar().querySelectorAll('[data-nav-part="section-head"]')].find((h) => h.textContent?.includes("Atlas")) as HTMLElement | undefined;
       expect(el).toBeTruthy();
       return el as HTMLElement;
     });

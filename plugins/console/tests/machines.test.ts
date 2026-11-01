@@ -26,7 +26,7 @@ const board: FleetBoard = {
   columns: [
     { key: "work", label: "work Client", serverId: "work-bb", online: true, lastSeenAt: 5000, threads: [
       t({ id: "a", title: "Compile report", updatedAt: 3000 }),
-      t({ id: "b", title: "Master CSM Insights", state: "running", updatedAt: 1000, projectName: "CSM" }),
+      t({ id: "b", title: "Master Reports Insights", state: "running", updatedAt: 1000, projectName: "Reports" }),
       t({ id: "c", title: "Sales stages", updatedAt: 4000 }),
     ] },
     { key: "laptop", label: "laptop home", serverId: "laptop-bb", online: true, lastSeenAt: 5000, threads: [
@@ -72,7 +72,7 @@ test("chipsFor orders Laptop, Studio, Work and shows exactly the running view's 
 
 test("remoteSections groups by project in first-seen order, no project is Personal", () => {
   const sections = remoteSections(remoteFor(board, "work"));
-  assert.deepEqual(sections.map((s) => s.name), ["CSM", "Personal"]);
+  assert.deepEqual(sections.map((s) => s.name), ["Reports", "Personal"]);
   assert.deepEqual(sections[1].threads.map((x) => x.id), ["c", "a"]);
 });
 

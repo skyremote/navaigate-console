@@ -51,18 +51,18 @@ function thread(id: string, title: string, projectId: string, over: Record<strin
   } as unknown as PluginSidebarThread;
 }
 const threads = [
-  thread("t1", "Portal judging dry run", "p1", { status: "active", runtimeStatus: "active", updatedAt: NOW - 60_000 }),
+  thread("t1", "Release dry run", "p1", { status: "active", runtimeStatus: "active", updatedAt: NOW - 60_000 }),
   thread("t2", "Ember theme polish", "p1", { providerId: "codex", updatedAt: NOW - 20 * 60_000 }),
-  thread("t3", "Invoice NAVAI-041", "p2", { updatedAt: NOW - 2 * HOUR }),
-  thread("t4", "Skool lesson cover", "p2", { updatedAt: NOW - 5 * HOUR }),
+  thread("t3", "Invoice INV-041", "p2", { updatedAt: NOW - 2 * HOUR }),
+  thread("t4", "Course lesson cover", "p2", { updatedAt: NOW - 5 * HOUR }),
   thread("t5", "Survey export", "p3", { updatedAt: NOW - 7 * HOUR }),
   thread("old1", "Pricing page idea", "p2", { updatedAt: NOW - 9 * DAY }),
   thread("old2", "Old Zoom notes", "p3", { updatedAt: NOW - 12 * DAY }),
 ];
 const projects = [
-  { id: "p1", name: "NavAIgate", isPersonal: false, href: "/p1", settingsHref: "/s/p1", experimental_icon: { imageUrl: svg("#2f6fed", "#fff"), monogram: "N", hue: 260 } },
+  { id: "p1", name: "Atlas", isPersonal: false, href: "/p1", settingsHref: "/s/p1", experimental_icon: { imageUrl: svg("#2f6fed", "#fff"), monogram: "N", hue: 260 } },
   { id: "p2", name: "Admin", isPersonal: false, href: "/p2", settingsHref: "/s/p2", experimental_icon: { imageUrl: null, monogram: "AD", hue: 150 } },
-  { id: "p3", name: "BluPlai", isPersonal: false, href: "/p3", settingsHref: "/s/p3", experimental_icon: { imageUrl: null, monogram: "B", hue: 25 } },
+  { id: "p3", name: "Survey app", isPersonal: false, href: "/p3", settingsHref: "/s/p3", experimental_icon: { imageUrl: null, monogram: "B", hue: 25 } },
 ];
 const policy = { autoMerge: false, requiredPrUrls: [], requiredPrEnvironments: {}, acceptancePending: true, inactiveAfterMs: null };
 const rec = (threadId: string) => ({ threadId, mode: "stashed", wakeAt: null, changedAt: NOW, revision: null, policy });
@@ -72,10 +72,10 @@ const board: FleetBoard = {
   serverId: "sky", serverKey: "laptop",
   columns: [
     { key: "laptop", label: "laptop", serverId: "sky", online: true, lastSeenAt: NOW, threads: [], resources: { observedAt: NOW, cpuCount: 12, cpuUtilization: 0.18, totalMemoryBytes: 32 * 1024 ** 3, availableMemoryBytes: 14 * 1024 ** 3 } },
-    { key: "studio", label: "studio", serverId: "macbookm1", online: true, lastSeenAt: NOW, mirror: true, threads: [
-      { id: "r1", title: "Nightly render", state: "idle", machine: "studio", projectName: "NavAIgate", providerId: "claude-code", updatedAt: NOW - HOUR, url: "https://m1/threads/r1", via: "macbookm1" },
-      { id: "r2", title: "Skool upload retry", state: "needs-you", machine: "studio", projectName: "Admin", providerId: "codex", updatedAt: NOW - 2 * HOUR, url: "https://m1/threads/r2", via: "macbookm1" },
-      { id: "r3", title: "Podcast cut", state: "idle", machine: "studio", projectName: "Admin", providerId: "claude-code", updatedAt: NOW - 3 * HOUR, url: "https://m1/threads/r3", via: "macbookm1" },
+    { key: "studio", label: "studio", serverId: "srv-studio", online: true, lastSeenAt: NOW, mirror: true, threads: [
+      { id: "r1", title: "Nightly render", state: "idle", machine: "studio", projectName: "Atlas", providerId: "claude-code", updatedAt: NOW - HOUR, url: "https://m1/threads/r1", via: "srv-studio" },
+      { id: "r2", title: "Course upload retry", state: "needs-you", machine: "studio", projectName: "Admin", providerId: "codex", updatedAt: NOW - 2 * HOUR, url: "https://m1/threads/r2", via: "srv-studio" },
+      { id: "r3", title: "Podcast cut", state: "idle", machine: "studio", projectName: "Admin", providerId: "claude-code", updatedAt: NOW - 3 * HOUR, url: "https://m1/threads/r3", via: "srv-studio" },
     ] },
     { key: "work", label: "work", serverId: "sky-m4", online: false, lastSeenAt: NOW - 2 * HOUR, threads: [] },
   ],
@@ -121,7 +121,7 @@ const accounts = {
   t4: { accountId: "a3", label: "gmail", email: "x@gmail.com", harness: "claude" },
   t5: { accountId: "a1", label: "dw", email: "sam@example.com", harness: "claude" },
 };
-const railRows = [row("t1", "Portal judging dry run", "running"), row("t3", "Invoice NAVAI-041", "failed"), row("t4", "Skool lesson cover", "needs-you"), row("old1", "Pricing page idea", "stashed", { updatedAt: NOW - 9 * DAY }), row("old2", "Old Zoom notes", "stashed", { updatedAt: NOW - 12 * DAY })];
+const railRows = [row("t1", "Release dry run", "running"), row("t3", "Invoice INV-041", "failed"), row("t4", "Course lesson cover", "needs-you"), row("old1", "Pricing page idea", "stashed", { updatedAt: NOW - 9 * DAY }), row("old2", "Old Zoom notes", "stashed", { updatedAt: NOW - 12 * DAY })];
 
 describe("rail screenshots from fixture data", () => {
   for (const mode of ["light", "dark"] as const) {
@@ -142,9 +142,9 @@ describe("rail screenshots from fixture data", () => {
     localStorage.setItem("nav-skin:machine", JSON.stringify("studio"));
     mount(() => <Rail activeThreadId="t1" activeProjectId="p1" onNavigate={() => {}} />, {
       rpc: { attention_fleet_inbox: () => ({ rows: [
-        row("r1", "Nightly render", "reviewable", { remote: true, machine: "studio", ownerServerId: "macbookm1", ownerHostId: "h1", pr: pr(41, "failing", 2) }),
-        row("r2", "Skool upload retry", "needs-you", { remote: true, machine: "studio", ownerServerId: "macbookm1", ownerHostId: "h1", pr: pr(42, "pending") }),
-        row("r3", "Podcast cut", "reviewable", { remote: true, machine: "studio", ownerServerId: "macbookm1", ownerHostId: "h1", pr: pr(40, "passing") }),
+        row("r1", "Nightly render", "reviewable", { remote: true, machine: "studio", ownerServerId: "srv-studio", ownerHostId: "h1", pr: pr(41, "failing", 2) }),
+        row("r2", "Course upload retry", "needs-you", { remote: true, machine: "studio", ownerServerId: "srv-studio", ownerHostId: "h1", pr: pr(42, "pending") }),
+        row("r3", "Podcast cut", "reviewable", { remote: true, machine: "studio", ownerServerId: "srv-studio", ownerHostId: "h1", pr: pr(40, "passing") }),
       ], truncated: false, notices: [] }), fleet_board: () => ({ available: true, board, error: null }) },
     });
     await waitFor(() => expect(sidebar().querySelectorAll('[data-nav-part="pr-badge"]')).toHaveLength(3));
@@ -154,7 +154,7 @@ describe("rail screenshots from fixture data", () => {
   it("the project right-click menu offers Change icon", async () => {
     mount(() => <Rail activeThreadId="t1" activeProjectId="p1" onNavigate={() => {}} />);
     const head = await waitFor(() => {
-      const el = [...sidebar().querySelectorAll('[data-nav-part="section-head"]')].find((h) => h.textContent?.includes("NavAIgate")) as HTMLElement | undefined;
+      const el = [...sidebar().querySelectorAll('[data-nav-part="section-head"]')].find((h) => h.textContent?.includes("Atlas")) as HTMLElement | undefined;
       expect(el).toBeTruthy();
       return el as HTMLElement;
     });
@@ -166,7 +166,7 @@ describe("rail screenshots from fixture data", () => {
   it("the project icon chooser", async () => {
     mount(() => <Rail activeThreadId="t1" activeProjectId="p1" onNavigate={() => {}} />);
     const head = await waitFor(() => {
-      const el = [...sidebar().querySelectorAll('[data-nav-part="section-head"]')].find((h) => h.textContent?.includes("NavAIgate")) as HTMLElement | undefined;
+      const el = [...sidebar().querySelectorAll('[data-nav-part="section-head"]')].find((h) => h.textContent?.includes("Atlas")) as HTMLElement | undefined;
       expect(el).toBeTruthy();
       return el as HTMLElement;
     });
@@ -183,10 +183,10 @@ describe("rail screenshots from fixture data", () => {
     savePage("stash-page", view.container.innerHTML, "light");
   });
 
-  const STASH_TITLES = ["Pricing page idea", "Old Zoom notes", "Invoice NAVAI-040", "Skool lesson cover v2", "Portal facilitator page copy", "BluPlai survey export", "Podcast cut for Wes", "Receipts for October", "Clientco workshop agenda", "Ember theme spacing", "Travel plan for Texas", "Hormozi offer notes", "Acme residual check", "Tom onboarding checklist", "Cohort archive tidy", "Video thumbnails round two", "Sales call recap", "Pulse dashboard colours", "Turso search tidy", "Insurance renewal letter", "Landing page headline test", "Studio backup schedule", "NAS share permissions", "Claude hooks review", "Skills registry cleanup", "Weekly Skool post", "Brain sync check", "Quote for new customer", "Mascot choice", "Folder logos"];
+  const STASH_TITLES = ["Pricing page idea", "Old Zoom notes", "Invoice INV-040", "Course lesson cover v2", "Portal landing page copy", "Survey export", "Podcast cut for the client", "Receipts for October", "Clientco workshop agenda", "Ember theme spacing", "Travel plan for the offsite", "Offer notes", "Acme contract check", "Onboarding checklist", "Archive tidy", "Video thumbnails round two", "Sales call recap", "Dashboard colours", "Search index tidy", "Insurance renewal letter", "Landing page headline test", "Studio backup schedule", "NAS share permissions", "Hooks review", "Template registry cleanup", "Weekly course post", "Notes sync check", "Quote for new customer", "Logo choice", "Folder logos"];
   const stash30 = STASH_TITLES.map((title, i) => row(`s${i}`, title, "stashed", {
     updatedAt: NOW - (i < 4 ? 2 + i : 7 + i * 2) * DAY - i * HOUR,
-    ...(i % 5 === 1 ? { remote: true, machine: "studio", ownerServerId: "macbookm1", ownerHostId: "h1" } : i % 7 === 3 ? { remote: true, machine: "work", ownerServerId: "sky-m4", ownerHostId: "h4" } : {}),
+    ...(i % 5 === 1 ? { remote: true, machine: "studio", ownerServerId: "srv-studio", ownerHostId: "h1" } : i % 7 === 3 ? { remote: true, machine: "work", ownerServerId: "sky-m4", ownerHostId: "h4" } : {}),
   }));
   const stashRpc = { attention_state: () => ({ records: stash30.map((r) => rec(r.threadId)), foldWorking: false, stashAfterDays: 7 }), attention_fleet_inbox: () => ({ rows: stash30, truncated: false, notices: [] }) };
 
@@ -218,12 +218,12 @@ describe("rail screenshots from fixture data", () => {
 
   it("Work needs you grouped into failed, questions, review and working", async () => {
     const rows = [
-      row("a", "Invoice NAVAI-041", "failed"), row("b", "Skool lesson cover", "needs-you", { question: "Which cover do you want, A or B?" }),
+      row("a", "Invoice INV-041", "failed"), row("b", "Course lesson cover", "needs-you", { question: "Which cover do you want, A or B?" }),
       row("c", "Ember theme polish", "reviewable"), row("d", "Nightly render", "reviewable", { remote: true, machine: "studio", ownerServerId: "m", ownerHostId: "h" }),
-      row("e", "Portal judging dry run", "running"),
+      row("e", "Release dry run", "running"),
     ];
     const view = mount(() => <AttentionPage />, { rpc: { attention_fleet_inbox: () => ({ rows, truncated: false, notices: [] }) } });
-    await screen.findByText("Invoice NAVAI-041");
+    await screen.findByText("Invoice INV-041");
     savePage("work-needs-you", view.container.innerHTML, "light");
   });
 });

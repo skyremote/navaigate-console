@@ -95,7 +95,7 @@
    {
     "key": "studio",
     "label": "Studio home",
-    "serverId": "macbookm1",
+    "serverId": "srv-studio",
     "online": true,
     "lastSeenAt": 1793561849568,
     "threads": [
@@ -119,7 +119,7 @@
       "providerId": "claude-code",
       "updatedAt": 1793543710250,
       "url": "https://host.example/projects/proj_01/threads/thr_09",
-      "via": "macbookm1"
+      "via": "srv-studio"
      },
      {
       "id": "thr_10",
@@ -130,7 +130,7 @@
       "providerId": "claude-code",
       "updatedAt": 1793543501621,
       "url": "https://host.example/projects/proj_01/threads/thr_10",
-      "via": "macbookm1"
+      "via": "srv-studio"
      }
     ]
    },

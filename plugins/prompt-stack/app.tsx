@@ -169,8 +169,8 @@ function PromptStackPanel({ threadId }: ExperimentalThreadActionTabProps) {
 
         {state ? (
           <p className="text-[11px] leading-relaxed text-muted-foreground">
-            Ticks save at once for this thread only and apply from the next prompt.
-            {state.scope !== "thread" ? " Until you tick, the thread follows the project default." : ""}
+            Ticks apply to your next prompt in this thread only, then clear themselves. Claude's reply opens with
+            a bold line, Brief (stack: ...), so you can see what it used.
           </p>
         ) : null}
       </div>

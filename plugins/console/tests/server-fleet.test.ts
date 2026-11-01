@@ -21,7 +21,7 @@ const fleetBoard = {
     { key: "laptop", label: "laptop home", serverId: "sky", url: "https://laptop.example.test", online: true, local: true, lastSeenAt: 10, capabilities: ["NAS"], counts: { running: 0, needsYou: 0, queued: 0 }, threads: [] },
     {
       key: "work", label: "work Client", serverId: "sky-m4", url: "https://work.example.test", online: true, local: false, lastSeenAt: 9, capabilities: ["VPN"], counts: { running: 1, needsYou: 0, queued: 0 },
-      threads: [{ id: "thr_a", title: "Master CSM Insights", state: "running", machine: "work", projectId: "p", projectName: "10_NavAIgate", providerId: "claude-code", parentThreadId: null, createdAt: 1, updatedAt: 2, url: "https://work.example.test/threads/thr_a", via: "sky-m4", extra: "ignored" }],
+      threads: [{ id: "thr_a", title: "Master Reports Insights", state: "running", machine: "work", projectId: "p", projectName: "10_Atlas", providerId: "claude-code", parentThreadId: null, createdAt: 1, updatedAt: 2, url: "https://work.example.test/threads/thr_a", via: "sky-m4", extra: "ignored" }],
     },
   ],
   commands: [],
@@ -38,7 +38,7 @@ test("board maps Fleet's board and takes this bb's key from Fleet", async () => 
   assert.equal(r.board?.serverId, "sky");
   assert.equal(r.board?.serverKey, "laptop");
   assert.deepEqual(r.board?.columns.map((c) => c.key), ["laptop", "work"]);
-  assert.equal(r.board?.columns[1].threads[0].title, "Master CSM Insights");
+  assert.equal(r.board?.columns[1].threads[0].title, "Master Reports Insights");
   assert.equal(r.board?.columns[1].threads[0].state, "running");
 });
 
@@ -89,8 +89,8 @@ test("mirrorOpen fails loudly so the rail can fall back to the remote page", asy
 });
 
 test("native placement preserves execution, workspace intent and durable receipt", async () => {
-  const route = { machine: "studio", serverId: "macbookm1", hostId: "h", mode: "auto", reason: "Fresh owner with NAS", warnings: [], candidates: [] };
-  const input = { machine: "Auto", prompt: "Read this synthetic brief", requestId: "00000000-0000-4000-8000-000000000001", projectName: "NavAIgate", providerId: "claude-code", model: "claude-opus-5-5", reasoningLevel: "high", serviceTier: "default", workspace: { type: "unmanaged", path: null }, routing: { needsNas: true } } as const;
+  const route = { machine: "studio", serverId: "srv-studio", hostId: "h", mode: "auto", reason: "Fresh owner with NAS", warnings: [], candidates: [] };
+  const input = { machine: "Auto", prompt: "Read this synthetic brief", requestId: "00000000-0000-4000-8000-000000000001", projectName: "Atlas", providerId: "claude-code", model: "claude-opus-5-5", reasoningLevel: "high", serviceTier: "default", workspace: { type: "unmanaged", path: null }, routing: { needsNas: true } } as const;
   const link = createFleetLink(fakeBb((call) => {
     assert.equal(call.method, "work_start");
     assert.deepEqual(call.input, input);

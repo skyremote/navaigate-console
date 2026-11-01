@@ -1,12 +1,17 @@
 // What the first-run setup screen needs from the server: the preset the installer
 // chose (`bb plugin config navaigate-skin set preset simple|pro`) and what the
 // running bb can do (the core-change probes behind the feature picker).
+import os from "node:os";
 import { z } from "zod";
 import type { BbPluginApi } from "@get-bb/plugin-sdk";
 import { ledgerIdsPassed } from "./src/features-enabled";
 import { setServerProbes } from "./server-features";
 
-export const setupHintSchema = z.object({ preset: z.enum(["simple", "pro"]).nullable() });
+export const setupHintSchema = z.object({
+  preset: z.enum(["simple", "pro"]).nullable(),
+  /** This Mac's own name, read here because the browser cannot know it; it finds "This Mac" in a profile that does not say. */
+  hostname: z.string(),
+});
 export const coreProbesSchema = z.object({
   /** Set when the running bb carries the release-build marker (the update-drain SDK call). */
   releaseBuild: z.boolean(),
@@ -54,7 +59,7 @@ export function createSetup(bb: BbPluginApi) {
   return {
     hint: async (): Promise<z.infer<typeof setupHintSchema>> => {
       const raw = String((await settings.get()).preset ?? "").trim().toLowerCase();
-      return { preset: raw === "simple" || raw === "pro" ? raw : null };
+      return { preset: raw === "simple" || raw === "pro" ? raw : null, hostname: os.hostname() };
     },
     probes,
   };

@@ -37,7 +37,7 @@ const summary = (over: Partial<NativeContextPreview> = {}): NativeContextPreview
 });
 const bundle = { schema: "navaigate.portable-context", version: 1, createdAt: 1_800_000_000_000, narrative: { brief: {}, decisions: [], messages: [], omitted: { messageIds: [], attachmentIds: [] }, provenance: "caller-supplied" }, source: { owner: { serverId: "s", machineKey: "laptop", hostId: "h", environmentId: "e", projectId: "p" }, workspace: {}, repository: { verification: "unknown", reason: "x" } }, files: [] };
 const request: NewThreadRequest = { projectId: "proj_test", providerId: "claude-code", model: "opus", reasoningLevel: "high", permissionMode: "full", executionInputSources: {}, environment: { type: "project-default" }, input: [{ type: "text", text: "Carry on", mentions: [] }] };
-const project = { id: "proj_test", name: "NavAIgate", kind: "standard", createdAt: 1, updatedAt: 1, gitRemoteUrl: null, sources: [] };
+const project = { id: "proj_test", name: "Atlas", kind: "standard", createdAt: 1, updatedAt: 1, gitRemoteUrl: null, sources: [] };
 function receipt(over: Partial<NativeWorkReceipt> = {}): NativeWorkReceipt {
   return { outcome: "started", requestId: "00000000-0000-4000-8000-000000000000", threadId: "thr_remote", localThreadId: "thr_mirror", commandId: null, url: null, route: { machine: "studio", serverId: "srv", hostId: null, mode: "manual", reason: "Chosen", warnings: [], candidates: [] }, warning: null, ...over };
 }
