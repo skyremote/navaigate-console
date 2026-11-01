@@ -2,14 +2,14 @@
 
 /*
   NavAIgate — bb theme v1 (2 October 2026)
-  Lifted from the GPLS platform tokens (NavAIgate-2.0 src/styles/gpls-theme.css + tokens.css):
+  Lifted from the NavAIgate platform tokens:
   warm paper and ink, hairline rules, gold for "now". The slate-blue accent is removed:
   no blue anywhere. Primary is ink, the focus ring and live states are gold.
 */
 
 :root,
 .light {
-  /* Anchors: GPLS Slate light (ground / ink) */
+  /* Anchors: slate light (ground / ink) */
   --canvas: #fbfaf8;
   --ink: #202225;
 

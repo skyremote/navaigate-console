@@ -18,7 +18,7 @@ async function boot(root: string, extra: { skillPath?: string; preview?: boolean
   const spawned: unknown[] = [];
   const host = createFakePluginHost({
     pluginId: "navmotion",
-    settings: { projectsRoot: root, bbProjectId: "proj_test", reviewerName: "Daniel", ...(extra.skillPath ? { skillPath: extra.skillPath } : {}) },
+    settings: { projectsRoot: root, bbProjectId: "proj_test", reviewerName: "Sam", ...(extra.skillPath ? { skillPath: extra.skillPath } : {}) },
     sdk: {
       files: {
         createPreview: async ({ rootPath }: { rootPath: string }) => {
@@ -108,10 +108,10 @@ describe("decide", () => {
     expect(r).toMatchObject({ recorded: true, sent: true, warning: null });
     const lines = readFileSync(path.join(dir, "feedback.jsonl"), "utf8").trim().split("\n").map((l) => JSON.parse(l));
     expect(lines).toHaveLength(1);
-    expect(lines[0]).toMatchObject({ by: "daniel", via: "studio", about: "storyboard", decision: "approve", note: "go" });
+    expect(lines[0]).toMatchObject({ by: "sam", via: "studio", about: "storyboard", decision: "approve", note: "go" });
     expect(lines[0].at).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d[+-]\d\d:\d\d$/);
     expect(sent).toEqual([
-      { threadId: "thr_deck", mode: "auto", input: [{ type: "text", text: 'NavMotion Studio: Daniel approved the storyboard for `deck-wait`. Note: "go". Carry on from where you stopped.', mentions: [] }] },
+      { threadId: "thr_deck", mode: "auto", input: [{ type: "text", text: 'NavMotion Studio: Sam approved the storyboard for `deck-wait`. Note: "go". Carry on from where you stopped.', mentions: [] }] },
     ]);
     await expect(rpc("decide", { slug: "deck-wait", decision: "approve", note: "" })).rejects.toThrow(/not been picked up/);
     expect(readFileSync(path.join(dir, "feedback.jsonl"), "utf8").trim().split("\n")).toHaveLength(1);

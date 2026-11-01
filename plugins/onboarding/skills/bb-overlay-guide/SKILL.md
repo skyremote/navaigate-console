@@ -27,4 +27,4 @@ No video, model call, account connection or provider configuration is used.
 Live acknowledgement boundary: never tick a live user's read checks, progress the
 live tour or mark completion on their behalf. Only the person's own deliberate UI
 action satisfies the read check. Automated progression tests must run against an
-isolated static fixture or isolated BB data directory, never Daniel's live guide.
+isolated static fixture or isolated BB data directory, never a live user's guide.

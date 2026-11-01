@@ -213,7 +213,7 @@ export default async function plugin(bb: BbPluginApi) {
   // `<img>` and `<video>` cannot send a bearer token, so media goes through
   // bb.sdk.files.createPreview: a short-lived, path-shaped capability URL
   // confined to the project folder, served by BB itself (works in the desktop
-  // app and through sky.getbb.app). One preview per project, renewed early.
+  // app and through the bb remote address). One preview per project, renewed early.
   const previews = new Map<string, { baseUrl: string; expiresAtMs: number; root: string }>();
   const PREVIEW_TTL = 60 * 60 * 1000; // BB caps preview TTL at one hour
   async function previewBase(dir: string): Promise<string | null> {

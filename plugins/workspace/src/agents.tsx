@@ -117,7 +117,7 @@ type FleetAgent = { name: string; description: string; model: string | null; col
 
 // The crew, grouped like an org chart. A `group:` line in an agent's front
 // matter wins; otherwise: chief-of-staff / cos-* lead, *-lead are the leads,
-// a shared prefix used by two or more agents (adsk-*) is its own team, and the
+// a shared prefix used by two or more agents (a client prefix such as acme-*) is its own team, and the
 // rest are specialists.
 const GROUP_ORDER = ["Chief of staff", "Leads"];
 function groupFleet(agents: FleetAgent[]) {

@@ -26,7 +26,7 @@ export const storageSchema = z.object({
   path: z.string().trim().min(1).max(300),
   /** Local copies of files fetched while away. */
   localCopy: z.string().trim().min(1).max(300),
-  /** host:port that only answers on the home network, e.g. 192.168.0.10:445. */
+  /** host:port that only answers on the home network, e.g. nas.local:445. */
   homeCheck: z.string().trim().max(120),
   /** BB project on the share (home) and on the local copy (away). */
   homeProject: z.string().trim().max(80),

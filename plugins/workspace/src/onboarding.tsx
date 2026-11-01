@@ -299,7 +299,7 @@ export function SetupWizard({ onDone }: { onDone?: () => void }) {
                         ["label", "What you call it", "NAS"],
                         ["path", "Where it's mounted (same on both machines)", "/Volumes/MyNAS or /mnt/nas"],
                         ["localCopy", "Local copies when away", "~/Storage_Local"],
-                        ["homeCheck", "Address only reachable at home (host:port)", "192.168.0.10:445"],
+                        ["homeCheck", "Address only reachable at home (host:port)", "nas.local:445"],
                         ["homeProject", "bb project on the share", "My NAS"],
                         ["awayProject", "bb project on the local copy", "My NAS (away)"],
                       ] as Array<[keyof Storage, string, string]>

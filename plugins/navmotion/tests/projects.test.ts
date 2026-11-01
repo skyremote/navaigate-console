@@ -142,32 +142,32 @@ describe("decisionPending (double-click guard)", () => {
 
 describe("decisionMessage (CONTRACT.md wording)", () => {
   it("approve with a note", () => {
-    expect(decisionMessage("sow-short", "storyboard", "approve", "go", "Daniel")).toBe(
-      'NavMotion Studio: Daniel approved the storyboard for `sow-short`. Note: "go". Carry on from where you stopped.',
+    expect(decisionMessage("sow-short", "storyboard", "approve", "go", "Sam")).toBe(
+      'NavMotion Studio: Sam approved the storyboard for `sow-short`. Note: "go". Carry on from where you stopped.',
     );
   });
   it("approve without a note leaves out the Note sentence", () => {
-    expect(decisionMessage("sow-short", "storyboard", "approve", "", "Daniel")).toBe(
-      "NavMotion Studio: Daniel approved the storyboard for `sow-short`. Carry on from where you stopped.",
+    expect(decisionMessage("sow-short", "storyboard", "approve", "", "Sam")).toBe(
+      "NavMotion Studio: Sam approved the storyboard for `sow-short`. Carry on from where you stopped.",
     );
   });
   it("changes to the storyboard", () => {
-    expect(decisionMessage("sow-short", "storyboard", "changes", "logo too small at 4s", "Daniel")).toBe(
-      'NavMotion Studio: Daniel asked for changes to the storyboard for `sow-short`: "logo too small at 4s". Make them, rebuild the board, and wait again.',
+    expect(decisionMessage("sow-short", "storyboard", "changes", "logo too small at 4s", "Sam")).toBe(
+      'NavMotion Studio: Sam asked for changes to the storyboard for `sow-short`: "logo too small at 4s". Make them, rebuild the board, and wait again.',
     );
   });
   it("changes to the final", () => {
-    expect(decisionMessage("sow-short", "final", "changes", "music too loud", "Daniel")).toBe(
-      'NavMotion Studio: Daniel asked for changes to the final for `sow-short`: "music too loud". Make them, render again, and wait again.',
+    expect(decisionMessage("sow-short", "final", "changes", "music too loud", "Sam")).toBe(
+      'NavMotion Studio: Sam asked for changes to the final for `sow-short`: "music too loud". Make them, render again, and wait again.',
     );
   });
   it("changes to the covers", () => {
-    expect(decisionMessage("sow-short", "covers", "changes", "bigger number", "Daniel")).toBe(
-      'NavMotion Studio: Daniel asked for changes to the covers for `sow-short`: "bigger number". Make them, render the covers again, and wait again.',
+    expect(decisionMessage("sow-short", "covers", "changes", "bigger number", "Sam")).toBe(
+      'NavMotion Studio: Sam asked for changes to the covers for `sow-short`: "bigger number". Make them, render the covers again, and wait again.',
     );
   });
   it("quotes notes safely", () => {
-    expect(decisionMessage("s-1", "storyboard", "approve", 'say "hi"', "Daniel")).toContain('Note: "say \\"hi\\"".');
+    expect(decisionMessage("s-1", "storyboard", "approve", 'say "hi"', "Sam")).toContain('Note: "say \\"hi\\"".');
     expect(decisionMessage("s-1", "storyboard", "approve", "")).toBe(
       "NavMotion Studio: The user approved the storyboard for `s-1`. Carry on from where you stopped.",
     );

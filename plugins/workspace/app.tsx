@@ -7,7 +7,7 @@
 //   Chips         experimental_appOverlay   hold for sub-agents, Run on / Move to your always-on machine, Claude account, under the chat box
 //   Tabs          experimental_appOverlay   Chrome-style strip of open chats; dock via bb's split
 //
-// Styling follows the GPLS Slate system (NavAIgate-2.0 src/styles/gpls-*.css).
+// Styling follows the NavAIgate slate system tokens (see themes/navaigate.css).
 // Colours come only from host tokens; the bundled NavAIgate theme drives them.
 import { definePluginApp } from "@get-bb/plugin-sdk/app";
 import { Rail } from "./src/rail";
