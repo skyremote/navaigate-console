@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { BbPluginApi } from "@get-bb/plugin-sdk";
+import { folderOfThread } from "./src/folder-of-thread";
 
 const id = z.string().min(1).max(128);
 export const attentionPolicy = z
@@ -93,6 +94,14 @@ const busy = new Set([
   "provisioning",
 ]);
 const defaultPolicy = () => attentionPolicy.parse({});
+/** The part of project-folders' `list` answer that says which folder each chat sits in. */
+const folderList = z
+  .object({
+    folders: z.array(z.object({ id: z.string() }).passthrough()),
+    bindings: z.record(z.string(), z.string()),
+    places: z.record(z.string(), z.string()),
+  })
+  .passthrough();
 const prOutput = z.record(
   z.string(),
   z.discriminatedUnion("outcome", [
@@ -613,7 +622,7 @@ export function createAttention(bb: BbPluginApi, clock = Date.now, featureOn: (i
       type: "number",
       label: "Stash chats untouched for (days)",
       description:
-        "Chats you have not touched for this many days move to the Stash, to keep your sidebar clear. They are not archived: open one and carry on, and it moves back to your list as soon as you send a message. Running, pinned, waiting and needs-you chats are never stashed. 0 switches the Stash off.",
+        "Chats you have not touched for this many days move to the Stash, to keep your sidebar clear. They are not archived: open one and carry on, and it moves back to your list as soon as you send a message. Chats in a folder stay in their folder, and running, pinned, waiting and needs-you chats are never stashed. 0 switches the Stash off.",
       default: 7,
       experimental_schema: z.number().int().min(0).max(365),
     },
@@ -641,6 +650,40 @@ export function createAttention(bb: BbPluginApi, clock = Date.now, featureOn: (i
     const record = read(threadId);
     return record.mode === "open" && record.changedAt < cutoff;
   };
+  type InFolder = (t: { id: string; environmentId: string | null }) => boolean;
+  const noFolders: InFolder = () => false;
+  let foldersDown = false;
+  /**
+   * A test for "this chat sits in a folder", with the same rule the sidebar uses.
+   * With the folders feature (EXTRA-X) off, or project-folders not installed or switched off,
+   * no chat is in a folder, which is what the sidebar shows then.
+   * Null when project-folders is on but cannot answer: callers then stash nothing rather than
+   * guess, and the outage is logged once, not every ten minutes.
+   */
+  async function inFolder(): Promise<InFolder | null> {
+    if (!featureOn("EXTRA-X")) return noFolders;
+    try {
+      const { plugins } = await bb.sdk.plugins.list();
+      const pf = plugins.find((p) => p.id === "project-folders");
+      if (!pf || pf.enabled === false) return noFolders;
+      const data = await bb.sdk.plugins.callRpc({
+        pluginId: "project-folders",
+        method: "list",
+        input: null,
+        outputSchema: folderList,
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (foldersDown) bb.log.info("stash: project-folders answers again");
+      foldersDown = false;
+      const ids = new Set(data.folders.map((f) => f.id));
+      return (t) => folderOfThread(data, ids, t.id, t.environmentId) !== null;
+    } catch (e) {
+      if (!foldersDown)
+        bb.log.warn(`stash: no chat is stashed or released by folder until project-folders answers: ${String(e)}`);
+      foldersDown = true;
+      return null;
+    }
+  }
   async function stashSweep(force = false) {
     const days = featureOn("EXTRA-A") ? Number((await settings.get()).stashAfterDays) : 0;
     if (!(days > 0)) return { stashed: [] as string[] };
@@ -648,23 +691,77 @@ export function createAttention(bb: BbPluginApi, clock = Date.now, featureOn: (i
     lastSweep = clock();
     const cutoff = clock() - days * 86400_000;
     const { threads } = await allThreads();
-    const due = threads
-      .filter(
-        (t) =>
-          !t.archivedAt &&
-          !t.deletedAt &&
-          t.visibility !== "hidden" &&
-          !t.parentThreadId &&
-          t.pinnedAt === null &&
-          t.updatedAt < cutoff &&
-          idleAndFree(t) &&
-          openSince(t.id, cutoff),
-      )
+    const idle = threads.filter(
+      (t) =>
+        !t.archivedAt &&
+        !t.deletedAt &&
+        t.visibility !== "hidden" &&
+        !t.parentThreadId &&
+        t.pinnedAt === null &&
+        t.updatedAt < cutoff &&
+        idleAndFree(t) &&
+        openSince(t.id, cutoff),
+    );
+    if (!idle.length) return { stashed: [] as string[] };
+    // The Stash only tidies loose chats: a chat in a folder stays in its folder.
+    // If project-folders cannot answer, nothing is stashed this round.
+    const filed = await inFolder();
+    if (!filed) return { stashed: [] as string[] };
+    const due = idle
+      .filter((t) => !filed(t))
       .sort((a, b) => a.updatedAt - b.updatedAt)
       .slice(0, SWEEP_BATCH);
     if (!due.length) return { stashed: [] as string[] };
     const done = await apply({ threadIds: due.map((t) => t.id), action: "stash" });
     return { stashed: done.results.filter((x) => x.ok).map((x) => x.threadId) };
+  }
+  const RELEASE_KEY = "stash:folders-released:v1";
+  const RELEASE_CUTOFF_KEY = "stash:folders-release-cutoff:v1";
+  let releaseDone = false;
+  let lastRelease = 0;
+  /**
+   * Once, when the folder rule arrives: chats stashed before its first attempt that sit in a folder go back to it.
+   * If project-folders cannot answer, it tries again ten minutes later. A chat stashed by hand after the first
+   * attempt stays stashed, even while the release is still waiting for project-folders.
+   */
+  async function releaseFiled(force = false) {
+    const none = { released: [] as string[] };
+    if (releaseDone || (!force && clock() - lastRelease < SWEEP_EVERY_MS)) return none;
+    lastRelease = clock();
+    if (await bb.storage.kv.get<boolean>(RELEASE_KEY)) {
+      releaseDone = true;
+      return none;
+    }
+    let cutoff = await bb.storage.kv.get<number>(RELEASE_CUTOFF_KEY);
+    if (typeof cutoff !== "number") {
+      cutoff = clock();
+      await bb.storage.kv.set(RELEASE_CUTOFF_KEY, cutoff);
+    }
+    const firstTry = cutoff;
+    const stashed = (db.prepare("SELECT value FROM nav_attention").all() as { value: string }[])
+      .map((r) => attentionRecord.parse(JSON.parse(r.value)))
+      .filter((r) => r.mode === "stashed" && (r.stashedAt ?? r.changedAt) <= firstTry)
+      .map((r) => r.threadId);
+    let released: string[] = [];
+    if (stashed.length) {
+      const filed = await inFolder();
+      if (!filed) return none;
+      const listed: ListedThread[] = [];
+      for (let i = 0; i < stashed.length; i += 200)
+        listed.push(
+          ...(await bb.sdk.threads.list({
+            threadIds: stashed.slice(i, i + 200),
+            includeHidden: true,
+            limit: 200,
+          })),
+        );
+      released = listed.filter((t) => filed(t)).map((t) => t.id);
+      await unstash(released);
+    }
+    await bb.storage.kv.set(RELEASE_KEY, true);
+    releaseDone = true;
+    if (released.length) bb.log.info(`stash: ${released.length} chats went back to their folders`);
+    return { released };
   }
   async function ciCheck(force = false) {
     const none = { notified: [] as string[] };
@@ -734,6 +831,7 @@ export function createAttention(bb: BbPluginApi, clock = Date.now, featureOn: (i
   }
   async function tick() {
     await reopenStashed().catch((e) => bb.log.warn(`stash reopen: ${String(e)}`));
+    await releaseFiled().catch((e) => bb.log.warn(`stash folder release: ${String(e)}`));
     await stashSweep().catch((e) => bb.log.warn(`stash sweep: ${String(e)}`));
     const { records } = await state();
     for (const r of records) {
@@ -810,6 +908,7 @@ export function createAttention(bb: BbPluginApi, clock = Date.now, featureOn: (i
     wake,
     reopenStashed,
     stashSweep,
+    releaseFiled,
     ciCheck,
     async configure(threadId: string, raw: z.infer<typeof attentionPolicy>) {
       const policy = attentionPolicy.parse(raw);

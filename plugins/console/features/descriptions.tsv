@@ -88,7 +88,7 @@ S04	Automation and usage	Use a per-task replay key and a short coalescing window
 S05	Software delivery	Generate a review tour that points at meaningful parts of a change and marks decisions for the human reviewer.
 S06	Software delivery	Keep task files while reclaiming stale managed worktrees, with explicit rules for local changes.
 S08	Working across Macs	Record each request and its side effects together, so a crash cannot lose or duplicate a job.
-EXTRA-A	Extras you asked for	Chats untouched for a set number of days (7 by default) move to a Stash, not the archive, and return when you work in them.
+EXTRA-A	Extras you asked for	Chats outside folders untouched for a set number of days (7 by default) move to a Stash, not the archive, and return when you work in them.
 EXTRA-B	Extras you asked for	Detect or choose an icon for each folder or project and show it in the sidebar.
 EXTRA-C	Extras you asked for	Pick which mascot each Helper Desk agent card uses, or a default set, and choose the mascot on the right-hand side of Helper Desk.
 EXTRA-D	Extras you asked for	Drag a chat from the sidebar into the composer so the agent has it as context.

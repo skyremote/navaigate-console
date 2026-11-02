@@ -185,18 +185,8 @@ export function slug(name: string): string {
   return s.length > 0 ? s.slice(0, 120) : "New_folder";
 }
 
-/** Which folder (if any) a thread is listed under: hand placement wins, then its working folder. */
-export function folderOfThread(
-  data: FolderData,
-  folderIds: ReadonlySet<string>,
-  threadId: string,
-  environmentId: string | null,
-): string | null {
-  const placed = data.places[threadId];
-  if (placed !== undefined) return placed && folderIds.has(placed) ? placed : null;
-  const bound = environmentId ? data.bindings[environmentId] : undefined;
-  return bound && folderIds.has(bound) ? bound : null;
-}
+// One rule for where a chat lives, shared with the Stash sweep on the server.
+export { folderOfThread } from "./folder-of-thread";
 
 /** Same-document navigation to another plugin's panel route without a full reload. */
 export function goTo(url: string) {

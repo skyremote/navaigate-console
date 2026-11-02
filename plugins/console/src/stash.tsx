@@ -1,5 +1,6 @@
 // The Stash: chats you have not touched for a while (7 days unless Settings says
-// otherwise) leave the sidebar and wait here, to keep the sidebar clear. Stash is
+// otherwise) leave the sidebar and wait here, to keep the sidebar clear. Chats in a
+// folder stay in their folder: the sweep only takes loose chats. Stash is
 // not archive: nothing is moved or deleted. Open a stashed chat and send a
 // message and it is back in the sidebar by itself; "Back to sidebar" does the
 // same without working in it. Only Delete removes a chat, after a confirmation.
@@ -40,7 +41,7 @@ export function groupByAge(rows: Row[], now: number): { label: string; rows: Row
 export function stashIntro(days: number): string {
   const keep = "They are not archived. Open one and carry on, and it moves back to your list as soon as you send a message.";
   if (days > 0)
-    return `Chats you have not touched for ${days} day${days === 1 ? "" : "s"} move here, to keep your sidebar clear. ${keep}`;
+    return `Chats you have not touched for ${days} day${days === 1 ? "" : "s"} move here, to keep your sidebar clear. Chats in a folder stay in their folder. ${keep}`;
   return `The Stash is switched off, so chats stay in your sidebar however long they sit. Any chat already here is not archived: open it and carry on, and it moves back to your list as soon as you send a message. Switch the Stash on in this plugin's Settings.`;
 }
 

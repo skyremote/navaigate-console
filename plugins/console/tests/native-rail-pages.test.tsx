@@ -44,7 +44,7 @@ describe("the Stash page", () => {
     renderSlot({ component: StashPage }, {}, { rpc: { attention_state: state(14), attention_fleet_inbox: inbox([stashed("a")]) } as never });
     await screen.findByText("Chat a");
     expect(screen.getByText(stashIntro(14))).toBeTruthy();
-    expect(stashIntro(7)).toBe("Chats you have not touched for 7 days move here, to keep your sidebar clear. They are not archived. Open one and carry on, and it moves back to your list as soon as you send a message.");
+    expect(stashIntro(7)).toBe("Chats you have not touched for 7 days move here, to keep your sidebar clear. Chats in a folder stay in their folder. They are not archived. Open one and carry on, and it moves back to your list as soon as you send a message.");
     expect(stashIntro(1)).toContain("for 1 day move");
   });
 

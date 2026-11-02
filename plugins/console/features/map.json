@@ -2426,7 +2426,7 @@
     "surface": "rail",
     "status": "live",
     "where": "Console sidebar: the 'Stash' link with a count, and a chevron that lists stashed chats inline; left icon rail 'Stash' page; Work needs you, view 'stashed'. Open a stashed chat to work in it again: it moves back to the sidebar when there is real new work in it (a message you send or a finished turn). Renaming or reading it does not bring it back. 'Delete' removes it after a confirm. The list is grouped 'This week' and 'Earlier', with a search box above 10 chats. Settings, NavAIgate Workspace, 'Stash chats untouched for (days)': default 7, 0 switches it off.",
-    "gap": "Running, pinned, waiting, needs-you and sub-agent chats are never stashed. Install on all three Macs together: an older build cannot read the stashed state.",
+    "gap": "Chats in a folder stay in their folder. Running, pinned, waiting, needs-you and sub-agent chats are never stashed. Install on all three Macs together: an older build cannot read the stashed state.",
     "evidence": {
       "verdict": "PASS",
       "note": "The Stash page listed 178 untouched chats with Open, Back to sidebar and Delete; move-back and Delete were not tried.",

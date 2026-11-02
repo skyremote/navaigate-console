@@ -3162,14 +3162,14 @@ export const FEATURES: readonly Feature[] = [
   {
     "id": "EXTRA-A",
     "name": "Stash: chats untouched for 7 days move to a Stash (not archive)",
-    "description": "Chats untouched for a set number of days (7 by default) move to a Stash, not the archive, and return when you work in them.",
+    "description": "Chats outside folders untouched for a set number of days (7 by default) move to a Stash, not the archive, and return when you work in them.",
     "area": "Extras you asked for",
     "surface": "rail",
     "status": {
       "kind": "live"
     },
     "where": "Console sidebar: the 'Stash' link with a count, and a chevron that lists stashed chats inline; left icon rail 'Stash' page; Work needs you, view 'stashed'. Open a stashed chat to work in it again: it moves back to the sidebar when there is real new work in it (a message you send or a finished turn). Renaming or reading it does not bring it back. 'Delete' removes it after a confirm. The list is grouped 'This week' and 'Earlier', with a search box above 10 chats. Settings, NavAIgate Workspace, 'Stash chats untouched for (days)': default 7, 0 switches it off.",
-    "gap": "Running, pinned, waiting, needs-you and sub-agent chats are never stashed. Install on all three Macs together: an older build cannot read the stashed state.",
+    "gap": "Chats in a folder stay in their folder. Running, pinned, waiting, needs-you and sub-agent chats are never stashed. Install on all three Macs together: an older build cannot read the stashed state.",
     "evidence": {
       "verdict": "PASS",
       "note": "The Stash page listed 178 untouched chats with Open, Back to sidebar and Delete; move-back and Delete were not tried.",

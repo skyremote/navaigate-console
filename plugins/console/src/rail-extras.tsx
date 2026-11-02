@@ -109,7 +109,7 @@ export function prByOwnerThread(rows: readonly Row[]): ReadonlyMap<string, Atten
 export function stashLinkTitle(days: number | null): string {
   if (days === 0) return "Open the Stash. It is switched off in Settings, so no chat moves here by itself";
   const age = days === null ? "a while" : `${days} day${days === 1 ? "" : "s"}`;
-  return `Open the Stash: chats you have not touched for ${age}. Open one and carry on, and it moves back to your list`;
+  return `Open the Stash: chats outside folders that you have not touched for ${age}. Open one and carry on, and it moves back to your list`;
 }
 
 export function RailLinks({ rows, stashOpen, stashDays = null, onToggleStash }: { rows: readonly Row[]; stashOpen: boolean; stashDays?: number | null; onToggleStash: () => void }) {

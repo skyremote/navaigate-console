@@ -11,7 +11,7 @@ afterEach(async () => {
 
 type Over = Partial<ReturnType<typeof makeThreadResponse>> & { queuedWork?: string; hasPendingInteraction?: boolean; busy?: boolean };
 
-function fixture(opts: { settings?: Record<string, number | boolean>; pr?: Record<string, unknown> } = {}) {
+function fixture(opts: { settings?: Record<string, number | boolean>; pr?: Record<string, unknown>; features?: Record<string, boolean> } = {}) {
   let now = NOW;
   const rows = new Map<string, ReturnType<typeof makeThreadResponse> & { queuedWork?: string; hasPendingInteraction?: boolean }>();
   const sent: { threadId: string; text: string }[] = [];
@@ -19,6 +19,13 @@ function fixture(opts: { settings?: Record<string, number | boolean>; pr?: Recor
   let prFails: (keys: string[]) => boolean = () => false;
   let prCalls = 0;
   let eventCalls = 0;
+  let folderCalls = 0;
+  /** A folder as project-folders' `list` returns it. */
+  const folder = (id: string) => ({ id, projectId: "p1", hostId: "owner-host", parentId: null, name: id, path: `/work/${id}`, sort: 0, kind: "folder" });
+  let folderData: Record<string, unknown> = { folders: [], roots: [], bindings: {}, places: {}, errors: [], machines: [] };
+  let foldersFail = false;
+  /** project-folders as bb's plugin list shows it; null when it is not installed. */
+  let foldersPlugin: { id: string; enabled: boolean; status: string } | null = { id: "project-folders", enabled: true, status: "running" };
   const turns = new Map<string, number>();
   const add = (id: string, over: Over = {}) => {
     const { busy, ...rest } = over;
@@ -40,7 +47,13 @@ function fixture(opts: { settings?: Record<string, number | boolean>; pr?: Recor
     settings: opts.settings,
     sdk: {
       plugins: {
-        callRpc: async (args: { input?: { keys?: string[] } }) => {
+        list: async () => ({ plugins: foldersPlugin ? [foldersPlugin] : [] }) as never,
+        callRpc: async (args: { pluginId: string; method: string; input?: { keys?: string[] }; outputSchema?: { parse: (v: unknown) => unknown } }) => {
+          if (args.pluginId === "project-folders") {
+            folderCalls++;
+            if (foldersFail) throw new Error("project-folders is not running");
+            return (args.outputSchema ? args.outputSchema.parse(folderData) : folderData) as never;
+          }
           prCalls++;
           const keys = args.input?.keys ?? [];
           if (prFails(keys)) throw new Error("pr plugin batch failed");
@@ -70,7 +83,8 @@ function fixture(opts: { settings?: Record<string, number | boolean>; pr?: Recor
     },
   });
   hosts.push(host);
-  const engine = createAttention(host.bb, () => now);
+  const featureOn = (id: string) => opts.features?.[id] ?? true;
+  const engine = createAttention(host.bb, () => now, featureOn);
   return {
     ...host,
     engine,
@@ -85,6 +99,25 @@ function fixture(opts: { settings?: Record<string, number | boolean>; pr?: Recor
     },
     prCalls: () => prCalls,
     eventCalls: () => eventCalls,
+    folderCalls: () => folderCalls,
+    /** What project-folders answers: the folders that exist, chats filed by hand ("" is the project root) and working folders. */
+    setFolders: (v: { folders?: string[]; places?: Record<string, string>; bindings?: Record<string, string> }) => {
+      folderData = { folders: (v.folders ?? []).map(folder), roots: [], bindings: v.bindings ?? {}, places: v.places ?? {}, errors: [], machines: [] };
+    },
+    failFolders: (fail: boolean) => {
+      foldersFail = fail;
+    },
+    /** project-folders in bb's plugin list: null when not installed, enabled false when switched off. */
+    setFoldersPlugin: (v: { enabled: boolean } | null) => {
+      foldersPlugin = v ? { id: "project-folders", enabled: v.enabled, status: v.enabled ? "running" : "disabled" } : null;
+    },
+    /** The plugin reloaded: a new engine on the same settings, kv and database. */
+    restart: async () => {
+      let next: ReturnType<typeof createAttention> | undefined;
+      hosts.push(await host.harness.lifecycle.reload((bb) => void (next = createAttention(bb, () => now, featureOn))));
+      return next!;
+    },
+    warnings: () => host.harness.logEntries.filter((e) => e.level === "warn").map((e) => e.message),
     /** The time of the chat's newest user message or finished turn. */
     turnAt: (id: string, at: number) => {
       turns.set(id, at);
@@ -325,6 +358,171 @@ describe("the minute-clock sweep", () => {
     f.advance(11 * 60_000);
     await f.engine.tick();
     expect((await f.engine.state()).records.map((r) => r.threadId)).toEqual(["late"]);
+  });
+});
+
+describe("the sweep only stashes chats that are not in a folder", () => {
+  it("leaves a chat filed in a folder by hand where it is and stashes the loose one", async () => {
+    const f = fixture();
+    f.setFolders({ folders: ["f1"], places: { filed: "f1" } });
+    f.add("filed");
+    f.add("loose");
+    await f.engine.stashSweep(true);
+    expect((await f.engine.state()).records.map((r) => [r.threadId, r.mode])).toEqual([["loose", "stashed"]]);
+  });
+
+  it("leaves a chat whose working folder is a folder where it is", async () => {
+    const f = fixture();
+    f.setFolders({ folders: ["f1"], bindings: { envF: "f1" } });
+    f.add("works-in-folder", { environmentId: "envF" });
+    f.add("loose", { environmentId: "envRoot" });
+    await f.engine.stashSweep(true);
+    expect((await f.engine.state()).records.map((r) => r.threadId)).toEqual(["loose"]);
+  });
+
+  it("stashes a chat filed at the project root, even when its working folder is a folder: filing by hand wins", async () => {
+    const f = fixture();
+    f.setFolders({ folders: ["f1"], places: { root: "" }, bindings: { envF: "f1" } });
+    f.add("root", { environmentId: "envF" });
+    await f.engine.stashSweep(true);
+    expect((await f.engine.state()).records.map((r) => r.threadId)).toEqual(["root"]);
+  });
+
+  it("stashes a chat whose folder no longer exists, as the sidebar shows it loose", async () => {
+    const f = fixture();
+    f.setFolders({ folders: [], places: { orphan: "gone" } });
+    f.add("orphan");
+    await f.engine.stashSweep(true);
+    expect((await f.engine.state()).records.map((r) => r.threadId)).toEqual(["orphan"]);
+  });
+
+  it("stashes nothing when project-folders cannot answer, says so once, and catches up on the next sweep", async () => {
+    const f = fixture();
+    f.add("loose");
+    f.failFolders(true);
+    expect((await f.engine.stashSweep(true)).stashed).toEqual([]);
+    expect((await f.engine.stashSweep(true)).stashed).toEqual([]);
+    expect((await f.engine.state()).records).toEqual([]);
+    expect(f.warnings().filter((m) => m.includes("project-folders"))).toHaveLength(1);
+    f.failFolders(false);
+    expect((await f.engine.stashSweep(true)).stashed).toEqual(["loose"]);
+  });
+
+  it("treats every chat as loose when project-folders is not installed, as the sidebar shows them", async () => {
+    const f = fixture();
+    f.setFoldersPlugin(null);
+    f.setFolders({ folders: ["f1"], places: { filed: "f1" } });
+    f.add("filed");
+    expect((await f.engine.stashSweep(true)).stashed).toEqual(["filed"]);
+    expect(f.folderCalls()).toBe(0);
+    expect(f.warnings()).toEqual([]);
+  });
+
+  it("treats every chat as loose when project-folders is switched off", async () => {
+    const f = fixture();
+    f.setFoldersPlugin({ enabled: false });
+    f.setFolders({ folders: ["f1"], places: { filed: "f1" } });
+    f.add("filed");
+    expect((await f.engine.stashSweep(true)).stashed).toEqual(["filed"]);
+    expect(f.folderCalls()).toBe(0);
+  });
+
+  it("treats every chat as loose when the folders feature is off in the picker", async () => {
+    const f = fixture({ features: { "EXTRA-X": false } });
+    f.setFolders({ folders: ["f1"], places: { filed: "f1" } });
+    f.add("filed");
+    expect((await f.engine.stashSweep(true)).stashed).toEqual(["filed"]);
+    expect(f.folderCalls()).toBe(0);
+  });
+
+  it("filed chats do not use up the batch, so loose chats behind them are still stashed", async () => {
+    const f = fixture();
+    const filed = Array.from({ length: 30 }, (_, i) => `filed${i}`);
+    f.setFolders({ folders: ["f1"], places: Object.fromEntries(filed.map((id) => [id, "f1"])) });
+    for (const id of filed) f.add(id, { updatedAt: NOW - 40 * DAY });
+    f.add("loose", { updatedAt: NOW - 8 * DAY });
+    expect((await f.engine.stashSweep(true)).stashed).toEqual(["loose"]);
+  });
+
+  it("does not ask project-folders when no chat is old enough", async () => {
+    const f = fixture();
+    f.add("fresh", { updatedAt: NOW - DAY });
+    await f.engine.stashSweep(true);
+    expect(f.folderCalls()).toBe(0);
+  });
+
+  it("a stash by hand still works on a chat in a folder", async () => {
+    const f = fixture();
+    f.setFolders({ folders: ["f1"], places: { filed: "f1" } });
+    f.add("filed");
+    const done = await f.engine.apply({ threadIds: ["filed"], action: "stash" });
+    expect(done.results[0]?.ok).toBe(true);
+    expect((await f.engine.state()).records[0]?.mode).toBe("stashed");
+  });
+});
+
+describe("chats stashed out of folders before the rule go back once", () => {
+  it("returns filed chats to their folders, leaves loose ones stashed, and does it only once", async () => {
+    const f = fixture();
+    f.add("filed");
+    f.add("bound", { environmentId: "envF" });
+    f.add("loose");
+    await f.engine.apply({ threadIds: ["filed", "bound", "loose"], action: "stash" });
+    f.setFolders({ folders: ["f1"], places: { filed: "f1" }, bindings: { envF: "f1" } });
+    expect((await f.engine.releaseFiled(true)).released.sort()).toEqual(["bound", "filed"]);
+    const modes = Object.fromEntries((await f.engine.state()).records.map((r) => [r.threadId, r.mode]));
+    expect(modes).toEqual({ filed: "open", bound: "open", loose: "stashed" });
+    await f.engine.apply({ threadIds: ["filed"], action: "stash" });
+    expect((await f.engine.releaseFiled(true)).released).toEqual([]);
+    expect((await f.engine.state()).records.find((r) => r.threadId === "filed")?.mode).toBe("stashed");
+  });
+
+  it("tries again when project-folders cannot answer, without marking itself done", async () => {
+    const f = fixture();
+    f.add("filed");
+    await f.engine.apply({ threadIds: ["filed"], action: "stash" });
+    f.setFolders({ folders: ["f1"], places: { filed: "f1" } });
+    f.failFolders(true);
+    expect((await f.engine.releaseFiled(true)).released).toEqual([]);
+    expect((await f.engine.state()).records[0]?.mode).toBe("stashed");
+    f.failFolders(false);
+    expect((await f.engine.releaseFiled(true)).released).toEqual(["filed"]);
+  });
+
+  it("while it waits for project-folders, a chat stashed by hand stays stashed", async () => {
+    const f = fixture();
+    f.add("early");
+    f.add("late");
+    f.setFolders({ folders: ["f1"], places: { early: "f1", late: "f1" } });
+    await f.engine.apply({ threadIds: ["early"], action: "stash" });
+    f.failFolders(true);
+    await f.engine.releaseFiled(true);
+    f.advance(60_000);
+    await f.engine.apply({ threadIds: ["late"], action: "stash" });
+    f.failFolders(false);
+    expect((await f.engine.releaseFiled(true)).released).toEqual(["early"]);
+    expect((await f.engine.state()).records.find((r) => r.threadId === "late")?.mode).toBe("stashed");
+  });
+
+  it("stays done after a restart, so a later stash by hand is never undone", async () => {
+    const f = fixture();
+    f.add("filed");
+    f.setFolders({ folders: ["f1"], places: { filed: "f1" } });
+    await f.engine.releaseFiled(true);
+    const again = await f.restart();
+    f.advance(60_000);
+    await again.apply({ threadIds: ["filed"], action: "stash" });
+    expect((await again.releaseFiled(true)).released).toEqual([]);
+    expect((await again.state()).records[0]?.mode).toBe("stashed");
+  });
+
+  it("runs from the minute clock before the sweep", async () => {
+    const f = fixture();
+    f.add("filed");
+    await f.engine.apply({ threadIds: ["filed"], action: "stash" });
+    f.setFolders({ folders: ["f1"], places: { filed: "f1" } });
+    await f.engine.tick();
+    expect((await f.engine.state()).records[0]?.mode).toBe("open");
   });
 });
 

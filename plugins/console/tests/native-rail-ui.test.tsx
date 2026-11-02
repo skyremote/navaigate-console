@@ -244,7 +244,7 @@ describe("EXTRA-A the Stash", () => {
   });
 
   it("says in the link's title how long a chat must be untouched, and when the Stash is off", () => {
-    expect(stashLinkTitle(7)).toBe("Open the Stash: chats you have not touched for 7 days. Open one and carry on, and it moves back to your list");
+    expect(stashLinkTitle(7)).toBe("Open the Stash: chats outside folders that you have not touched for 7 days. Open one and carry on, and it moves back to your list");
     expect(stashLinkTitle(0)).toContain("switched off");
   });
 });
