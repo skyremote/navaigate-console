@@ -27,7 +27,7 @@ vi.mock("@get-bb/plugin-sdk/app", async (importOriginal) => {
 });
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() } }));
 
-import { NativeConversationOverlay, NativeConversationPanel, NativeModelsComposer, NativeModelsHeader } from "../src/native-sessions";
+import { NativeConversationOverlay, NativeConversationPanel, NativeModelsComposer, NativeModelsHeader, localActiveThread, sessionForRoute } from "../src/native-sessions";
 
 type Session = z.infer<typeof nativeSessionStateSchema>;
 function state(root: string, others: string[] = [], active = root): Session {
@@ -141,6 +141,103 @@ describe("native conversation route isolation", () => {
     expect(original.style.visibility).toBe("");
     expect(original.inert).toBe(false);
     expect(document.querySelector("[data-nav-native-session]")).toBeNull();
+  });
+
+  describe("remembered local model while a mirror is the saved selection", () => {
+    // Root on Sol, a local Opus member, and a mirror on another machine last visited.
+    const mirrored = (remembered?: string) => {
+      const session = state("thr_root", ["thr_child", "thr_mirror"], "thr_mirror");
+      session.members[2].providerId = "fleet-mirror";
+      session.members[2].kind = "parallel";
+      if (remembered) session.lastLocalThreadId = remembered;
+      return session;
+    };
+
+    it("opens the root on the last local model, not on the root's own model", async () => {
+      const original = primaryWindow();
+      const session = mirrored("thr_child");
+      const view = renderSlot({ component: NativeConversationOverlay }, {}, {
+        context: { threadId: "thr_root", projectId: "proj_test" },
+        rpc: { native_session_state: () => session },
+      });
+      await waitFor(() => expect(document.querySelector('[data-native-conversation-root="thr_root"]')?.getAttribute("data-native-active-thread")).toBe("thr_child"), { timeout: 5000 });
+      expect(original.style.visibility).toBe("hidden");
+      expect(view.inspection.navigateCalls).toEqual([]);
+      // A reload re-reads the same server state and gives the same answer.
+      await view.behavior.emitRealtime("native-sessions", {});
+      await act(async () => {});
+      expect(document.querySelector('[data-native-conversation-root="thr_root"]')?.getAttribute("data-native-active-thread")).toBe("thr_child");
+    });
+
+    it("falls back to the physical root when no local model was ever chosen", async () => {
+      const original = primaryWindow();
+      const view = renderSlot({ component: NativeConversationOverlay }, {}, {
+        context: { threadId: "thr_root", projectId: "proj_test" },
+        rpc: { native_session_state: () => mirrored() },
+      });
+      await waitFor(() => expect(view.inspection.rpcCalls).toHaveLength(1));
+      await act(async () => {});
+      expect(document.querySelector("[data-nav-native-session]")).toBeNull();
+      expect(original.style.visibility).toBe("");
+    });
+
+    it("does not open a second copy of the remembered model when another split pane already shows it", async () => {
+      const original = primaryWindow();
+      original.parentElement!.dataset.splitPaneId = "pane-root";
+      const child = primaryWindow();
+      child.parentElement!.dataset.splitPaneId = "pane-child";
+      renderSlot({ component: NativeConversationOverlay }, {}, {
+        context: { threadId: "thr_root", projectId: "proj_test" },
+        sidebarSplitLayout: { panes: [
+          { paneId: "pane-root", threadId: "thr_root", isFocused: true, rect: { x: 0, y: 0, width: 0.5, height: 1 } },
+          { paneId: "pane-child", threadId: "thr_child", isFocused: false, rect: { x: 0.5, y: 0, width: 0.5, height: 1 } },
+        ] },
+        rpc: { native_session_state: () => mirrored("thr_child") },
+      });
+      await act(async () => {});
+      expect(document.querySelector("[data-nav-native-session]")).toBeNull();
+      expect(original.style.visibility).toBe("");
+      expect(child.style.visibility).toBe("");
+    });
+
+    it("never follows a remembered member that is a mirror, another worktree or deleted", () => {
+      const other = mirrored("thr_child"); other.members[1].environmentId = "env_parallel";
+      expect(localActiveThread(other)).toBe("thr_root");
+      const asMirror = mirrored("thr_child"); asMirror.members[1].providerId = "fleet-mirror";
+      expect(localActiveThread(asMirror)).toBe("thr_root");
+      const gone = mirrored("thr_child"); gone.members[1].status = "deleted";
+      expect(localActiveThread(gone)).toBe("thr_root");
+      const unprovisioned = mirrored("thr_child"); unprovisioned.members[1].environmentId = null;
+      expect(localActiveThread(unprovisioned)).toBe("thr_root");
+      expect(localActiveThread(mirrored("thr_child"))).toBe("thr_child");
+    });
+
+    it("never follows an archived member, whether saved or remembered", () => {
+      const remembered = mirrored("thr_child"); remembered.members[1].archived = true;
+      expect(localActiveThread(remembered)).toBe("thr_root");
+      const saved = state("thr_root", ["thr_child"], "thr_child"); saved.members[1].archived = true; saved.lastLocalThreadId = "thr_root";
+      expect(localActiveThread(saved)).toBe("thr_root");
+      const both = state("thr_root", ["thr_child", "thr_second"], "thr_child"); both.members[1].archived = true; both.lastLocalThreadId = "thr_second";
+      expect(localActiveThread(both)).toBe("thr_second");
+    });
+
+    it("scopes only the root route; any other open thread keeps its own model", () => {
+      const session = mirrored("thr_child");
+      expect(sessionForRoute(session, "thr_root")?.activeThreadId).toBe("thr_child");
+      expect(sessionForRoute(session, "thr_mirror")?.activeThreadId).toBe("thr_mirror");
+      expect(sessionForRoute(session, "thr_child")?.activeThreadId).toBe("thr_child");
+      const more = state("thr_root", ["thr_child", "thr_second", "thr_mirror"], "thr_mirror");
+      more.members[3].providerId = "fleet-mirror"; more.lastLocalThreadId = "thr_child";
+      expect(sessionForRoute(more, "thr_second")?.activeThreadId).toBe("thr_second");
+      expect(sessionForRoute(more, "thr_root")?.activeThreadId).toBe("thr_child");
+    });
+
+    it("leaves an ordinary local selection untouched", () => {
+      const session = state("thr_root", ["thr_child"], "thr_child");
+      session.lastLocalThreadId = "thr_root";
+      expect(localActiveThread(session)).toBe("thr_child");
+      expect(sessionForRoute(session, "thr_root")).toBe(session);
+    });
   });
 
   it("keeps a physical worktree open when another window selects the root", async () => {

@@ -100,6 +100,34 @@ describe("visible physical composer usage placement", () => {
     await waitFor(() => expect(calls).toContain("thr_root"));
     expect(calls).not.toContain("thr_child");
   });
+  it("binds to the remembered local model when a mirror is the saved selection, as the composer does", async () => {
+    const root = footer(); const calls: string[] = [];
+    renderSlot({ component: UsageDock }, {}, { context: { threadId: "thr_root" }, rpc: {
+      native_session_state: () => ({ rootThreadId: "thr_root", activeThreadId: "thr_mirror", lastLocalThreadId: "thr_child", members: [
+        { id: "thr_root", providerId: "codex", status: "idle", environmentId: "env_root" },
+        { id: "thr_child", providerId: "claude-code", status: "idle", environmentId: "env_root" },
+        { id: "thr_mirror", providerId: "fleet-mirror", status: "idle", environmentId: "env_root" },
+      ] }),
+      pool_account: () => ({ accountId: null, activeAccountId: null }),
+    }, sdk: { threads: { context: async ({ threadId }) => { calls.push(threadId); return { usage: null } as never; } }, system: { usageLimits: async () => ({}) } } });
+    await waitFor(() => expect(calls.at(-1)).toBe("thr_child"), { timeout: 5000 });
+    expect(calls).not.toContain("thr_mirror");
+    expect(root.footer).toBeTruthy();
+  });
+  it("keeps root usage when a mirror is selected and no local model was ever chosen", async () => {
+    const root = footer(); const calls: string[] = [];
+    renderSlot({ component: UsageDock }, {}, { context: { threadId: "thr_root" }, rpc: {
+      native_session_state: () => ({ rootThreadId: "thr_root", activeThreadId: "thr_mirror", members: [
+        { id: "thr_root", providerId: "codex", status: "idle", environmentId: "env_root" },
+        { id: "thr_child", providerId: "claude-code", status: "idle", environmentId: "env_root" },
+        { id: "thr_mirror", providerId: "fleet-mirror", status: "idle", environmentId: "env_root" },
+      ] }),
+      pool_account: () => ({ accountId: null, activeAccountId: null }),
+    }, sdk: { threads: { context: async ({ threadId }) => { calls.push(threadId); return { usage: null } as never; } }, system: { usageLimits: async () => ({}) } } });
+    await waitFor(() => expect(root.footer.nextElementSibling?.getAttribute("data-nav-usage-thread")).toBe("thr_root"));
+    await waitFor(() => expect(calls).toContain("thr_root"));
+    expect(calls).not.toContain("thr_child");
+  });
   it("uses a directly opened member's own context when a different model was selected elsewhere", async () => {
     const current = footer(); const calls: string[] = [];
     renderSlot({ component: UsageDock }, {}, { context: { threadId: "thr_child" }, rpc: {

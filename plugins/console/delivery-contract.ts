@@ -1,4 +1,4 @@
-import { defineRpcContract } from "@get-bb/plugin-sdk";
+import type { defineRpcContract as sdkDefineRpcContract } from "@get-bb/plugin-sdk";
 import { z } from "zod";
 import {
   PROOF_BRANCH_MESSAGE,
@@ -8,6 +8,11 @@ import {
   base64Bytes,
   validProofBranch,
 } from "./src/delivery-proof";
+
+// The app bundle shims only "@get-bb/plugin-sdk/app", so a value import from the SDK root breaks a
+// clean install (the frontend build cannot resolve it). The SDK's defineRpcContract returns its argument.
+const defineRpcContract: typeof sdkDefineRpcContract = ((contract: unknown) => contract) as typeof sdkDefineRpcContract;
+
 const id = z.string().min(1).max(200);
 export const prSchema = z.object({
   number: z.number().int().positive(),

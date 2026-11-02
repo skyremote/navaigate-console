@@ -421,9 +421,9 @@ export default async function plugin(bb: BbPluginApi) {
   // (local cached plans, native owner reads, Cursor at most every 15 minutes) and the chats behind them.
   const usageLinkAction = createUsageLinkAction({ links: usageLinks, rows: () => trend.machineRows(), changed: async () => { attentionIntegrations.forgetUsage(); await trend.sample(); } });
   const trend = createUsageTrend(bb, {
-    fleetUsage: createFleetUsageBridge(bb, { localOwner: async () => (await fleet.board()).board?.serverId ?? null, identityFor: (key) => attentionIntegrations.identityFor(key) }),
+    fleetUsage: createFleetUsageBridge(bb, { localOwner: async () => (await fleet.board()).board?.serverId ?? null, selfMachine: () => thisMachine(loadProfile().profile, os.hostname())?.id ?? null, identityFor: (key) => attentionIntegrations.identityFor(key) }),
     identityFor: (key) => attentionIntegrations.identityFor(key),
-    localMachine: async () => (await fleet.board()).board?.serverKey ?? null,
+    localMachine: async () => (await fleet.board().catch(() => null))?.board?.serverKey ?? thisMachine(loadProfile().profile, os.hostname())?.id ?? null,
     cursorUsage: () => home.cursorUsage(),
     planLabel: (harness, raw, email) => home.planLabel(harness, raw, email),
     accountFor: (provider, sessionId) => {

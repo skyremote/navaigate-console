@@ -79,7 +79,8 @@ function usePlace(): Place {
         current.setAttribute("data-bb-plugin-root", "");
         current.setAttribute("data-bb-plugin", "navaigate-skin");
         current.setAttribute("data-nav-composer-chips", "");
-        current.className = "flex min-w-0 shrink-0 items-center gap-0.5 pl-1";
+        // Shrinkable: the left group has no overflow clip, so a fixed-width slot ran under bb's permission chip.
+        current.className = "flex min-w-0 shrink items-center gap-0.5 pl-1";
         left.appendChild(current);
         moved = true;
       } else if (left.lastElementChild !== current) {
@@ -651,7 +652,7 @@ export function ComposerChips() {
     <>
       {alwaysOnMachine(profile) && moveOn ? <RunOnM1Chip /> : null}
       {accountsOn && poolProviderOf(place.newProviderId) ? <AccountChip provider={poolProviderOf(place.newProviderId)!} threadId={null} /> : null}
-      {allowanceOn ? <AllowanceChip providerId={place.newProviderId} compact className="h-6 shrink-0 px-1.5" /> : null}
+      {allowanceOn ? <AllowanceChip providerId={place.newProviderId} compact className="h-6 min-w-0 shrink px-1.5" /> : null}
     </>,
     place.slot,
   );

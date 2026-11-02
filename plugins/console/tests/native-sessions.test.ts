@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createFakePluginHost, makeMessageDispatchHookContext, makePluginAgentConfigurationContext, makeThreadResponse } from "@get-bb/plugin-sdk/testing";
 import { createNativeSessions, nativeSessionStateSchema } from "../server-native-sessions";
 import { NATIVE_CONTEXT_MAX_CHARS } from "../server-native-context";
-import { nativeHandoffSource, NATIVE_ARM_TTL_MS, type NativeSessionRecord } from "../src/native-session-model";
+import { localActiveThread, nativeHandoffSource, NATIVE_ARM_TTL_MS, type NativeSessionRecord } from "../src/native-session-model";
 
 const selection = { providerId: "claude-code", model: "claude-test", reasoningLevel: "high" };
 const hosts: ReturnType<typeof createFakePluginHost>[] = [];
@@ -24,12 +24,14 @@ function fixture(onContextProvider?: (provider: ContextProvider) => void) {
   const root = makeThreadResponse({ id: "thr_root", projectId: "proj_test", providerId: "codex", title: "One conversation", visibility: "visible", status: "idle", createdAt: Date.now() - 5_000 });
   threads.set(root.id, root);
   const hidden: string[] = [];
+  const rootReads = { count: 0, failAt: 0 };
   const asking = new Set<string>();
   const host = createFakePluginHost({
     pluginId: "navaigate-skin",
     sdk: { threads: {
       events: { list: async ({ threadId, beforeSeq, limit }) => [...events.get(threadId) ?? []].filter((event) => !beforeSeq || event.seq < Number(beforeSeq)).sort((a, b) => b.seq - a.seq).slice(0, Number(limit ?? 100)) },
       get: async ({ threadId }) => {
+        if (threadId === "thr_root") { rootReads.count++; if (rootReads.failAt === rootReads.count) throw new Error("temporary host failure"); }
         const thread = threads.get(threadId);
         if (!thread) throw new Error("404 thread not found");
         return { ...thread };
@@ -70,7 +72,7 @@ function fixture(onContextProvider?: (provider: ContextProvider) => void) {
     });
   }
   const dispatch = (ctx: ReturnType<typeof context>) => host.harness.inspection.registrations.hooks["message.dispatch"]!(ctx);
-  return { ...host, events, threads, metadata, root, hidden, asking, successor, context, dispatch, get service() { return service; }, async reload() { const fresh = await host.harness.lifecycle.reload((bb) => { service = createNativeSessions(bb); }); hosts.push(fresh); return fresh; } };
+  return { ...host, rootReads, events, threads, metadata, root, hidden, asking, successor, context, dispatch, get service() { return service; }, async reload() { const fresh = await host.harness.lifecycle.reload((bb) => { service = createNativeSessions(bb); }); hosts.push(fresh); return fresh; } };
 }
 
 function userEvent(seq: number, text: string, threadId = "thr_root") {
@@ -464,6 +466,150 @@ describe("durable logical conversation", () => {
     f.metadata.set(unrelated.id, { nativeConversation: { rootThreadId: f.root.id } });
     await expect(f.service.adopt({ rootThreadId: f.root.id, threadId: unrelated.id, kind: "parallel" })).rejects.toThrow(/Only a model started alongside/);
     await expect(f.service.select({ rootThreadId: f.root.id, threadId: unrelated.id })).rejects.toThrow(/does not belong/);
+  });
+
+  describe("remembered local model", () => {
+    async function withMirror() {
+      const f = fixture();
+      f.root.environmentId = "env_root";
+      await f.service.state({ threadId: f.root.id });
+      const opus = f.successor("thr_opus", { environmentId: "env_root", originPluginId: "navaigate-skin", visibility: "visible" });
+      f.metadata.set(opus.id, { nativeConversation: { rootThreadId: f.root.id, sourceThreadId: f.root.id, kind: "continuation" } });
+      await f.service.adopt({ rootThreadId: f.root.id, threadId: opus.id, kind: "continuation" });
+      const mirror = f.successor("thr_mirror", { providerId: "fleet-mirror", environmentId: "env_mirror", originPluginId: "navaigate-skin", visibility: "hidden" });
+      f.metadata.set(mirror.id, { nativeConversation: { rootThreadId: f.root.id, sourceThreadId: f.root.id, kind: "parallel" } });
+      await f.service.adopt({ rootThreadId: f.root.id, threadId: mirror.id, kind: "parallel" });
+      return { f, opus, mirror };
+    }
+
+    it("keeps the last local choice when a mirror is selected, and across a reload", async () => {
+      const { f, opus, mirror } = await withMirror();
+      expect((await f.service.state({ threadId: f.root.id })).lastLocalThreadId).toBeUndefined();
+      expect((await f.service.select({ rootThreadId: f.root.id, threadId: opus.id })).lastLocalThreadId).toBe(opus.id);
+      const viewed = await f.service.select({ rootThreadId: f.root.id, threadId: mirror.id });
+      expect(viewed.activeThreadId).toBe(mirror.id);
+      expect(viewed.lastLocalThreadId).toBe(opus.id);
+      await f.reload();
+      const again = await f.service.state({ threadId: f.root.id });
+      expect(again.activeThreadId).toBe(mirror.id);
+      expect(again.lastLocalThreadId).toBe(opus.id);
+      expect(nativeSessionStateSchema.parse(again).lastLocalThreadId).toBe(opus.id);
+    });
+
+    it("remembers the local member that was active before the first mirror visit", async () => {
+      const { f, opus, mirror } = await withMirror();
+      await f.service.select({ rootThreadId: f.root.id, threadId: opus.id });
+      const record = (await f.bb.storage.kv.get<NativeSessionRecord>(`native-conversation:${f.root.id}`))!;
+      const { lastLocalThreadId: _dropped, ...legacy } = record as NativeSessionRecord & { lastLocalThreadId?: string };
+      await f.bb.storage.kv.set(`native-conversation:${f.root.id}`, legacy);
+      expect((await f.service.select({ rootThreadId: f.root.id, threadId: mirror.id })).lastLocalThreadId).toBe(opus.id);
+    });
+
+    it("remembers a model the user starts in the root's workspace as their local choice", async () => {
+      const f = fixture();
+      f.root.environmentId = "env_root";
+      await f.service.arm({ threadId: f.root.id, selection });
+      const child = f.successor("thr_started", { environmentId: "env_root" });
+      await f.dispatch(f.context(child));
+      const state = await f.service.state({ threadId: f.root.id });
+      expect(state.activeThreadId).toBe(child.id);
+      expect(state.lastLocalThreadId).toBe(child.id);
+      expect(localActiveThread(state)).toBe(child.id);
+    });
+
+    // The composer arms from the thread it shows. After a mirror visit that is the remembered local model.
+    const codexExecution = { providerId: "codex", model: "codex-test", reasoningLevel: "high", serviceTier: "default" };
+    async function switchFromOpusAfterMirror() {
+      const { f, opus, mirror } = await withMirror();
+      await f.service.select({ rootThreadId: f.root.id, threadId: opus.id });
+      await f.service.select({ rootThreadId: f.root.id, threadId: mirror.id });
+      await f.service.arm({ threadId: opus.id, selection: codexExecution });
+      const codex = f.successor("thr_codex_after_mirror", { providerId: "codex", environmentId: "env_root" });
+      return { f, opus, mirror, codex, ctx: { ...f.context(codex, `Continue from @thread:${opus.id}\n\nRead the attached evidence.`, opus.id), requestedExecution: codexExecution } };
+    }
+
+    it("activates an Opus to Codex switch that was armed from the remembered model after a mirror visit", async () => {
+      const { f, mirror, codex, ctx } = await switchFromOpusAfterMirror();
+      await f.dispatch(ctx);
+      const state = await f.service.state({ threadId: f.root.id });
+      expect(state.members.map((member) => member.id)).toContain(codex.id);
+      expect(state.activeThreadId).toBe(codex.id);
+      expect(state.lastLocalThreadId).toBe(codex.id);
+      expect(localActiveThread(state)).toBe(codex.id);
+      expect(state.activeThreadId).not.toBe(mirror.id);
+      expect(f.threads.get(codex.id)?.parentThreadId ?? null).toBeNull();
+    });
+
+    it("activates the same switch from the root before any mirror visit", async () => {
+      const { f, opus } = await withMirror();
+      await f.service.select({ rootThreadId: f.root.id, threadId: opus.id });
+      await f.service.arm({ threadId: opus.id, selection: codexExecution });
+      const codex = f.successor("thr_codex_no_mirror", { providerId: "codex", environmentId: "env_root" });
+      await f.dispatch({ ...f.context(codex, `Continue from @thread:${opus.id}\n\nRead the attached evidence.`, opus.id), requestedExecution: codexExecution });
+      const state = await f.service.state({ threadId: f.root.id });
+      expect(state.activeThreadId).toBe(codex.id);
+      expect(localActiveThread(state)).toBe(codex.id);
+    });
+
+    it("does not activate a switch armed from a thread that is neither shown nor remembered", async () => {
+      const { f, mirror } = await withMirror();
+      await f.service.arm({ threadId: f.root.id, selection });
+      await f.service.select({ rootThreadId: f.root.id, threadId: mirror.id });
+      const child = f.successor("thr_stale_source", { environmentId: "env_root" });
+      await f.dispatch(f.context(child));
+      const state = await f.service.state({ threadId: f.root.id });
+      expect(state.members.map((member) => member.id)).toContain(child.id);
+      expect(state.activeThreadId).toBe(mirror.id);
+    });
+
+    it("still groups a local switch when the root cannot be read for the bookkeeping", async () => {
+      // Calibrate: the bookkeeping read is the last read of the root during the dispatch.
+      const calibration = await switchFromOpusAfterMirror();
+      const before = calibration.f.rootReads.count;
+      await calibration.f.dispatch(calibration.ctx);
+      const lastRead = calibration.f.rootReads.count;
+      expect(lastRead).toBeGreaterThan(before);
+      const { f, codex, ctx } = await switchFromOpusAfterMirror();
+      f.rootReads.failAt = f.rootReads.count + (lastRead - before);
+      expect(await f.dispatch(ctx)).toEqual({ action: "proceed" });
+      expect(f.rootReads.count).toBe(f.rootReads.failAt);
+      const state = await f.service.state({ threadId: f.root.id });
+      expect(state.members.map((member) => member.id)).toContain(codex.id);
+      expect(f.threads.get(codex.id)?.visibility).toBe("hidden");
+      expect(state.activeThreadId).toBe(codex.id);
+      expect(state.lastLocalThreadId).toBe(calibration.opus.id);
+    });
+
+    it("never offers an archived member as the remembered local model", async () => {
+      const { f, opus, mirror } = await withMirror();
+      await f.service.select({ rootThreadId: f.root.id, threadId: opus.id });
+      await f.service.select({ rootThreadId: f.root.id, threadId: mirror.id });
+      f.threads.get(opus.id)!.archivedAt = Date.now();
+      const state = await f.service.state({ threadId: f.root.id });
+      expect(state.lastLocalThreadId).toBeUndefined();
+      expect(state.members.find((member) => member.id === opus.id)?.archived).toBe(true);
+      expect(localActiveThread(state)).toBe(f.root.id);
+    });
+
+    it("does not remember an archived member that is selected", async () => {
+      const { f, opus } = await withMirror();
+      f.threads.get(opus.id)!.archivedAt = Date.now();
+      expect((await f.service.select({ rootThreadId: f.root.id, threadId: opus.id })).lastLocalThreadId).toBeUndefined();
+    });
+
+    it("never remembers a mirror, and reports no local choice if none was made", async () => {
+      const { f, mirror } = await withMirror();
+      await f.service.select({ rootThreadId: f.root.id, threadId: mirror.id });
+      expect((await f.service.state({ threadId: f.root.id })).lastLocalThreadId).toBeUndefined();
+    });
+
+    it("drops a remembered local member that was deleted", async () => {
+      const { f, opus, mirror } = await withMirror();
+      await f.service.select({ rootThreadId: f.root.id, threadId: opus.id });
+      await f.service.select({ rootThreadId: f.root.id, threadId: mirror.id });
+      f.threads.delete(opus.id);
+      expect((await f.service.state({ threadId: f.root.id })).lastLocalThreadId).toBeUndefined();
+    });
   });
 
   it("keeps unrelated split-pane conversations separate", async () => {

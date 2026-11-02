@@ -94,9 +94,9 @@ export function AllowanceChip({ providerId, className, compact = false }: { prov
   const all = allowance ? allowanceSummary(allowance.windows) : [];
   const lines = compact ? all.slice(0, 1) : all;
   const title = all.length ? `${planName(harness, allowance?.plan ?? null)}: ${all.map((line) => `${line.label} ${line.left}% left${line.reset ? `, ${line.reset}` : ""}`).join("; ")}` : "Plan allowance left on the account this provider runs on";
-  return <span data-testid="allowance-chip" data-nav-part="allowance-chip" className={`inline-flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground ${className ?? ""}`} style={{ fontVariantNumeric: "tabular-nums" }} title={title}>
+  return <span data-testid="allowance-chip" data-nav-part="allowance-chip" className={`inline-flex min-w-0 items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground ${compact ? "overflow-hidden whitespace-nowrap" : "flex-wrap"} ${className ?? ""}`} style={{ fontVariantNumeric: "tabular-nums" }} title={title}>
     {compact ? null : <span className="font-medium">{allowance ? planName(harness, allowance.plan) : harness}</span>}
-    {loading ? <span>Reading allowance…</span> : !allowance || lines.length === 0 ? <span>Allowance not reported</span> : lines.map((line) => <span key={line.label}>
+    {loading ? <span>Reading allowance…</span> : !allowance || lines.length === 0 ? <span>Allowance not reported</span> : lines.map((line) => <span key={line.label} className={compact ? "min-w-0 truncate" : undefined}>
       {line.label} <span className={TONE[line.tone]}>{line.left}% left</span>{line.reset ? <span> · {line.reset}</span> : null}
     </span>)}
   </span>;

@@ -45,7 +45,7 @@ export function allowanceIdFor(local: UsageReading[], reading: UsageReading): st
   const pooled = reading.subscriptionId === null ? undefined : local.find((item) => item.provider === reading.provider && item.subscriptionId === reading.subscriptionId);
   return pooled?.id ?? reading.id;
 }
-export function createFleetUsageBridge(bb: BbPluginApi, options: { localOwner(): Promise<string | null>; now?: () => number; identityFor?(linkKey: string): Promise<string | null> }) {
+export function createFleetUsageBridge(bb: BbPluginApi, options: { localOwner(): Promise<string | null>; selfMachine?(): string | null; now?: () => number; identityFor?(linkKey: string): Promise<string | null> }) {
   return async (): Promise<FleetUsageRead> => {
     const now = (options.now ?? Date.now)();
     const [localOwner, config, replies] = await Promise.all([
@@ -55,11 +55,14 @@ export function createFleetUsageBridge(bb: BbPluginApi, options: { localOwner():
         catch { return { machine, result: null }; }
       })),
     ]);
+    const self = options.selfMachine?.() ?? null;
     const readings: UsageReading[] = [];
     const coverage: FleetUsageCoverage[] = [];
     const seen = new Set<string>();
     for (const { machine, result } of replies.sort((a, b) => (b.result?.snapshot?.observedAt ?? 0) - (a.result?.snapshot?.observedAt ?? 0))) {
       const snapshot = result?.snapshot;
+      // Without the Fleet plugin (one machine, or a community install) no snapshot comes back: this machine is still "self", never "Unavailable".
+      if ((result?.state !== "ok" || !snapshot?.hostId) && machine === self) { coverage.push({ machine, ownerServerId: null, hostId: null, state: "self" }); continue; }
       if (result?.state !== "ok" || !snapshot?.hostId) { coverage.push({ machine, ownerServerId: null, hostId: null, state: "unavailable" }); continue; }
       if ((localOwner !== null && snapshot.ownerServerId === localOwner) || snapshot.hostId === config?.primaryHostId) { coverage.push({ machine, ownerServerId: snapshot.ownerServerId, hostId: snapshot.hostId, state: "self" }); continue; }
       const fresh = snapshot.observedAt <= now + 5000 && now - snapshot.observedAt <= USAGE_FRESH_MS;

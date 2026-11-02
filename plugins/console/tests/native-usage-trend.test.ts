@@ -168,6 +168,17 @@ describe("actual finite Fleet usage bridge", () => {
 });
 
 
+describe("Fleet usage bridge without the Fleet plugin", () => {
+  it("keeps this machine as self, not Unavailable, when no Fleet plugin answers", async () => {
+    vi.useFakeTimers(); vi.setSystemTime(NOW);
+    const host = createFakePluginHost({ sdk: { system: { config: async () => ({ primaryHostId: "host_local" }) }, plugins: { callRpc: async () => { throw new Error("plugin fleet is not installed"); } } } }); hosts.push(host);
+    const result = await createFleetUsageBridge(host.bb, { localOwner: async () => null, selfMachine: () => "laptop", now: () => NOW })();
+    expect(result.coverage).toContainEqual({ machine: "laptop", ownerServerId: null, hostId: null, state: "self" });
+    expect(result.coverage.filter((item) => item.state === "unavailable").map((item) => item.machine)).toEqual(["studio", "work"]);
+  });
+});
+
+
 describe("owner rates use only current reported readings", () => {
   it("preserves the original graph burn/forecast calculation for fresh owner samples and disables it on provider failure", async () => {
     const f = fixture(); f.local({ accountKey: null });

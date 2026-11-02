@@ -303,7 +303,7 @@ export function createUsageTrend(bb: BbPluginApi, deps: TrendDeps) {
       }
     }
     const previousCoverage = (await bb.storage.kv.get<FleetUsageRead["coverage"]>("usage-trend:v1:fleet-sources")) ?? [];
-    const fleet = deps.fleetUsage ? await deps.fleetUsage().catch(() => ({ readings: [], coverage: previousCoverage.map((source) => ({ ...source, state: "unavailable" as const })) })) : { readings: [], coverage: [] };
+    const fleet = deps.fleetUsage ? await deps.fleetUsage().catch(() => ({ readings: [], coverage: previousCoverage.map((source) => ({ ...source, state: source.state === "self" ? ("self" as const) : ("unavailable" as const) })) })) : { readings: [], coverage: [] };
     await bb.storage.kv.set("usage-trend:v1:fleet-sources", fleet.coverage);
     await recordMachineRows(readings, fleet, list !== null);
     for (const reading of mergeUsageReadings(readings, fleet.readings)) {

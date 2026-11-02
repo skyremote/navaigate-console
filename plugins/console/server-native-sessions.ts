@@ -33,6 +33,7 @@ const memberSchema = z.object({
   title: z.string(),
   status: z.string(),
   createdAt: z.number(),
+  archived: z.boolean().optional(),
 });
 const armSchema = selectionSchema.extend({
   sourceThreadId: id,
@@ -48,6 +49,8 @@ const recordSchema = z.object({
   title: z.string().max(500),
   projectId: id,
   activeThreadId: id,
+  /** The last member the user chose that runs in the root's own workspace (never a mirror). It outlives a visit to a mirror. */
+  lastLocalThreadId: id.optional(),
   version: z.number().int().positive(),
   selectionVersion: z.number().int().positive(),
   members: z.array(memberSchema).min(1).max(NATIVE_SESSION_LIMIT),
@@ -59,6 +62,8 @@ export const nativeSessionStateSchema = z.object({
   title: z.string(),
   projectId: id,
   activeThreadId: id,
+  /** Where the composer falls back when the saved selection is a mirror or another workspace. Absent until a local member was chosen. */
+  lastLocalThreadId: id.optional(),
   version: z.number(),
   members: z.array(memberSchema).max(NATIVE_SESSION_LIMIT),
   pending: armSchema.nullable(),
@@ -258,7 +263,7 @@ export function createNativeSessions(bb: BbPluginApi) {
       try {
         const thread = await bb.sdk.threads.get({ threadId: member.id });
         const execution = await bb.sdk.threads.defaultExecutionOptions({ threadId: member.id });
-        return { ...member, providerId: thread.providerId, environmentId: thread.environmentId, title: (thread.title ?? thread.titleFallback ?? member.title).slice(0, 500), status: thread.deletedAt === null ? thread.status : "deleted", model: execution?.model ?? member.model, reasoningLevel: execution?.reasoningLevel ?? member.reasoningLevel, serviceTier: execution?.serviceTier ?? member.serviceTier };
+        return { ...member, providerId: thread.providerId, environmentId: thread.environmentId, title: (thread.title ?? thread.titleFallback ?? member.title).slice(0, 500), status: thread.deletedAt === null ? thread.status : "deleted", model: execution?.model ?? member.model, reasoningLevel: execution?.reasoningLevel ?? member.reasoningLevel, serviceTier: execution?.serviceTier ?? member.serviceTier, ...(thread.archivedAt !== null ? { archived: true } : {}) };
       } catch (error) {
         return { ...member, status: /not found|404/i.test(String(error)) ? "deleted" : "unavailable" };
       }
@@ -266,7 +271,8 @@ export function createNativeSessions(bb: BbPluginApi) {
     const active = members.find((member) => member.id === record.activeThreadId && member.status !== "deleted");
     const activeThreadId = active?.id ?? [...members].reverse().find((member) => member.status !== "deleted")?.id ?? record.rootThreadId;
     const arm = record.arms[activeThreadId];
-    return { rootThreadId, title: record.title, projectId: record.projectId, activeThreadId, version: record.version, members, pending: arm && arm.expiresAt > Date.now() ? arm : null, warning: record.warning };
+    const lastLocalThreadId = members.find((member) => member.id === record.lastLocalThreadId && member.status !== "deleted" && !member.archived)?.id;
+    return { rootThreadId, title: record.title, projectId: record.projectId, activeThreadId, ...(lastLocalThreadId ? { lastLocalThreadId } : {}), version: record.version, members, pending: arm && arm.expiresAt > Date.now() ? arm : null, warning: record.warning };
   }
 
   const quietly = async <T,>(read: () => Promise<T>, fallback: T): Promise<T> => { try { return await read(); } catch { return fallback; } };
@@ -363,6 +369,19 @@ export function createNativeSessions(bb: BbPluginApi) {
       if (!record.members.some((m) => m.id === input.threadId)) throw new Error("This provider session does not belong to the conversation.");
       const target = await bb.sdk.threads.get({ threadId: input.threadId });
       if (target.deletedAt !== null) throw new Error("This provider session was deleted.");
+      // Same rule as the composer: only the root's own workspace, never a mirror, never an archived thread.
+      // Looking at a mirror therefore leaves the remembered local choice alone. A failed read of the root
+      // only skips the bookkeeping; the selection itself still succeeds.
+      try {
+        const rootThread = await bb.sdk.threads.get({ threadId: root });
+        const isLocal = (thread: { environmentId: string | null; providerId: string; archivedAt: number | null }) => !!rootThread.environmentId && thread.environmentId === rootThread.environmentId && thread.providerId !== "fleet-mirror" && thread.archivedAt === null;
+        if (isLocal(target)) record.lastLocalThreadId = target.id;
+        else if (!record.lastLocalThreadId && record.activeThreadId !== root && record.activeThreadId !== target.id) {
+          // First mirror visit on a record saved before this was tracked: keep the model that was in use.
+          const previous = await bb.sdk.threads.get({ threadId: record.activeThreadId }).catch(() => null);
+          if (previous && previous.deletedAt === null && isLocal(previous)) record.lastLocalThreadId = previous.id;
+        }
+      } catch { /* keep the previous remembered choice */ }
       record.activeThreadId = input.threadId;
       record.selectionVersion++;
       record.version++;
@@ -464,6 +483,14 @@ export function createNativeSessions(bb: BbPluginApi) {
         const next = appendNativeMember(record, member, pending);
         delete next.arms[sourceThreadId];
         next.warning = null;
+        // A model the user just started in the root's own workspace is their local choice. If the root cannot
+        // be read right now, grouping still goes ahead and the choice is left as it was.
+        if (next.activeThreadId === member.id) {
+          try {
+            const rootThread = await bb.sdk.threads.get({ threadId: root });
+            if (rootThread.environmentId && member.environmentId === rootThread.environmentId) next.lastLocalThreadId = member.id;
+          } catch { /* previous behaviour */ }
+        }
         await save(next);
         // Complete all durable writes before hiding the native successor.
         await indexAssociation(next, member.id);

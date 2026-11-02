@@ -212,6 +212,9 @@ export function Meter({ value, color = "var(--foreground)", label, className }: 
   );
 }
 
+/** A bar never grows wider than this, so a few days of data stay bars instead of wide ovals. */
+const BAR_MAX_WIDTH = 28;
+
 /**
  * Bars over full-height tracks (BoardUI's "earned" chart, in ink). Each bar
  * rises from the baseline on entry, staggered, on its outer element; its
@@ -236,7 +239,7 @@ export function TrackBars({ bars, max = 100, height = 132, label, active, onActi
           const on = active === i;
           const dim = active !== null && !on;
           return (
-            <div key={b.key} title={b.title} onMouseEnter={() => onActive(i)} className="relative flex h-full min-w-0 flex-1 items-end rounded-full bg-muted">
+            <div key={b.key} title={b.title} onMouseEnter={() => onActive(i)} className="relative flex h-full min-w-0 flex-1 items-end rounded-full bg-muted" style={{ maxWidth: BAR_MAX_WIDTH }}>
               <span className="nav-hk-bar nav-hk-hover block h-full w-full rounded-full" style={{ opacity: dim ? 0.45 : 1, animationDelay: `${i * 28}ms` }}>
                 <i style={{ transform: `scaleY(${Math.max(h, b.value > 0 ? 0.06 : 0)})`, background: b.color ?? color }} />
               </span>
@@ -247,7 +250,7 @@ export function TrackBars({ bars, max = 100, height = 132, label, active, onActi
       </div>
       <div className="mt-2 flex gap-1.5 text-[11px] text-muted-foreground" style={tnum}>
         {bars.map((b, i) => (
-          <span key={b.key} className={cn("min-w-0 flex-1 truncate text-center", active === i ? "text-foreground" : null)}>{b.tick}</span>
+          <span key={b.key} className={cn("min-w-0 flex-1 truncate text-center", active === i ? "text-foreground" : null)} style={{ maxWidth: BAR_MAX_WIDTH }}>{b.tick}</span>
         ))}
       </div>
     </div>

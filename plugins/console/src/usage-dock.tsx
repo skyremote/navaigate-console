@@ -17,7 +17,7 @@ import type { rpcContract } from "../server";
 import { isTransientRpcFailure, rpcFlight } from "./rpc-flight";
 import { harnessOf } from "./shared";
 import { useVisibleRealtime } from "./visible-poll";
-import { selectionRoute } from "./native-sessions";
+import { localActiveThread } from "./native-sessions";
 import { UsageHover } from "./usage-card";
 
 const POOL_PROVIDER: Record<string, "claude" | "codex"> = { "claude-code": "claude", codex: "codex" };
@@ -317,13 +317,11 @@ export function UsageDock() {
     void rpcFlight().call(`native_session_state:${routeThreadId}`, () => rpc.call("native_session_state", { threadId: routeThreadId }), { fresh }).then((session) => {
       if (routeRef.current !== routeThreadId || request !== selectionRequest.current) return;
       settledRoute.current = routeThreadId;
-      const member = session.members.find((item) => item.id === session.activeThreadId);
       const routeMember = session.members.find((item) => item.id === routeThreadId);
-      const root = session.members.find((item) => item.id === session.rootThreadId);
-      // Match the conversation's route isolation: only a same-environment,
-      // non-mirror continuation can appear over the root's native composer.
-      const usesOverlay = routeThreadId === session.rootThreadId && selectionRoute(session, session.activeThreadId) === session.rootThreadId;
-      const visibleMember = session.activeThreadId === routeThreadId || usesOverlay ? member : routeMember;
+      // Match the conversation's route isolation: the root's composer shows the saved selection when it is a
+      // same-environment, non-mirror member, otherwise the last local model chosen, otherwise the root itself.
+      // Any other open thread shows its own model.
+      const visibleMember = routeThreadId === session.rootThreadId ? session.members.find((item) => item.id === localActiveThread(session)) : routeMember;
       setSelection({ route: routeThreadId, active: visibleMember?.id ?? routeThreadId, root: session.rootThreadId, providerId: visibleMember?.providerId ?? null, status: visibleMember?.status ?? null, routeProviderId: routeMember?.providerId ?? null, routeStatus: routeMember?.status ?? null });
     }, (cause: unknown) => {
       if (routeRef.current !== routeThreadId || request !== selectionRequest.current) return;

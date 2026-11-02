@@ -16,6 +16,7 @@ import type { nativeContextAttachmentContract } from "../server-native-context";
 import type { nativeContinuationPreparationContract } from "../server-native-sessions";
 import { appendNativeContextAttachment, hasNativeContinuationIntent, useNativeContinuationIntent } from "./native-continuation";
 import type { nativeSessionStateSchema } from "../server-native-sessions";
+import { localActiveThread, selectionRoute } from "./native-session-model";
 import { findSessionWindow, mountSessionWindow } from "./native-session-dom";
 import { usePortalScopeProps } from "@/lib/portal-scope";
 import { Boundary } from "./boundary";
@@ -31,21 +32,17 @@ type Session = z.infer<typeof nativeSessionStateSchema>;
 const explain = (error: unknown) => error instanceof Error ? error.message : String(error);
 const button = ghostButton;
 
-/** The route a chosen member opens on: the root when it shares the root's environment and is not a mirror, otherwise its own. One rule, used by the chat header and the usage dock. */
-export function selectionRoute(session: Pick<Session, "rootThreadId"> & { members: ReadonlyArray<{ id: string; environmentId: string | null; providerId: string | null }> }, memberId: string): string {
-  const root = session.members.find((member) => member.id === session.rootThreadId);
-  const member = session.members.find((entry) => entry.id === memberId);
-  return root?.environmentId && member?.environmentId === root.environmentId && member.providerId !== "fleet-mirror" ? session.rootThreadId : memberId;
-}
+export { selectionRoute, localActiveThread };
 
 /** A saved selection may come from another window. It cannot move this route
  * into a mirror or a different workspace merely because its state refreshed. */
-function sessionForRoute(session: Session | null, threadId: string | null): Session | null {
+export function sessionForRoute(session: Session | null, threadId: string | null): Session | null {
   if (!session || !threadId || session.activeThreadId === threadId) return session;
   const member = session.members.find((entry) => entry.id === threadId);
   if (!member) return session;
-  if (threadId === session.rootThreadId && selectionRoute(session, session.activeThreadId) === session.rootThreadId) return session;
-  return { ...session, activeThreadId: threadId, pending: session.pending?.sourceThreadId === threadId ? session.pending : null };
+  const active = threadId === session.rootThreadId ? localActiveThread(session) : threadId;
+  if (active === session.activeThreadId) return session;
+  return { ...session, activeThreadId: active, pending: session.pending?.sourceThreadId === active ? session.pending : null };
 }
 
 function useSession(threadId: string | null) {

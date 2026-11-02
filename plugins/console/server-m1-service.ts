@@ -7,7 +7,7 @@
 import { execFile } from "node:child_process";
 import { z } from "zod";
 import { alwaysOnSsh, requireHandoff } from "./server-words";
-import { parseProbe, type ServiceProbe } from "./src/m1-service-model";
+import { parseProbe, type ServiceProbe } from "./src/m1-service-probe";
 
 const BB = "/Applications/bb.app/Contents/Resources/app.asar.unpacked/node_modules/bb-app/host-daemon/dist/bb";
 const APP = "/Applications/bb.app/Contents/MacOS/bb";

@@ -229,6 +229,13 @@ If a companion is missing, the rest still works. Its feature shows greyed out wi
 - **Your own `navaigate-skin`.** If you installed a `navaigate-skin` from another source, it is left alone, with or without `--console`.
 - **Fleet and Prompt Stack** are new plugins. An existing Pro install does not gain them by itself; add them with `bb plugin install` (see Install by hand), or run the installer with `--edition pro` (together with `--console` if you are moving over). Moving to the Console with `--console` alone installs the Console and the helpers, and adds none of the plugins you left out of 1.11.
 
+## What's new in 1.12.2
+
+- The Console now installs on a clean machine. In 1.12.0 and 1.12.1 a fresh install could stop with "NavAIgate Console: install failed", because two files needed a part of the BB plugin toolkit that a normal install doesn't have. Run the install line again to finish it.
+- On one machine without Fleet, the usage card uses the machine name from your profile and no longer lists it a second time as "Unavailable".
+- The Daily peak bars stop at 28 pixels wide, so a few days of readings no longer draw big ovals.
+- Full notes: `docs/releases/1.12.2.md`.
+
 ## What's new in 1.12.1
 
 - The project has a new home: `github.com/skyremote/navaigate-console` (it was `skyremote/bb-overlay`). Every install line in this README, INSTALL.md and the website now uses the new address. The old address still redirects, so an install you made earlier keeps updating without you doing anything, and running the installer again recognises it as ours.
