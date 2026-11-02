@@ -3,7 +3,7 @@ import React from "react";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderSlot } from "@get-bb/plugin-sdk/testing/app";
-import { AttentionPage, AttentionSwipeRow, attentionVisible } from "../src/attention";
+import { AttentionPage, AttentionSwipeRow, RetryAttention, attentionVisible } from "../src/attention";
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 afterEach(cleanup);
 const row = {
@@ -253,5 +253,40 @@ describe("native attention controls", () => {
     fireEvent.touchStart(button, { touches: [{ clientX: 100, clientY: 10 }] });
     fireEvent.touchEnd(button, { changedTouches: [{ clientX: 220, clientY: 15 }] });
     expect(settle).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("Quota retry tab", () => {
+  it("explains an empty queue and shows the last retry decision", async () => {
+    renderSlot(
+      { component: () => <RetryAttention threadId="t" /> },
+      {},
+      {
+        rpc: {
+          attention_retries: () => ({ retries: [] }),
+          attention_retry_decision: () => ({ decision: { kind: "decline", reason: "not-retryable", observedAt: 1_800_000_000_000, sendAt: null } }),
+        },
+      },
+    );
+    expect(await screen.findByText("No retry is waiting for this chat.")).toBeTruthy();
+    expect(await screen.findByText(/no retry, because the error was not a usage limit or a temporary provider error/)).toBeTruthy();
+  });
+  it("lists a pending retry with its cancel button", async () => {
+    renderSlot(
+      { component: () => <RetryAttention threadId="t2" /> },
+      {},
+      { rpc: { attention_retries: () => ({ retries: [{ id: "r", threadId: "t2", sendAt: 1_800_000_000_000 }] }), attention_retry_decision: () => ({ decision: null }) } },
+    );
+    expect(await screen.findByText("Cancel retry")).toBeTruthy();
+    expect(screen.queryByText("No retry is waiting for this chat.")).toBeNull();
+  });
+  it("says the read failed instead of claiming nothing is waiting", async () => {
+    renderSlot(
+      { component: () => <RetryAttention threadId="t3" /> },
+      {},
+      { rpc: { attention_retries: () => { throw new Error("down"); }, attention_retry_decision: () => ({ decision: null }) } },
+    );
+    expect(await screen.findByText(/Could not read the retries for this chat/)).toBeTruthy();
+    expect(screen.queryByText("No retry is waiting for this chat.")).toBeNull();
   });
 });

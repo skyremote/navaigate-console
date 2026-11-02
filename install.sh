@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# NavAIgate Console 1.12.2, from NavAIgate (the project was called BB Overlay before 2 November 2026 and now lives at skyremote/navaigate-console).
+# NavAIgate Console 1.12.3, from NavAIgate (the project was called BB Overlay before 2 November 2026 and now lives at skyremote/navaigate-console).
 # A fresh install gets the Console: one sidebar and Home page, with a setup screen
 # where you tick the features you want. --edition simple|pro only picks which
 # starting preset the setup screen offers (default simple); Pro also installs

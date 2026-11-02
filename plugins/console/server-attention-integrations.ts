@@ -62,6 +62,12 @@ export function deduplicateSubscriptions(input: z.infer<typeof subscriptionObser
     };
   });
 }
+/** The provider-retry plugin's last decision for a chat, reduced to what the tab shows. */
+export const retryDecision = z.object({ kind: z.enum(["retry", "decline"]), reason: z.string(), observedAt: z.number(), sendAt: z.number().nullable() });
+const retryDiagnostic = z
+  .object({ observedAt: z.number(), decision: z.object({ kind: z.enum(["retry", "decline"]), reason: z.string(), sendAt: z.number().optional() }).passthrough() })
+  .passthrough()
+  .nullable();
 export const retryRow = z.object({
   id: z.string(),
   threadId: z.string(),
@@ -298,6 +304,14 @@ export function createAttentionIntegrations(
       .filter((r) => r.payload.kind === "retry")
       .map((r) => ({ id: r.id, threadId: r.threadId, sendAt: r.sendAt })),
   });
+  const retryLastDecision = async (threadId: string): Promise<z.infer<typeof retryDecision> | null> => {
+    try {
+      const d = await bb.sdk.plugins.callRpc({ pluginId: "provider-retry", method: "decision.get", input: { threadId }, outputSchema: retryDiagnostic, signal: AbortSignal.timeout(5_000) });
+      return d ? { kind: d.decision.kind, reason: d.decision.reason, observedAt: d.observedAt, sendAt: d.decision.sendAt ?? null } : null;
+    } catch {
+      return null;
+    }
+  };
   const retryCancel = async ({ threadId, id }: { threadId: string; id: string }) => {
     const row = (await retries(threadId)).retries.find((r) => r.id === id);
     if (!row) throw new Error("Pending provider retry was not found.");
@@ -397,5 +411,5 @@ export function createAttentionIntegrations(
   const forgetUsage = () => {
     usageCache = null;
   };
-  return { usage, forgetUsage, identityFor, retries, retryCancel, automations, automationRun, transport };
+  return { usage, forgetUsage, identityFor, retries, retryCancel, retryLastDecision, automations, automationRun, transport };
 }

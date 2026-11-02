@@ -2,7 +2,7 @@ import { createAttentionOwners, ownerAttentionRead, ownerAttentionSnapshot, owne
 import { createAttention, attentionState, attentionInbox, attentionInput, attentionResult, attentionPolicy } from "./server-attention";
 import { createEventInbox, eventInboxState } from "./server-event-inbox";
 import { createWebhookAdmin, webhookFormState, webhookProbeResult, webhookProject, webhookSaveInput, webhookSettingsInput, webhookTestResult } from "./server-webhook-admin";
-import { createAttentionIntegrations, subscriptionUsage, retryRow, automationOverview } from "./server-attention-integrations";
+import { createAttentionIntegrations, subscriptionUsage, retryRow, retryDecision, automationOverview } from "./server-attention-integrations";
 import { createDelivery } from "./server-delivery";
 import { createFleetDoctor } from "./fleet-doctor";
 import { createHelperModels } from "./server-helper-models";
@@ -110,6 +110,7 @@ export const rpcContract = defineRpcContract({
   attention_usage: { input: z.null(), output: z.object({ subscriptions: z.array(subscriptionUsage), scope: z.string() }) },
   attention_retries: { input: z.object({ threadId: z.string().min(1).optional() }).strict(), output: z.object({ retries: z.array(retryRow) }) },
   attention_retry_cancel: { input: z.object({ threadId: z.string().min(1), id: z.string().min(1) }).strict(), output: z.object({ ok: z.boolean() }) },
+  attention_retry_decision: { input: z.object({ threadId: z.string().min(1) }).strict(), output: z.object({ decision: retryDecision.nullable() }) },
   attention_automations: { input: z.null(), output: automationOverview },
   attention_automation_run: { input: z.object({ projectId: z.string().min(1), automationId: z.string().min(1), idempotencyKey: z.string().min(1).max(200) }).strict(), output: z.object({ run: z.object({ id: z.string() }).passthrough() }) },
   attention_events: { input: z.null(), output: eventInboxState },
@@ -511,6 +512,7 @@ export default async function plugin(bb: BbPluginApi) {
     attention_usage: () => attentionIntegrations.usage(),
     attention_retries: ({ threadId }) => attentionIntegrations.retries(threadId),
     attention_retry_cancel: input => attentionIntegrations.retryCancel(input),
+    attention_retry_decision: async ({ threadId }) => ({ decision: await attentionIntegrations.retryLastDecision(threadId) }),
     attention_automations: () => attentionIntegrations.automations(),
     attention_automation_run: input => attentionIntegrations.automationRun(input),
     attention_events: () => eventInbox.state(),

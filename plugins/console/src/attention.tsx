@@ -897,13 +897,38 @@ export function AttentionUsage() {
     </p>
   ) : null;
 }
+const RETRY_REASON: { [reason: string]: string } = {
+  "not-retryable": "the error was not a usage limit or a temporary provider error",
+  "attempts-exhausted": "it had already retried as many times as it is allowed",
+  "beyond-maximum-wait": "the limit resets later than BB is willing to wait",
+  "no-rate-limit-state": "the provider did not say when the limit resets",
+  "not-resettable": "this limit does not reset by itself",
+  "pool-unavailable": "the account pool could not say when an account is free",
+  "source-unavailable": "the account pool could not be reached",
+};
+const retryReason = (reason: string) => RETRY_REASON[reason] ?? reason.replace(/-/g, " ");
+type RetryDecisionView = { kind: "retry" | "decline"; reason: string; observedAt: number; sendAt: number | null };
 export function RetryAttention({ threadId }: { threadId: string }) {
   const rpc = useRpc<typeof rpcContract>();
-  const [rows, setRows] = useState<{ id: string; threadId: string; sendAt: number | null }[]>([]);
+  const [rows, setRows] = useState<{ id: string; threadId: string; sendAt: number | null }[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [decision, setDecision] = useState<RetryDecisionView | null>(null);
+  useEffect(() => {
+    setRows(null);
+    setFailed(false);
+    setDecision(null);
+  }, [threadId]);
   const load = useCallback(
     (fresh: boolean) => {
       rpcFlight().call(`attention_retries:${threadId}`, () => rpc.call("attention_retries", { threadId }), { fresh }).then(
-        (r) => setRows(r.retries),
+        (r) => {
+          setRows(r.retries);
+          setFailed(false);
+        },
+        () => setFailed(true),
+      );
+      rpcFlight().call(`attention_retry_decision:${threadId}`, () => rpc.call("attention_retry_decision", { threadId }), { fresh }).then(
+        (r) => setDecision(r.decision),
         () => {},
       );
     },
@@ -914,9 +939,10 @@ export function RetryAttention({ threadId }: { threadId: string }) {
   useEffect(read, [read]);
   useVisiblePoll(read, 15_000);
   return (
-    <div className="p-2">
-      {rows.map((r) => (
-        <p className="text-xs" key={r.id}>
+    <div className="grid gap-2 p-3 text-xs">
+      {failed ? <p className="text-muted-foreground">Could not read the retries for this chat. It tries again in 15 seconds.</p> : rows === null ? <p className="text-muted-foreground">Reading retries for this chat</p> : null}
+      {rows?.map((r) => (
+        <p key={r.id}>
           Provider Retry: {r.sendAt ? new Date(r.sendAt).toLocaleString() : "waiting"}
           <button
             className={btn}
@@ -928,6 +954,23 @@ export function RetryAttention({ threadId }: { threadId: string }) {
           </button>
         </p>
       ))}
+      {!failed && rows?.length === 0 ? (
+        <>
+          <p className="text-foreground">No retry is waiting for this chat.</p>
+          <p className="text-muted-foreground">
+            If this chat stops at a usage limit or a temporary provider error, BB keeps your message and sends it again when it can. The retry and its send time show here, with a button to cancel it.
+          </p>
+        </>
+      ) : null}
+      {decision ? (
+        <p className="text-muted-foreground" data-nav-part="retry-last-decision">
+          Last check, {new Date(decision.observedAt).toLocaleString()}:{" "}
+          {decision.kind === "retry"
+            ? `retry planned${decision.sendAt ? ` for ${new Date(decision.sendAt).toLocaleString()}` : ""}`
+            : `no retry, because ${retryReason(decision.reason)}`}
+          .
+        </p>
+      ) : null}
     </div>
   );
 }

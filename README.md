@@ -229,6 +229,11 @@ If a companion is missing, the rest still works. Its feature shows greyed out wi
 - **Your own `navaigate-skin`.** If you installed a `navaigate-skin` from another source, it is left alone, with or without `--console`.
 - **Fleet and Prompt Stack** are new plugins. An existing Pro install does not gain them by itself; add them with `bb plugin install` (see Install by hand), or run the installer with `--edition pro` (together with `--console` if you are moving over). Moving to the Console with `--console` alone installs the Console and the helpers, and adds none of the plugins you left out of 1.11.
 
+## What's new in 1.12.3
+
+- The Quota retry tab on a chat no longer shows a blank page. It says when no retry is waiting, explains what BB does at a usage limit, and shows BB's last retry decision for that chat in plain words.
+- Full notes: `docs/releases/1.12.3.md`.
+
 ## What's new in 1.12.2
 
 - The Console now installs on a clean machine. In 1.12.0 and 1.12.1 a fresh install could stop with "NavAIgate Console: install failed", because two files needed a part of the BB plugin toolkit that a normal install doesn't have. Run the install line again to finish it.
