@@ -1,6 +1,6 @@
-# BB Overlay
+# NavAIgate Console
 
-**The NavAIgate Console for [bb](https://getbb.app), from [NavAIgate](https://navaigate.dev).** One sidebar, a Home page and a setup screen where you tick the features you want, plus helpers that show what your agents are doing. Simple and Pro are starting presets for those tick boxes. It comes with an acknowledged, replayable walkthrough over the real controls.
+**The NavAIgate Console for [bb](https://getbb.app), from [NavAIgate](https://navaigate.dev).** (This project was called BB Overlay until 2 November 2026. It now lives at `skyremote/navaigate-console`; the old address still redirects here, so existing installs keep updating.) One sidebar, a Home page and a setup screen where you tick the features you want, plus helpers that show what your agents are doing. Simple and Pro are starting presets for those tick boxes. It comes with an acknowledged, replayable walkthrough over the real controls.
 
 > **In plain words**
 >
@@ -77,7 +77,7 @@ Five small plugins that change how bb looks and behaves while you work. Each is 
 The skill itself is NavAIgate's internal production tool and is not in this repository, so the installer leaves the Studio out. Without the skill it runs but has nothing to show. If you have the skill:
 
 ```sh
-bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin navmotion
+bb plugin install git:https://github.com/skyremote/navaigate-console.git@main --plugin navmotion
 bb plugin config navmotion set bbProjectId <the bb project for new threads>
 bb plugin config navmotion set reviewerName <your first name>
 ```
@@ -93,7 +93,7 @@ Inspired by Ben AI's Claude Code mods video. The pixel bots are original NavAIga
 You need bb installed (0.48 or later, on macOS or Linux), open, and signed in to at least one harness (Claude Code, Codex or Cursor). Then run one command in a terminal:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/skyremote/bb-overlay/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/skyremote/navaigate-console/main/install.sh | bash
 ```
 
 On a fresh machine this installs the Console on the Simple preset, Helper Desk, Cache Clock, Reflect, Screen Share, the Markdown plugin and the guide. For the Pro preset and the Pro plugins use `bash -s -- --edition pro` after the pipe. Reload bb and the Console opens its Setup screen; the guide offers to start once. You explicitly acknowledge each step, and can pause and resume or replay from the plugin's Settings.
@@ -101,18 +101,18 @@ On a fresh machine this installs the Console on the Simple preset, Helper Desk, 
 If you already run 1.11 Simple or Pro, the same command keeps your setup exactly as it is and updates it within its pins. To move to the Console, add `--console`:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/skyremote/bb-overlay/main/install.sh | bash -s -- --console
+curl -fsSL https://raw.githubusercontent.com/skyremote/navaigate-console/main/install.sh | bash -s -- --console
 ```
 
 **Read it first.** It's a good habit to read a script before you pipe it into a shell: [install.sh](install.sh). To see every command it would run without changing anything:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/skyremote/bb-overlay/main/install.sh | bash -s -- --dry-run
+curl -fsSL https://raw.githubusercontent.com/skyremote/navaigate-console/main/install.sh | bash -s -- --dry-run
 ```
 
 Safe to run again: it updates what's already there within its own pin, never removes or downgrades anything, leaves disabled plugins disabled, and leaves alone any plugin you installed from somewhere else. Options: `--edition simple|pro`, `--console`, `--dry-run`, `--no-look` (leave theme, navigation and thread-list settings alone), `--no-mods` (skip the helper plugins) and `--pin-folders`. The one thing it offers is Projects & Sections at 0.6.20 or later: `--pin-folders` switches it in place to 0.6.19 and keeps your folders.
 
-**Prefer a bb chat?** Paste: "Run the BB Overlay installer: `curl -fsSL https://raw.githubusercontent.com/skyremote/bb-overlay/main/install.sh | bash`. Then open Setup and walk me through it."
+**Prefer a bb chat?** Paste: "Run the NavAIgate Console installer: `curl -fsSL https://raw.githubusercontent.com/skyremote/navaigate-console/main/install.sh | bash`. Then open Setup and walk me through it."
 
 ### Prompt Stack's Claude Code hook
 
@@ -125,18 +125,18 @@ The brain kit is in `extras/brain-selfhost-kit` (start with its README and `self
 ### Install by hand
 
 ```sh
-bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin console
-bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin helper-desk
-bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin cache-clock
-bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin reflect
-bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin screen-share
-bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin navmotion-skin
-bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin onboarding
+bb plugin install git:https://github.com/skyremote/navaigate-console.git@main --plugin console
+bb plugin install git:https://github.com/skyremote/navaigate-console.git@main --plugin helper-desk
+bb plugin install git:https://github.com/skyremote/navaigate-console.git@main --plugin cache-clock
+bb plugin install git:https://github.com/skyremote/navaigate-console.git@main --plugin reflect
+bb plugin install git:https://github.com/skyremote/navaigate-console.git@main --plugin screen-share
+bb plugin install git:https://github.com/skyremote/navaigate-console.git@main --plugin navmotion-skin
+bb plugin install git:https://github.com/skyremote/navaigate-console.git@main --plugin onboarding
 # Pro preset, as well:
-bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin fleet
-bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin prompt-stack
-bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin kanban
-bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin finder-links
+bb plugin install git:https://github.com/skyremote/navaigate-console.git@main --plugin fleet
+bb plugin install git:https://github.com/skyremote/navaigate-console.git@main --plugin prompt-stack
+bb plugin install git:https://github.com/skyremote/navaigate-console.git@main --plugin kanban
+bb plugin install git:https://github.com/skyremote/navaigate-console.git@main --plugin finder-links
 bb plugin install git:https://github.com/VKirill/bb-plugin-project-folders.git@v0.6.19
 bb plugin install git:https://github.com/aaronphifer/bb-plugin-agent-board.git@semver:^0.6.1
 bb plugin install tasks
@@ -209,7 +209,7 @@ This computer has to stay awake while you do this, because it is the bb server t
 
 ## Companion plugins
 
-The installer adds two plugins made by other people. They are not part of BB Overlay and not ours: both are MIT-licensed, and they install from their own repositories, so they keep their own updates and their own licences.
+The installer adds two plugins made by other people. They are not part of the NavAIgate Console and not ours: both are MIT-licensed, and they install from their own repositories, so they keep their own updates and their own licences.
 
 | Plugin | Author | Licence | What it adds here |
 | --- | --- | --- | --- |
@@ -228,6 +228,11 @@ If a companion is missing, the rest still works. Its feature shows greyed out wi
 - **Going back.** The old core is still installed. Turn it on with `bb plugin enable navaigate-simple` (or `navaigate-workspace`) and choose its thread list and theme in **Settings, Appearance**; the saved values above show what you had.
 - **Your own `navaigate-skin`.** If you installed a `navaigate-skin` from another source, it is left alone, with or without `--console`.
 - **Fleet and Prompt Stack** are new plugins. An existing Pro install does not gain them by itself; add them with `bb plugin install` (see Install by hand), or run the installer with `--edition pro` (together with `--console` if you are moving over). Moving to the Console with `--console` alone installs the Console and the helpers, and adds none of the plugins you left out of 1.11.
+
+## What's new in 1.12.1
+
+- The project has a new home: `github.com/skyremote/navaigate-console` (it was `skyremote/bb-overlay`). Every install line in this README, INSTALL.md and the website now uses the new address. The old address still redirects, so an install you made earlier keeps updating without you doing anything, and running the installer again recognises it as ours.
+- The product is called the NavAIgate Console. The plugin ids, the saved folders under `~/.config/bb-overlay`, and the guide's name in Settings are unchanged, so nothing on your machine moves.
 
 ## What's new in 1.11.0
 

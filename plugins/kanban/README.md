@@ -68,4 +68,4 @@ the page. `components/ui/` is vendored shadcn source you own.
   radix families, `sonner`, `clsx`, `tailwind-merge` and `cva` are host-shimmed
   and live only in `devDependencies` for types.
 
-Licence: PolyForm Internal Use 1.0.0, part of [BB Overlay](https://github.com/skyremote/bb-overlay) by NavAIgate. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Licence: PolyForm Internal Use 1.0.0, part of [NavAIgate Console](https://github.com/skyremote/navaigate-console) by NavAIgate. See [LICENSE](LICENSE) and [NOTICE](NOTICE).

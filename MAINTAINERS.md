@@ -33,9 +33,9 @@ Change the pin everywhere it appears, in one release:
 - `install.sh`: `PF_VERSION` (and decide whether `folders_existing` should still warn about releases from 0.6.20 to the new one)
 - `plugins/workspace/src/folders.ts`: `PROJECT_FOLDERS_INSTALL`
 - `README.md` and `INSTALL.md`: the install-by-hand line and the note under it
-- `docs/index.html`: the install line (BB Overlay only)
+- `docs/index.html`: the install line (the public edition only)
 
-Then test the installer on a throwaway bb (below) from nothing, from the old pin, and from a range install, and mirror the change to the other edition (bb-overlay and navaigate-workspace ship the same installer).
+Then test the installer on a throwaway bb (below) from nothing, from the old pin, and from a range install, and mirror the change to the other edition (navaigate-console, once called bb-overlay, and navaigate-workspace ship the same installer).
 
 ## Testing the installer on a throwaway bb
 

@@ -1,6 +1,6 @@
 # NavAIgate Workspace for bb
 
-Part of [BB Overlay](https://github.com/skyremote/bb-overlay) by [NavAIgate](https://navaigate.dev). Install, set-up and licence details are in the repository's main README.
+Part of [NavAIgate Console](https://github.com/skyremote/navaigate-console) by [NavAIgate](https://navaigate.dev). Install, set-up and licence details are in the repository's main README.
 
 ## Surfaces
 

@@ -42,4 +42,4 @@
 - Tags, flags and section order are stored in bb's plugin storage on your bb server.
 - The theme loads IBM Plex and Fraunces from Google Fonts. Nothing else leaves your machine.
 
-Part of BB Overlay by NavAIgate: https://github.com/skyremote/bb-overlay. Free to use for yourself and your business under the PolyForm Internal Use licence; not for redistribution.
+Part of the NavAIgate Console by NavAIgate: https://github.com/skyremote/navaigate-console. Free to use for yourself and your business under the PolyForm Internal Use licence; not for redistribution.

@@ -9,12 +9,12 @@ import { toast } from "sonner";
 import { PROJECT_FOLDERS_INSTALL } from "./folders";
 
 /** One command that installs and configures the whole set. */
-export const INSTALL_ALL = "curl -fsSL https://raw.githubusercontent.com/skyremote/bb-overlay/main/install.sh | bash";
+export const INSTALL_ALL = "curl -fsSL https://raw.githubusercontent.com/skyremote/navaigate-console/main/install.sh | bash";
 
 const COMPANIONS = [
   { id: "project-folders", label: "Projects & Sections", by: "VKirill, MIT", powers: "Folders in the rail and Move to folder.", install: PROJECT_FOLDERS_INSTALL },
   { id: "agent-board", label: "Agent Board", by: "aaronphifer, MIT", powers: "A live board of the agents working in a chat.", install: "bb plugin install git:https://github.com/aaronphifer/bb-plugin-agent-board.git@semver:^0.6.1" },
-  { id: "kanban", label: "Kanban", by: "NavAIgate", powers: "Every chat as a card on a board.", install: "bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin kanban" },
+  { id: "kanban", label: "Kanban", by: "NavAIgate", powers: "Every chat as a card on a board.", install: "bb plugin install git:https://github.com/skyremote/navaigate-console.git@main --plugin kanban" },
   { id: "tasks", label: "Tasks", by: "built into bb", powers: "To-do and the Board.", install: "bb plugin install tasks" },
 ] as const;
 

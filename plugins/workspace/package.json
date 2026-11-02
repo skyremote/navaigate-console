@@ -74,7 +74,7 @@
   "description": "Your bb front page: Home, a Jev-sorted inbox, calendar, to-dos, a run-sheet sidebar, a voice agent and hand-off to an always-on machine.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/skyremote/bb-overlay.git",
+    "url": "https://github.com/skyremote/navaigate-console.git",
     "directory": "plugins/workspace"
   },
   "author": "NavAIgate (https://navaigate.dev)",

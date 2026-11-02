@@ -7,11 +7,13 @@ import tempfile
 import unittest
 
 INSTALLER = Path(__file__).resolve().parents[1] / 'install.sh'
-PRO = 'navaigate-workspace@1.8.1  running\n  source: git:https://github.com/skyremote/bb-overlay.git@main'
+PRO = 'navaigate-workspace@1.8.1  running\n  source: git:https://github.com/skyremote/navaigate-console.git@main'
 PERSONAL = 'navaigate-skin@0.33.1  running\n  source: path:/Users/example/own-skin'
-SIMPLE = 'navaigate-simple@1.0.0  running\n  source: git:https://github.com/skyremote/bb-overlay.git@main'
-CONSOLE = 'navaigate-skin@0.34.0  running\n  source: git:https://github.com/skyremote/bb-overlay.git@main'
-REPO = 'git:https://github.com/skyremote/bb-overlay.git@main'
+SIMPLE = 'navaigate-simple@1.0.0  running\n  source: git:https://github.com/skyremote/navaigate-console.git@main'
+CONSOLE = 'navaigate-skin@0.34.0  running\n  source: git:https://github.com/skyremote/navaigate-console.git@main'
+REPO = 'git:https://github.com/skyremote/navaigate-console.git@main'
+OLD_URL = 'git:https://github.com/skyremote/bb-overlay.git@main'
+OTHER_URL = 'git:https://github.com/skyremote/navaigate-console-other.git@main'
 FAKE_BB = '''#!/usr/bin/env python3
 import json, os, sys
 args = sys.argv[1:]
@@ -89,7 +91,7 @@ class InstallerTest(unittest.TestCase):
         self.assertFalse(any(c[:3]==['settings','ui','set'] for c in calls))
 
     def test_disabled_helper_is_not_reenabled_or_updated(self):
-        plugins=PRO+'\nhelper-desk@0.1.0  disabled\n  source: git:https://github.com/skyremote/bb-overlay.git@main'
+        plugins=PRO+'\nhelper-desk@0.1.0  disabled\n  source: git:https://github.com/skyremote/navaigate-console.git@main'
         calls,_=self.run_installer(TEST_PLUGINS=plugins)
         self.assertNotIn(['plugin','enable','helper-desk'],calls)
         self.assertFalse(any(c[:3]==['plugin','update','helper-desk'] for c in calls))
@@ -123,7 +125,7 @@ class InstallerTest(unittest.TestCase):
         self.assertFalse(any(c[:2]==['plugin','remove'] for c in calls))
 
     def test_return_to_personal_pro_does_not_add_absent_optional_plugins(self):
-        plugins='navaigate-simple@1.0.0  running\n  source: git:https://github.com/skyremote/bb-overlay.git@main\nnavaigate-skin@0.33.1  disabled\n  source: path:/example/own-skin'
+        plugins='navaigate-simple@1.0.0  running\n  source: git:https://github.com/skyremote/navaigate-console.git@main\nnavaigate-skin@0.33.1  disabled\n  source: path:/example/own-skin'
         calls,_=self.run_installer('--edition','pro',TEST_PLUGINS=plugins)
         self.assertEqual(self.installs(calls),['onboarding'])
         self.assertIn(['plugin','enable','navaigate-skin'],calls)
@@ -134,7 +136,7 @@ class InstallerTest(unittest.TestCase):
         self.assertFalse(any(c[:2] in [['plugin','disable'],['plugin','install']] for c in calls))
 
     def test_selected_pro_provider_wins_over_coinstalled_simple(self):
-        plugins=PERSONAL+'\nnavaigate-simple@0.1.0  running\n  source: git:https://github.com/skyremote/bb-overlay.git@main'
+        plugins=PERSONAL+'\nnavaigate-simple@0.1.0  running\n  source: git:https://github.com/skyremote/navaigate-console.git@main'
         calls,_=self.run_installer(TEST_PLUGINS=plugins,TEST_LIST='navaigate-skin/rail')
         self.assertIn(['plugin','config','bb-overlay-guide','set','edition','pro'],calls)
         self.assertFalse(any(c[:3]==['settings','ui','set'] for c in calls))
@@ -266,5 +268,37 @@ class InstallerTest(unittest.TestCase):
         calls,_=self.run_installer('--edition','simple',TEST_PLUGINS=PRO)
         self.assertIn('simple',self.installs(calls));self.assertNotIn('console',self.installs(calls))
         self.assertIn(['plugin','disable','navaigate-workspace'],calls)
+
+    # ---- 1.12.1: the repository was renamed from skyremote/bb-overlay
+    def test_an_install_recorded_from_the_old_repository_name_is_still_ours_and_updates(self):
+        console=CONSOLE.replace(REPO,OLD_URL)
+        self.assertIn(OLD_URL,console)
+        calls,_=self.run_installer(TEST_PLUGINS=console,TEST_LIST='navaigate-skin/rail')
+        self.assertIn(['plugin','update','navaigate-skin','--yes'],calls)
+        self.assertFalse(any(c[:3]==['plugin','config','navaigate-skin'] for c in calls))
+        self.assertFalse(any(c[:2]==['plugin','remove'] for c in calls))
+
+    def test_a_1_11_install_recorded_from_the_old_name_can_move_to_the_console(self):
+        for old in (PRO,SIMPLE):
+            calls,_=self.run_installer('--console',TEST_PLUGINS=old.replace(REPO,OLD_URL))
+            self.assertIn('console',self.installs(calls))
+            self.assertFalse(any(c[:2]==['plugin','remove'] for c in calls))
+
+    def test_a_1_11_pro_install_recorded_from_the_old_name_is_updated_in_place(self):
+        calls,_=self.run_installer(TEST_PLUGINS=PRO.replace(REPO,OLD_URL))
+        self.assertIn(['plugin','update','navaigate-workspace','--yes'],calls)
+        foreign=PRO.replace(REPO,'git:https://github.com/someone/else.git@main')
+        calls,_=self.run_installer(TEST_PLUGINS=foreign)
+        self.assertNotIn(['plugin','update','navaigate-workspace','--yes'],calls)
+
+    def test_our_plugins_are_only_installed_from_the_new_repository(self):
+        calls,_=self.run_installer()
+        sources=[c[2] for c in calls if c[:2]==['plugin','install']]
+        self.assertTrue(sources and all(s==REPO for s in sources),sources)
+        self.assertFalse(any('bb-overlay' in s for s in sources))
+
+    def test_the_other_repository_is_not_treated_as_ours(self):
+        calls,_=self.run_installer(TEST_PLUGINS=CONSOLE.replace(REPO,OTHER_URL),TEST_LIST='navaigate-skin/rail')
+        self.assertNotIn(['plugin','update','navaigate-skin','--yes'],calls)
 
 if __name__=='__main__': unittest.main()

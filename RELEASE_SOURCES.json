@@ -1,6 +1,6 @@
 {
   "about": "Where each release plugin folder was copied from. Written by scripts/sync-release.sh; do not edit by hand.",
-  "release": "1.12.0",
+  "release": "1.12.1",
   "plugins": [
     {
       "folder": "plugins/console",

@@ -155,7 +155,7 @@ for row in "${SPEC[@]}"; do
 import sys
 p = sys.argv[1]
 t = open(p).read()
-t = t.replace("`claude-plugin/skills/`), not in this panel's source.", "`claude-plugin/skills/`, a folder of this plugin in BB Overlay).")
+t = t.replace("`claude-plugin/skills/`), not in this panel's source.", "`claude-plugin/skills/`, a folder of this plugin in the NavAIgate Console).")
 open(p, "w").write(t)
 PY
   fi
@@ -191,7 +191,7 @@ for line in open(vendor):
     vendored[f] = {"folder": f, "what": i, "sourceRepo": repo, "branch": branch, "commit": commit, "note": note}
 doc = {
     "about": "Where each release plugin folder was copied from. Written by scripts/sync-release.sh; do not edit by hand.",
-    "release": "1.12.0",
+    "release": "1.12.1",
     "plugins": [plugins[f] for f in order if f in plugins],
     "vendored": list(vendored.values()),
 }

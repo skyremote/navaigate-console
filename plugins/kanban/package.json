@@ -64,7 +64,7 @@
   "author": "NavAIgate (https://navaigate.dev)",
   "repository": {
     "type": "git",
-    "url": "https://github.com/skyremote/bb-overlay.git",
+    "url": "https://github.com/skyremote/navaigate-console.git",
     "directory": "plugins/kanban"
   }
 }

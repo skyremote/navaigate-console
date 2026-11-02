@@ -1,4 +1,4 @@
-# Install BB Overlay 1.12: the NavAIgate Console
+# Install the NavAIgate Console 1.12
 
 You need **bb 0.48 or later** on macOS or Linux, open and signed in to your chosen AI harness (Claude Code, Codex or Cursor).
 
@@ -13,13 +13,13 @@ Fleet needs a second Mac running bb and a brain. On a single Mac it stays hidden
 For a fresh Simple preset:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/skyremote/bb-overlay/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/skyremote/navaigate-console/main/install.sh | bash
 ```
 
 For a fresh Pro preset:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/skyremote/bb-overlay/main/install.sh | bash -s -- --edition pro
+curl -fsSL https://raw.githubusercontent.com/skyremote/navaigate-console/main/install.sh | bash -s -- --edition pro
 ```
 
 To look at the commands first, add `--dry-run`. Use `--no-look` to leave your theme, navigation and thread-list settings alone, or `--no-mods` to leave out the helper plugins. Read [install.sh](install.sh) before running it if you prefer. No installer path uninstalls a plugin.
@@ -36,7 +36,7 @@ Reload bb with **Cmd-R** on Mac or **Ctrl-R** on Linux.
 Run the same command. Your setup stays exactly as it is, and the installer prints one line about `--console`. To move to the Console:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/skyremote/bb-overlay/main/install.sh | bash -s -- --console
+curl -fsSL https://raw.githubusercontent.com/skyremote/navaigate-console/main/install.sh | bash -s -- --console
 ```
 
 It saves your current thread list, navigation and theme, installs the Console and reloads it, and only then switches the look and turns your old core off. If a step fails it restores your previous settings and leaves the old core running. Nothing is uninstalled and no data is deleted. To go back, enable the old core (`bb plugin enable navaigate-simple` or `navaigate-workspace`) and choose its thread list and theme in **Settings, Appearance** (the values saved in `~/.config/bb-overlay/before-console` show what you had; nothing reads them back).

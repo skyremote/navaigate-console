@@ -119,7 +119,7 @@
     <p class="lead">So I use bb every day to run Claude, Codex and Cursor side by side, and the thing I kept losing was what each one was actually doing, so we built a sidebar that shows what every harness is working on, a to-do list that lives next to the chat it came from, and a board that moves when the work moves. This page is how it all works, one piece at a time.</p>
     <div class="actions">
       <a class="btn primary" href="#install">Install it</a>
-      <a class="btn" href="https://github.com/skyremote/bb-overlay">Source on GitHub</a>
+      <a class="btn" href="https://github.com/skyremote/navaigate-console">Source on GitHub</a>
       <a class="btn" href="#keys">Shortcuts</a>
     </div>
     <div class="film" id="film">
@@ -135,16 +135,16 @@
       <div class="caps">Step one</div>
       <h2>Install it in <em class="f">one</em> command</h2>
       <p>You need bb 0.48 or later on Mac or Linux. A fresh install now starts with Simple: a quiet branded chat sidebar, Helper Desk, Cache Clock, Reflect, Screen Share and the guided walkthrough. Existing Pro installations keep their current interface and preferences.</p>
-<pre>curl -fsSL https://raw.githubusercontent.com/skyremote/bb-overlay/main/install.sh | bash</pre>
-      <p>Like to read a script before you run it? Good habit. <a href="https://github.com/skyremote/bb-overlay/blob/main/install.sh">Read install.sh first</a>, or see exactly what it would do without changing anything with <code>curl -fsSL https://raw.githubusercontent.com/skyremote/bb-overlay/main/install.sh | bash -s -- --dry-run</code>. It's safe to run again any time to update everything, it never removes anything, and if you already use a different NavAIgate rail it leaves your look alone.</p>
-      <p>For a fresh full <b>Pro</b> install, add <code>-s -- --edition pro</code> after <code>bash</code>. Then reload BB: the walkthrough highlights each real control and requires a read acknowledgement before advancing. No videos. Pause and resume, or replay from <b>Settings → Plugins → BB Overlay guide</b>. The detailed feature guide below describes the established Pro workspace. Not technical? The <a href="https://github.com/skyremote/bb-overlay/blob/main/INSTALL.md">step-by-step install guide</a> walks you through it.</p>
+<pre>curl -fsSL https://raw.githubusercontent.com/skyremote/navaigate-console/main/install.sh | bash</pre>
+      <p>Like to read a script before you run it? Good habit. <a href="https://github.com/skyremote/navaigate-console/blob/main/install.sh">Read install.sh first</a>, or see exactly what it would do without changing anything with <code>curl -fsSL https://raw.githubusercontent.com/skyremote/navaigate-console/main/install.sh | bash -s -- --dry-run</code>. It's safe to run again any time to update everything, it never removes anything, and if you already use a different NavAIgate rail it leaves your look alone.</p>
+      <p>For a fresh full <b>Pro</b> install, add <code>-s -- --edition pro</code> after <code>bash</code>. Then reload BB: the walkthrough highlights each real control and requires a read acknowledgement before advancing. No videos. Pause and resume, or replay from <b>Settings → Plugins → BB Overlay guide</b>. The detailed feature guide below describes the established Pro workspace. Not technical? The <a href="https://github.com/skyremote/navaigate-console/blob/main/INSTALL.md">step-by-step install guide</a> walks you through it.</p>
       <p><b>Pro components by hand.</b> The established full workspace, one plugin at a time, then <b>Settings, Appearance</b>: the <b>NavAIgate</b> theme and the <b>NavAIgate rail</b> as the thread list.</p>
-<pre>bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin workspace
-bb plugin install git:https://github.com/skyremote/bb-overlay.git@main --plugin kanban
+<pre>bb plugin install git:https://github.com/skyremote/navaigate-console.git@main --plugin workspace
+bb plugin install git:https://github.com/skyremote/navaigate-console.git@main --plugin kanban
 bb plugin install git:https://github.com/VKirill/bb-plugin-project-folders.git@v0.6.19
 bb plugin install git:https://github.com/aaronphifer/bb-plugin-agent-board.git@semver:^0.6.1
 bb plugin install tasks</pre>
-      <p>Projects &amp; Sections (folders) by VKirill and Agent Board by aaronphifer are free MIT plugins made by other people. They aren't part of BB Overlay, and they install from their own repositories so they keep their own updates.</p>
+      <p>Projects &amp; Sections (folders) by VKirill and Agent Board by aaronphifer are free MIT plugins made by other people. They aren't part of the NavAIgate Console, and they install from their own repositories so they keep their own updates.</p>
       <div class="note">Folders need the <b>Projects &amp; Sections</b> plugin, to-dos are stored in bb's own <b>Tasks</b> plugin, and the usage dock reads bb's <b>Account Pooler</b> if you use it. If one of those isn't there, the rest still works, and that part just doesn't show.</div>
     </div>
   </section>
@@ -348,7 +348,7 @@ bb plugin install tasks</pre>
 </main>
 
 <footer>
-  <div class="wrap">Built by <a href="https://navaigate.dev">NavAIgate</a>. Source and releases on <a href="https://github.com/skyremote/bb-overlay">GitHub</a>. The loader, status marks and dial were inspired by components from <a href="https://reactbits.dev">React Bits</a>.</div>
+  <div class="wrap">Built by <a href="https://navaigate.dev">NavAIgate</a>. Source and releases on <a href="https://github.com/skyremote/navaigate-console">GitHub</a>. The loader, status marks and dial were inspired by components from <a href="https://reactbits.dev">React Bits</a>.</div>
 </footer>
 
 <script>

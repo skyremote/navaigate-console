@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# BB Overlay 1.12: the NavAIgate Console, from NavAIgate.
+# NavAIgate Console 1.12.1, from NavAIgate (the project was called BB Overlay before 2 November 2026 and now lives at skyremote/navaigate-console).
 # A fresh install gets the Console: one sidebar and Home page, with a setup screen
 # where you tick the features you want. --edition simple|pro only picks which
 # starting preset the setup screen offers (default simple); Pro also installs
@@ -13,7 +13,7 @@
 # Disabled plugins stay disabled.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/skyremote/bb-overlay/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/skyremote/navaigate-console/main/install.sh | bash
 #   bash install.sh [--edition simple|pro] [--console] [--dry-run] [--no-look] [--no-mods]
 #
 #   --edition simple|pro  the Console's starting preset on a fresh install (default
@@ -30,18 +30,22 @@ set -euo pipefail
 
 main() {
 
-  EDITION="BB Overlay"
-  BRAIN_KIT_URL="https://github.com/skyremote/bb-overlay/tree/main/extras/brain-selfhost-kit"
+  EDITION="NavAIgate Console"
+  BRAIN_KIT_URL="https://github.com/skyremote/navaigate-console/tree/main/extras/brain-selfhost-kit"
   CONSOLE_ID="navaigate-skin"
-  REPO_URL="https://github.com/skyremote/bb-overlay.git"
+  REPO_URL="https://github.com/skyremote/navaigate-console.git"
   REPO_REF="main"
   MIN_BB="0.48"
   MIN_BB_MODS="0.46"
 
-  # Either NavAIgate edition counts as ours: the public BB Overlay and the
-  # members' edition ship the same plugins, so a copy from the other one is
-  # updated where it is, not kept as it was.
-  NAV_MATCH="github.com/skyremote/bb-overlay|github.com/skyremote/navaigate-workspace"
+  # Either NavAIgate edition counts as ours: the public NavAIgate Console (once
+  # called BB Overlay) and the members' edition ship the same plugins, so a copy
+  # from the other one is updated where it is, not kept as it was. Installs made
+  # before the rename were recorded from skyremote/bb-overlay; GitHub redirects it
+  # to this repository, so they still match and still update. The trailing
+  # ".git", "@" and "/" keep any other repository whose name merely starts with this one
+  # from counting as ours.
+  NAV_MATCH="github.com/skyremote/navaigate-console.git|github.com/skyremote/navaigate-console@|github.com/skyremote/navaigate-console/|github.com/skyremote/bb-overlay|github.com/skyremote/navaigate-workspace"
 
   # From 0.6.20 on, Projects & Sections declares functions only VKirill's own bb
   # build has (vk-requires.json), yet bb still offers those releases to a range.
@@ -132,7 +136,7 @@ main() {
     return 1
   }
   if version_lt "$BB_VERSION" "$MIN_BB"; then
-    die "BB Overlay 1.12 needs bb $MIN_BB or later. Update bb first, then run this again."
+    die "NavAIgate Console 1.12 needs bb $MIN_BB or later. Update bb first, then run this again."
   fi
 
   PLUGIN_LIST="$(bb plugin list 2>/dev/null)" || die "bb is installed but not answering. Open the bb app, wait for it to load, then run this again."
@@ -315,7 +319,7 @@ main() {
     if [ "$SET_LOOK" -eq 0 ] && [ -n "$LEGACY_EDITION" ] && [ "$CONSOLE_FLAG" -eq 1 ]; then
       die "--no-look cannot switch to the Console: the old thread list would point at a disabled core. Remove --no-look to switch, or omit --console to keep your current setup."
     fi
-    step "BB Overlay: Console"
+    step "NavAIgate Console: Console"
     if [ "$CONSOLE_NEW" -eq 1 ]; then
       say "The Console is the core for both starting presets. Its setup screen opens first; you tick the features you want there. Starting preset: $PRESET."
     fi
@@ -329,9 +333,9 @@ main() {
     [ "$EDITION" = pro ] && [ -n "$(plugin_line navaigate-workspace)$(plugin_line navaigate-skin)" ] && PRESERVE_PRO=1
     KEEP_LOOK=0
     [ -n "$CURRENT_EDITION" ] && [ "$EDITION" = "$CURRENT_EDITION" ] && KEEP_LOOK=1
-    step "BB Overlay: $EDITION (1.11 setup, kept as it is)"
+    step "NavAIgate Console: $EDITION (1.11 setup, kept as it is)"
     if [ "$SKIN_OTHER" -eq 0 ]; then
-      say "BB Overlay 1.12 adds the NavAIgate Console. Nothing about your $EDITION setup has changed. To move to the Console, run this again with --console (nothing is uninstalled)."
+      say "NavAIgate Console 1.12 adds the Console. Nothing about your $EDITION setup has changed. To move to the Console, run this again with --console (nothing is uninstalled)."
     fi
   fi
 
