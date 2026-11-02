@@ -63,3 +63,7 @@ Cache Clock is useful for applicable Claude chats. Screen Share has specific mat
 - A paused or completed guide does not pop up again on each update. Choose **Replay** to start it again.
 - If you deliberately disabled `bb-overlay-guide`, enable it in Plugins first.
 - Update bb if the installer says your version is too old.
+
+## If bb says "Could not start bb" right after an update
+
+On Windows, bb installs a waiting update when it quits, and opening bb again before that install has finished starts it with only part of its files in place, so the server stops with "Could not start bb" and a "Daemon lock exists" line. Nothing is damaged. Close the error, wait 30 seconds and open bb again, and next time give bb a minute to reopen by itself after an update. Don't delete the lock file, because bb clears an old lock by itself.
