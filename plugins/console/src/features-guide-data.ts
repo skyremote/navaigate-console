@@ -4232,5 +4232,38 @@ export const FEATURES: readonly Feature[] = [
       "gate": "app.tsx tab agents and command open-agents",
       "plugin": "console"
     }
+  },
+  {
+    "id": "EXTRA-AG",
+    "name": "Usage spheres on Home",
+    "description": "See each subscription on Home as a sphere of liquid: what is left, its burn rate, and flames while it is in use.",
+    "area": "Automation and usage",
+    "surface": "home",
+    "status": {
+      "kind": "live"
+    },
+    "where": "Console: left icon rail, Home, the 'Usage' card under the four stat tiles: one glass sphere of liquid for each subscription (Claude, Codex, Cursor), filled to what is left, or to what is used with the 'Used' switch. Hover or tap a sphere for its burn rate, when it runs out at that rate and each of its windows. A subscription in use burns, and the flames grow with the burn rate. Cross a sphere with the pointer and the liquid tilts; press it and it sloshes.",
+    "gap": "A burn rate needs 30 minutes of readings; until then the sphere says so. bb names the harness that is working, not the account, so 'Working now' shows only where one sphere can claim it.",
+    "evidence": {
+      "verdict": "PASS",
+      "note": "Home drew six spheres from live readings with one burning at its measured rate; hovering another changed the readout and a press moved its liquid.",
+      "date": "2026-11-10",
+      "build": "bb 0.49.0"
+    },
+    "showMe": {
+      "kind": "panel",
+      "path": "home"
+    },
+    "edition": "both",
+    "picker": {
+      "default": "on",
+      "requires": [],
+      "presets": [
+        "pro"
+      ],
+      "enforced": "inline",
+      "gate": "'Usage' card on Home (src/usage-orbs.tsx, src/usage-orbs-model.ts, src/usage-orb-engine.ts)",
+      "plugin": "console"
+    }
   }
 ];

@@ -435,8 +435,8 @@ export default async function plugin(bb: BbPluginApi) {
   bb.background.service("usage-trend", {
     async start(signal) {
       while (!signal.aborted) {
-        // The trend feeds the Home window chart (EXTRA-AD), usage across machines (F47) and the usage dock (F48): sampled while any of them is on.
-        if (serverFeatureOn("EXTRA-AD") || serverFeatureOn("F47") || serverFeatureOn("F48")) await orAbort(trend.sample(), signal);
+        // The trend feeds the Home window chart (EXTRA-AD), usage across machines (F47), the usage dock (F48) and the usage spheres (EXTRA-AG): sampled while any of them is on.
+        if (serverFeatureOn("EXTRA-AD") || serverFeatureOn("F47") || serverFeatureOn("F48") || serverFeatureOn("EXTRA-AG")) await orAbort(trend.sample(), signal);
         if (signal.aborted) break;
         await new Promise((r) => {
           const t = setTimeout(r, 3 * 60_000);

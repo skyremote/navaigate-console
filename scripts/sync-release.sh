@@ -191,7 +191,7 @@ for line in open(vendor):
     vendored[f] = {"folder": f, "what": i, "sourceRepo": repo, "branch": branch, "commit": commit, "note": note}
 doc = {
     "about": "Where each release plugin folder was copied from. Written by scripts/sync-release.sh; do not edit by hand.",
-    "release": "1.12.4",
+    "release": "1.12.5",
     "plugins": [plugins[f] for f in order if f in plugins],
     "vendored": list(vendored.values()),
 }

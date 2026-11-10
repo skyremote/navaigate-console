@@ -120,3 +120,4 @@ EXTRA-AC	Context and artefacts	Open a file link in a chat even when the agent sa
 EXTRA-AD	Automation and usage	Hover the usage line under the chat box for a trend, burn rate, time to limit and which chats used the most.
 EXTRA-AE	Working across Macs	Send a chat to another Mac's own bb and follow its progress here, then pull the results back.
 EXTRA-AF	Models and agents	Open an Agents tab in any chat to see its family of sub-agents, read a session log and spin up a new agent.
+EXTRA-AG	Automation and usage	See each subscription on Home as a sphere of liquid: what is left, its burn rate, and flames while it is in use.

@@ -497,5 +497,9 @@
   "EXTRA-AF": {
     "kind": "chat",
     "hint": "Open a chat first: right panel Agents tab, or Cmd+Shift+A"
+  },
+  "EXTRA-AG": {
+    "kind": "panel",
+    "path": "home"
   }
 }

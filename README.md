@@ -229,6 +229,12 @@ If a companion is missing, the rest still works. Its feature shows greyed out wi
 - **Your own `navaigate-skin`.** If you installed a `navaigate-skin` from another source, it is left alone, with or without `--console`.
 - **Fleet and Prompt Stack** are new plugins. An existing Pro install does not gain them by itself; add them with `bb plugin install` (see Install by hand), or run the installer with `--edition pro` (together with `--console` if you are moving over). Moving to the Console with `--console` alone installs the Console and the helpers, and adds none of the plugins you left out of 1.11.
 
+## What's new in 1.12.5
+
+- Home has a new Usage card: one sphere of liquid for each subscription (Claude, Codex, Cursor), filled to what is left, or to what is used with the Used switch. A plan read on two machines is one sphere.
+- Hover or tap a sphere for its burn rate, which window runs out first at that rate, and every window it has. A subscription in use burns, and the flames grow with the burn rate.
+- Full notes: `docs/releases/1.12.5.md`.
+
 ## What's new in 1.12.4
 
 - The Stash now only takes chats that are not in a folder. A chat you filed into a folder, or one that works in a folder's directory, stays in that folder however long it sits.

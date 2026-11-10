@@ -1,6 +1,7 @@
 // Home: the NavAIgate front page inside bb.
 //   Head        N mark, today's date, what is running, today's brief (run on demand)
 //   Stats       running, needs you, unread and parked across every harness
+//   Usage       one sphere of liquid per subscription; a burning one is in use now
 //   Ask         one box that starts a real bb chat; on Auto, Jev routes it to a harness
 //   Machines    every machine with its load now; new work on the one you pick
 //   Allowance   each subscription's week (month for Cursor) and its daily peaks
@@ -34,6 +35,7 @@ import { Card, Heading, Reveal, Segmented, ensureHomeKitStyle, tileCls } from ".
 import { quietFor, splitLabel } from "./running";
 import { useRunning } from "./use-running";
 import { ActivityCard, AllowanceCard, MachinesCard, RecentCard, StatTiles, UsageMachinesCard, WindowCard, threadModel } from "./home-panels";
+import { UsageOrbsCard } from "./usage-orbs";
 import { machineName } from "./words";
 import { useFeature } from "./use-feature";
 
@@ -322,6 +324,7 @@ export function HomePage() {
   ensureHomeKitStyle();
   const briefOn = useFeature("EXTRA-O");
   const trendOn = useFeature("EXTRA-AD");
+  const spheresOn = useFeature("EXTRA-AG");
   const askOn = useFeature("EXTRA-P");
   const inboxOn = useFeature("EXTRA-I");
   const socialOn = useFeature("EXTRA-L");
@@ -393,6 +396,7 @@ export function HomePage() {
           {brief?.date ? <span className="text-muted-foreground" style={tnum}>{brief.date}</span> : null}
         </div> : null}
         <StatTiles tally={model.tally} start={2} running={{ view, machines: machineKeys }} />
+        {spheresOn ? <UsageOrbsCard trend={trend} workingBy={workingBy} i={4} icon={(brand) => (PROVIDER[brand] ? <ProviderIcon id={PROVIDER[brand]} className="size-3.5" /> : null)} /> : null}
         <div className="grid items-start gap-4 lg:grid-cols-[1.25fr_1fr]">
           {askOn ? <Ask /> : <div />}
           <MachinesCard threads={physical} i={5} />

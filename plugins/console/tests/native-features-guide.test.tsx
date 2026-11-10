@@ -14,7 +14,9 @@ import { buildFeatures, renderModule, statusFromMap } from "../scripts/build-fea
 
 const ROOT = join(__dirname, "..");
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-const EXTRA_IDS = [...LETTERS, ...["A", "B", "C", "D", "E", "F"].map((l) => `A${l}`)].map((l) => `EXTRA-${l}`); // EXTRA-A to EXTRA-Z, then EXTRA-AA to EXTRA-AF
+const EXTRA_IDS = [...LETTERS, ...["A", "B", "C", "D", "E", "F", "G"].map((l) => `A${l}`)].map((l) => `EXTRA-${l}`); // EXTRA-A to EXTRA-Z, then EXTRA-AA to EXTRA-AG
+/** Features added after the 1 November live check carry the date and build of their own check. */
+const LATER_EVIDENCE: Record<string, [string, string]> = { "EXTRA-AG": ["2026-11-10", "bb 0.49.0"] };
 const EXPECTED_IDS = [
   ...Array.from({ length: 83 }, (_, i) => `F${String(i + 1).padStart(2, "0")}`),
   ...Array.from({ length: 8 }, (_, i) => `S0${i + 1}`).filter((id) => id !== "S07"), // S07, guest review links, is dropped
@@ -122,7 +124,7 @@ describe("the features data", () => {
       expect(["PASS", "FAIL", "UNVERIFIED", "RECHECK"], f.id).toContain(f.evidence.verdict);
       expect(f.evidence.note.trim().length, f.id).toBeGreaterThan(10);
       expect(f.evidence.note.length, f.id).toBeLessThanOrEqual(160);
-      expect([f.evidence.date, f.evidence.build], f.id).toEqual(["2026-11-01", "release 6"]);
+      expect([f.evidence.date, f.evidence.build], f.id).toEqual(LATER_EVIDENCE[f.id] ?? ["2026-11-01", "release 6"]);
     }
     const byId = new Map(FEATURES.map((f) => [f.id, f]));
     // Fixed after the first live check and seen working again on Console b9bbc7f and Fleet 40b4ee2.
