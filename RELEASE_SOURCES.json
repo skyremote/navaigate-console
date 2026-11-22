@@ -1,6 +1,6 @@
 {
   "about": "Where each release plugin folder was copied from. Written by scripts/sync-release.sh; do not edit by hand.",
-  "release": "1.13.0",
+  "release": "1.13.1",
   "plugins": [
     {
       "folder": "plugins/console",
@@ -14,7 +14,7 @@
       "pluginId": "fleet",
       "sourceRepo": "navaigate-bb-mods",
       "branch": "navaigate/community-release-fleet-20261101",
-      "commit": "9f1f52af4ebe4a217dd7ceb69f58a9c761fc89bd"
+      "commit": "335453254ed11cdde3baccaff51e164c08a5977e"
     },
     {
       "folder": "plugins/helper-desk",

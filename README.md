@@ -231,6 +231,12 @@ If a companion is missing, the rest still works. Its feature shows greyed out wi
 - **Your own `navaigate-skin`.** If you installed a `navaigate-skin` from another source, it is left alone, with or without `--console`.
 - **Fleet and Prompt Stack** are new plugins. An existing Pro install does not gain them by itself; add them with `bb plugin install` (see Install by hand), or run the installer with `--edition pro` (together with `--console` if you are moving over). Moving to the Console with `--console` alone installs the Console and the helpers, and adds none of the plugins you left out of 1.11.
 
+## What's new in 1.13.1
+
+- Fleet now installs from Git on standard bb. In 1.13.0 it stopped with `Could not resolve "@get-bb/plugin-sdk"`, because bb installs a Git plugin without its development packages and Fleet needs the SDK to build.
+- If the installer with `--edition pro` stopped on Fleet, run it again. If Fleet is already running for you, there's nothing to do.
+- Full notes: `docs/releases/1.13.1.md`.
+
 ## What's new in 1.13.0
 
 - You can now run a model on your own Mac from the new-chat screen, so you tick **Online or Local on the new-chat screen** in Setup, pick the **Local** orb and a model from Ollama or LM Studio, and the chat goes through opencode and writes its own title on your Mac. A fresh Simple install leaves that box unticked, and if you finished Setup before 1.13 it's ticked after the update, with Online still chosen until you pick Local.
