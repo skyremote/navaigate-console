@@ -2,9 +2,14 @@
 // but the chips live in an app overlay in the footer row. This invisible
 // composer action publishes each mounted composer's API and view, keyed by its
 // scope, so the chips can read the draft or switch the machine picker.
-import { useEffect, useMemo, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { useComposer } from "@get-bb/plugin-sdk/app";
 import type { PluginComposerApi } from "@get-bb/plugin-sdk/app";
+import { isMcpDraft, openMcpPage } from "./mcp-command";
+import { featureNow } from "./use-feature";
+
+/** The feature-map id of "/mcp opens the connector manager". */
+export const MCP_FEATURE = "EXTRA-AJ";
 
 export type ComposerHandle = {
   api: PluginComposerApi;
@@ -55,6 +60,18 @@ export function ComposerBridge() {
   useEffect(() => {
     publishComposerHandle(key, { api, view });
   }, [key, api, view]);
+  // The host may clear the draft before onSubmitted fires, so remember the
+  // last non-empty draft: a submit always carries a non-empty draft.
+  const lastDraft = useRef<PluginComposerApi["draft"] | null>(null);
+  if (!api.isEmpty) lastDraft.current = api.draft;
+  useEffect(() => {
+    if (api.scope.kind !== "thread") return;
+    return api.onSubmitted(() => {
+      // The MCP Manager page belongs to a separate plugin, so this is a feature of its own (off by default for the community).
+      if (lastDraft.current && isMcpDraft(lastDraft.current) && featureNow(MCP_FEATURE)) openMcpPage();
+      lastDraft.current = null;
+    });
+  }, [api]);
   useEffect(() => {
     if (api.scope.kind !== "new-thread" || !pendingSelection) return;
     const { choice, until } = pendingSelection;

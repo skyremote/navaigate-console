@@ -501,5 +501,29 @@
   "EXTRA-AG": {
     "kind": "panel",
     "path": "home"
+  },
+  "EXTRA-AH": {
+    "kind": "compose"
+  },
+  "EXTRA-AI": {
+    "kind": "none",
+    "reason": "Right-click a chat in the sidebar, then Colour"
+  },
+  "EXTRA-AJ": {
+    "kind": "none",
+    "reason": "Send /mcp on its own in a chat"
+  },
+  "EXTRA-AK": {
+    "kind": "none",
+    "reason": "Drag a chat onto a folder of another project in the sidebar"
+  },
+  "EXTRA-AL": {
+    "kind": "compose"
+  },
+  "EXTRA-AM": {
+    "kind": "compose"
+  },
+  "EXTRA-AN": {
+    "kind": "compose"
   }
 }

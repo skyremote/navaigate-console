@@ -4,7 +4,8 @@
 import { useMemo, useState } from "react";
 import { useBbNavigate } from "@get-bb/plugin-sdk/app";
 import { Segmented } from "./home-kit";
-import { FEATURES, FEATURE_AREAS } from "./features-guide-data";
+import { FEATURES as ALL_FEATURES, FEATURE_AREAS } from "./features-guide-data";
+import { useProfile } from "./use-profile";
 import { goToHref } from "./features-guide-nav";
 import { statusLabel, type Feature, type ShowMe } from "./features-guide-types";
 
@@ -125,6 +126,9 @@ function Row({ f, onShow }: { f: Feature; onShow: (t: ShowMe) => void }) {
 
 export function FeaturesGuide() {
   ensureStyle();
+  // Private-only features are listed only in the private edition; a community profile never has them.
+  const edition = useProfile().edition;
+  const FEATURES = useMemo(() => (edition === "private" ? ALL_FEATURES : ALL_FEATURES.filter((f) => f.edition !== "private")), [edition]);
   const nav = useBbNavigate();
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
@@ -132,9 +136,9 @@ export function FeaturesGuide() {
     const c = { live: 0, partly: 0, blocked: 0 };
     for (const f of FEATURES) c[f.status.kind]++;
     return c;
-  }, []);
+  }, [FEATURES]);
   const q = query.trim().toLowerCase();
-  const shown = useMemo(() => FEATURES.filter((f) => (filter === "all" || f.status.kind === filter) && matches(f, q)), [filter, q]);
+  const shown = useMemo(() => FEATURES.filter((f) => (filter === "all" || f.status.kind === filter) && matches(f, q)), [FEATURES, filter, q]);
   const show = (t: ShowMe) => {
     if (t.kind === "panel") nav.toPluginPanel(t.path);
     else if (t.kind === "route") goToHref(t.href);

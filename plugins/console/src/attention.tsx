@@ -78,17 +78,19 @@ export function overlayRecords(records: Record[], overlay: ReadonlyMap<string, V
       });
   return next;
 }
+/** Statuses a settle, snooze or stash clears. Failed is included: the owner decides when a failure is done. */
+const CLEARABLE: Row["status"][] = ["accepted", "snoozed", "reviewable", "stashed", "failed"];
 const statusFor = (row: Row, v: View): Row["status"] =>
   v.mode === "stashed"
-    ? ["accepted", "snoozed", "reviewable", "stashed"].includes(row.status)
+    ? CLEARABLE.includes(row.status)
       ? "stashed"
       : row.status
     : v.mode === "settled"
-      ? ["accepted", "snoozed", "reviewable", "stashed"].includes(row.status)
+      ? CLEARABLE.includes(row.status)
         ? "accepted"
         : row.status
       : v.mode === "snoozed"
-        ? ["accepted", "snoozed", "reviewable", "stashed"].includes(row.status)
+        ? CLEARABLE.includes(row.status)
           ? "snoozed"
           : row.status
         : ["accepted", "snoozed", "stashed"].includes(row.status)

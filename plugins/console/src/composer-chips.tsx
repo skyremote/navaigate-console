@@ -29,6 +29,8 @@ import type { M1Machine } from "../server-machines";
 import { CloudGlyph, m1Tone, useM1, useM1Actions } from "./m1";
 import { useComposerHandle } from "./composer-bridge";
 import { HoldChip } from "./composer-chips-hold";
+import { LocalChip, localNow, useModelNow, useThreadMark } from "./session-profile-marks";
+import { isLocalMark, LEAN_PROVIDER, LOCAL_PROVIDER } from "./session-profile";
 import { AllowanceChip } from "./allowance";
 import { usePortalScopeProps } from "@/lib/portal-scope";
 import { useVisiblePoll } from "./visible-poll";
@@ -635,15 +637,37 @@ export function ComposerChips() {
   const moveOn = useFeature("F28");
   const accountsOn = useFeature("F03");
   const allowanceOn = useFeature("F48");
+  // Local chats (EXTRA-AH): say what the chat really runs on, and do not offer an online account for it.
+  const localOn = useFeature("EXTRA-AH");
+  const thread = place?.where === "chat" && threadId ? threads.find((t) => t.id === threadId) : undefined;
+  // The Local claim (and no account chip) only where the code holds the chat to the model: Claude Code
+  // (the launcher locks it) and opencode (its current model is read below). Any other harness: nothing,
+  // and its mark is not even asked.
+  const enforced = thread?.providerId === LEAN_PROVIDER || thread?.providerId === LOCAL_PROVIDER;
+  const mark = useThreadMark(localOn && enforced && thread ? thread.id : null);
+  const local = localOn && enforced && isLocalMark(mark) ? mark : null;
+  // A Local chat in opencode can be switched to another model inside the chat, so what it runs on now is
+  // read too: the model of its last turn (asked again after each change of the chat) and the model picked
+  // for its next reply (from its box, no question). A Local chat on Claude Code stays on its marked model.
+  const inOpencode = !!local && thread?.providerId === LOCAL_PROVIDER;
+  const current = useModelNow(inOpencode && thread ? thread.id : null, thread?.updatedAt);
+  const picked = useComposerHandle(inOpencode && thread ? thread.id : null)?.view.selection?.model ?? null;
+  const now = inOpencode ? localNow(current, picked) : undefined;
+  // The Local claim, and no online account, only while the chat really runs on this Mac.
+  const stillLocal = !!local && (!inOpencode || now === undefined || now.state === "here" || now.state === "unknown");
+  // The account chip waits for the mark, so it never flashes up (and asks the pool) for a Local chat.
+  // An ordinary chat the rail already knows has its mark at once; any other wait ends after
+  // THREAD_MARK_WAIT_MS, when an unanswered chat counts as Online (see useThreadMark).
+  const markKnown = !localOn || !enforced || (mark !== undefined && (!inOpencode || now !== undefined));
   if (!place) return null;
   if (place.where === "chat") {
-    const thread = threadId ? threads.find((t) => t.id === threadId) : undefined;
     if (!thread) return null;
     return createPortal(
       <>
+        {local && (!inOpencode || now !== undefined) ? <LocalChip mark={local} now={now} /> : null}
         {holdOn ? <HoldChip threadId={thread.id} /> : null}
         {handoffOn(profile) && moveOn ? <M1Chip thread={thread} /> : null}
-        {accountsOn && poolProviderOf(thread.providerId) ? <AccountChip provider={poolProviderOf(thread.providerId)!} threadId={thread.id} /> : null}
+        {accountsOn && markKnown && !stillLocal && poolProviderOf(thread.providerId) ? <AccountChip provider={poolProviderOf(thread.providerId)!} threadId={thread.id} /> : null}
       </>,
       place.slot,
     );

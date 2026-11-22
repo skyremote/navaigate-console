@@ -63,7 +63,7 @@ export const CORE_LEDGER: readonly CoreChange[] = [
     ],
     "probe": {
       "kind": "none",
-      "detail": "no probe; hide unless release build detected by the release-build marker (server SDK: typeof bb.sdk.system.experimental_acquireUpdateDrain === 'function'; browser: typeof composer.experimental_setContinuationIntent === 'function'). The plugin does not draw this feature and cannot see which iOS app build the user holds, so this only says the server is the fork; the feature stays blocked until a signed app build is proven."
+      "detail": "no probe; hide unless release build detected by the release-build marker (server SDK: typeof bb.sdk.threads.experimental_resolveExecutionHost === 'function'; browser: typeof composer.experimental_setContinuationIntent === 'function'). The plugin does not draw this feature and cannot see which iOS app build the user holds, so this only says the server is the fork; the feature stays blocked until a signed app build is proven."
     }
   },
   {
@@ -154,7 +154,7 @@ export const CORE_LEDGER: readonly CoreChange[] = [
     ],
     "probe": {
       "kind": "none",
-      "detail": "no probe; hide unless release build detected by the release-build marker (server SDK: typeof bb.sdk.system.experimental_acquireUpdateDrain === 'function'; browser: typeof composer.experimental_setContinuationIntent === 'function'; both fork-only, and the fork keeps the upstream version string 0.48.1). The new fields are hiddenClassName, tableClassName, effect ranges with hidden or table, and transformPaste (packages/plugin-sdk/src/app-contract.ts, internal/composer-customization-validation.ts). The fork's validator copies only the fields it knows, so an older core is expected to ignore them; that was read in the code, not run on stock bb. Nothing in the SDK reports that the core understood them."
+      "detail": "no probe; hide unless release build detected by the release-build marker (server SDK: typeof bb.sdk.threads.experimental_resolveExecutionHost === 'function'; browser: typeof composer.experimental_setContinuationIntent === 'function'; both fork-only, and the fork keeps the upstream version string 0.49.0). The new fields are hiddenClassName, tableClassName, effect ranges with hidden or table, and transformPaste (packages/plugin-sdk/src/app-contract.ts, internal/composer-customization-validation.ts). The fork's validator copies only the fields it knows, so an older core is expected to ignore them; that was read in the code, not run on stock bb. Nothing in the SDK reports that the core understood them."
     }
   },
   {
@@ -185,7 +185,7 @@ export const CORE_LEDGER: readonly CoreChange[] = [
     ],
     "probe": {
       "kind": "none",
-      "detail": "no probe; hide the GitLab half unless release build detected by the release-build marker (server SDK: typeof bb.sdk.system.experimental_acquireUpdateDrain === 'function'; browser: typeof composer.experimental_setContinuationIntent === 'function'; both fork-only, and the fork keeps the upstream version string 0.48.1). The change is inside the bundled github-pr-status plugin (plugins/github-pr-status/host/gitlab-host.ts) whose package version was not bumped, so its version string does not show it."
+      "detail": "no probe; hide the GitLab half unless release build detected by the release-build marker (server SDK: typeof bb.sdk.threads.experimental_resolveExecutionHost === 'function'; browser: typeof composer.experimental_setContinuationIntent === 'function'; both fork-only, and the fork keeps the upstream version string 0.49.0). The change is inside the bundled github-pr-status plugin (plugins/github-pr-status/host/gitlab-host.ts) whose package version was not bumped, so its version string does not show it."
     }
   },
   {
@@ -200,7 +200,7 @@ export const CORE_LEDGER: readonly CoreChange[] = [
     ],
     "probe": {
       "kind": "none",
-      "detail": "no probe; hide the Bitbucket and Azure half unless release build detected by the release-build marker (server SDK: typeof bb.sdk.system.experimental_acquireUpdateDrain === 'function'; browser: typeof composer.experimental_setContinuationIntent === 'function'; both fork-only, and the fork keeps the upstream version string 0.48.1). Files: plugins/github-pr-status/host/bitbucket-*.ts and host/azure-devops-host.ts; the plugin's version string was not bumped."
+      "detail": "no probe; hide the Bitbucket and Azure half unless release build detected by the release-build marker (server SDK: typeof bb.sdk.threads.experimental_resolveExecutionHost === 'function'; browser: typeof composer.experimental_setContinuationIntent === 'function'; both fork-only, and the fork keeps the upstream version string 0.49.0). Files: plugins/github-pr-status/host/bitbucket-*.ts and host/azure-devops-host.ts; the plugin's version string was not bumped."
     }
   },
   {

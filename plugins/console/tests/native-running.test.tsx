@@ -170,7 +170,7 @@ describe("Home and the rail say the same thing", () => {
     const rpc = {
       attention_state: () => ({ records: [], foldWorking: false }), attention_fleet_inbox: () => ({ rows: [], truncated: false, notices: [] }), thread_accounts: () => ({ threads: {} }),
       fleet_board: () => ({ available: true, board: boardWithResources(), error: null }), native_session_index: () => copy(fixture.index),
-      state_get: () => ({ tags: [], assign: {}, later: {}, order: [], collapsed: [], groups: [], within: {}, colors: {}, subOpen: [] }),
+      state_get: () => ({ tags: [], assign: {}, later: {}, order: [], collapsed: [], groups: [], within: {}, colors: {}, subOpen: [], threadColors: {} }),
     };
     const callRpc = async ({ method }: { method: string }) => {
       if (method === "list") return { folders: [], roots: [], bindings: {}, places: {} };

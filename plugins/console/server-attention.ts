@@ -432,6 +432,15 @@ export function createAttention(bb: BbPluginApi, clock = Date.now, featureOn: (i
       return undefined;
     }
   }
+  /** True when any member started or finished a turn after `since`. An unreadable event log counts as new, so a failure is never hidden by mistake. */
+  async function newTurnSince(since: number, members: Member[]) {
+    for (const m of members) {
+      if (m.updatedAt <= since) continue;
+      const turn = await lastTurnAt(m.id);
+      if (turn === undefined || (turn !== null && turn > since)) return true;
+    }
+    return false;
+  }
   /** A stashed chat comes back only on real new work: a turn or message after it was stashed, a queued message, a question or running work. */
   async function hasNewActivity(record: AttentionRecord, members: Member[]) {
     const since = record.stashedAt ?? record.changedAt;
@@ -570,6 +579,11 @@ export function createAttention(bb: BbPluginApi, clock = Date.now, featureOn: (i
           (m) => busy.has(m.runtime.displayStatus) || Object.values(m.activity).some((n) => n > 0),
         ),
         hasWaiting = memberRows.some((m) => m.queuedWork !== "none");
+      // A failure the owner has settled or snoozed stays put until a new turn starts after that choice.
+      const errorSeen =
+        hasError &&
+        (r.mode === "settled" || (r.mode === "snoozed" && (r.wakeAt ?? 0) > clock())) &&
+        !(await newTurnSince(r.changedAt, memberRows));
       const first = interactions[0];
       const question = first
         ? (first.payload.kind === "user_question"
@@ -583,7 +597,7 @@ export function createAttention(bb: BbPluginApi, clock = Date.now, featureOn: (i
         ? "needs-you"
         : r.mode === "stashed" && !hasRunning
           ? "stashed"
-          : hasError
+          : hasError && !errorSeen
           ? "failed"
           : r.mode === "settled"
             ? "accepted"

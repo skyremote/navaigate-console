@@ -35,8 +35,8 @@ export function createSetup(bb: BbPluginApi) {
 
   async function probes(): Promise<CoreProbesResult> {
     if (cached && cached.until > Date.now()) return cached.value;
-    const system = (bb.sdk as unknown as { system?: Record<string, unknown> }).system;
-    const releaseBuild = typeof system?.experimental_acquireUpdateDrain === "function";
+    const threads = (bb.sdk as unknown as { threads?: Record<string, unknown> }).threads;
+    const releaseBuild = typeof threads?.experimental_resolveExecutionHost === "function";
     let cleanupSafety = false;
     try {
       const safety = await bb.sdk.plugins.callRpc({

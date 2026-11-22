@@ -39,6 +39,30 @@ export function projectColorOf(projectId: string, picked: Record<string, string>
   return PROJECT_COLORS[Math.abs(h) % PROJECT_COLORS.length];
 }
 
+/* ------------------------------- chat colours -------------------------------- */
+
+// A colour the owner picks for one chat, drawn as a bar down the row's left
+// edge. Its own brighter palette, so a chat bar never reads as a project dot.
+export const THREAD_COLORS = ["red", "orange", "yellow", "green", "teal", "blue", "purple", "pink"] as const;
+export type ThreadColor = (typeof THREAD_COLORS)[number];
+export const THREAD_COLOR_LABEL: Record<ThreadColor, string> = {
+  red: "Red",
+  orange: "Orange",
+  yellow: "Yellow",
+  green: "Green",
+  teal: "Teal",
+  blue: "Blue",
+  purple: "Purple",
+  pink: "Pink",
+};
+export const threadCss = (c: ThreadColor) => `var(--nav-tc-${c})`;
+
+/** The colour the owner picked for a chat, or null. A stored name the rail no longer knows reads as none. */
+export function threadColorOf(threadId: string, picked: Record<string, string> | undefined): ThreadColor | null {
+  const p = picked?.[threadId];
+  return typeof p === "string" && (THREAD_COLORS as readonly string[]).includes(p) ? (p as ThreadColor) : null;
+}
+
 /* ---------------------------------- motion ---------------------------------- */
 
 const STAGGER = Array.from({ length: 16 }, (_, i) => `.nav-sec-in > :nth-child(${i + 1}) { animation-delay: ${i * 20}ms; }`).join("\n");
@@ -48,8 +72,12 @@ const CSS = `
   --nav-mono-l: 0.45;
   --nav-pc-gold: #7a7a82; --nav-pc-orange: #c46a2e; --nav-pc-green: #2f8a5b; --nav-pc-teal: #3f7f74;
   --nav-pc-plum: #7a5c8a; --nav-pc-rose: #b4536a; --nav-pc-slate: #66707a;
+  --nav-tc-red: #d64545; --nav-tc-orange: #e07a2e; --nav-tc-yellow: #c99a06; --nav-tc-green: #2f9e5b;
+  --nav-tc-teal: #1f9a8f; --nav-tc-blue: #2f6fdb; --nav-tc-purple: #7b52d1; --nav-tc-pink: #d14d8f;
 }
 .dark {
+  --nav-tc-red: #f06b6b; --nav-tc-orange: #f59a52; --nav-tc-yellow: #f2c94c; --nav-tc-green: #5fcf94;
+  --nav-tc-teal: #4fd1c5; --nav-tc-blue: #6b9cf5; --nav-tc-purple: #a98af0; --nav-tc-pink: #f07ab5;
   --nav-mono-l: 0.84;
   --nav-pc-gold: #b4b4bc; --nav-pc-orange: #e08a4f; --nav-pc-green: #5fcf94; --nav-pc-teal: #8fbfb0;
   --nav-pc-plum: #b79ac4; --nav-pc-rose: #e391a5; --nav-pc-slate: #9aa3ad;
@@ -81,12 +109,15 @@ ${STAGGER}
 let injected = false;
 export function ensureRailLook() {
   if (injected || typeof document === "undefined") return;
-  if (!document.getElementById("nav-rail-look")) {
-    const el = document.createElement("style");
+  let el = document.getElementById("nav-rail-look");
+  if (!el) {
+    el = document.createElement("style");
     el.id = "nav-rail-look";
-    el.textContent = CSS;
     document.head.appendChild(el);
   }
+  // A plugin reload keeps the page, and with it the style a previous build put
+  // in; replace it so new rules (such as the chat colours) apply at once.
+  if (el.textContent !== CSS) el.textContent = CSS;
   injected = true;
 }
 

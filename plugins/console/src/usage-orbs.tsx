@@ -91,7 +91,7 @@ function Flame({ className }: { className?: string }) {
 /* ------------------------------- one sphere ------------------------------ */
 
 /** Whether the reader asks for reduced motion, followed while the page is open. */
-function useReducedMotion(): boolean {
+export function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(prefersReducedMotion);
   useEffect(() => {
     const query = typeof window.matchMedia === "function" ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;

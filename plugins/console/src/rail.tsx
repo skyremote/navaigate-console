@@ -54,6 +54,10 @@ import {
   GLYPH_LABEL,
   PROJECT_COLORS,
   PROJECT_COLOR_LABEL,
+  THREAD_COLORS,
+  THREAD_COLOR_LABEL,
+  threadColorOf,
+  threadCss,
   SubAgentGlyph,
   Spinner,
   StateGlyph,
@@ -72,6 +76,8 @@ import { useFeature } from "./use-feature";
 import { alwaysOnId, homeMachineId } from "../lib/profile-text";
 import { mac, machineName, machinePhraseOf } from "./words";
 import { handoffOn } from "../lib/profile-console";
+import { ProfileBadge, ProfileFilter, profileCounts, useSessionProfiles } from "./session-profile-marks";
+import { matchesProfile, type ProfileFilterValue, type SessionProfileKind } from "./session-profile";
 
 /** Lowercase Roman numerals for the top-level sections: 1 -> "i", 14 -> "xiv". */
 function roman(n: number): string {
@@ -390,6 +396,8 @@ type RowCtx = {
   close: (id: string) => void;
   /** The account a chat last ran on, when the Console has seen a turn of it. */
   account: (id: string) => ThreadAccount | undefined;
+  /** The chat's setup flag (Lean, Local, Local, unlocked); null or undefined for Online or not known yet. */
+  profile: (id: string) => SessionProfileKind | null | undefined;
 };
 
 function ThreadRow({ thread, active, depth, now, onNavigate, moveTargets, onMove, ctx, progress, fold, child = false, mixed = false, where }: {
@@ -440,6 +448,7 @@ function ThreadRow({ thread, active, depth, now, onNavigate, moveTargets, onMove
   const accountTagOn = useFeature("F03");
   const handoffFeatureOn = useFeature("EXTRA-AE");
   const tags = tagsOn ? ctx.ops.state.tags.filter((t) => tagIds.includes(t.id)) : [];
+  const color = threadColorOf(thread.id, ctx.ops.state.threadColors);
   const isSelected = ctx.selected.has(thread.id);
   // Status glyphs animate only when they change, not when the row first draws.
   const born = useRef(Date.now());
@@ -541,7 +550,16 @@ function ThreadRow({ thread, active, depth, now, onNavigate, moveTargets, onMove
       {/* Hover and selected fills fade in on opacity alone. */}
       <span aria-hidden className="nav-fade pointer-events-none absolute inset-0 -z-10 rounded-md bg-[var(--state-hover)] opacity-0 group-hover/row:opacity-100" />
       <span aria-hidden data-nav-part="row-fill" className={cn("nav-fade pointer-events-none absolute inset-0 -z-10 rounded-md", isSelected ? "bg-[var(--surface-selected)]" : "bg-accent", active || isSelected ? "opacity-100" : "opacity-0")} />
-      {active ? <span aria-hidden data-nav-part="row-bar" className={cn("absolute left-0 w-[2px]", ctx.compact ? "inset-y-2" : "inset-y-2.5")} style={{ background: "var(--foreground)" }} /> : null}
+      {/* A coloured chat tints its whole card, a little stronger while open, over the hover and open fills. */}
+      {color ? (
+        <span aria-hidden data-nav-part="row-tint" className="pointer-events-none absolute inset-0 -z-10 rounded-md" style={{ background: `color-mix(in oklab, ${threadCss(color)} ${active || isSelected ? 30 : 18}%, transparent)` }} />
+      ) : null}
+      {/* A coloured chat keeps its bar on every row, open or not; an uncoloured one shows the plain bar only while open. */}
+      {color ? (
+        <span aria-hidden data-nav-part="row-color" className={cn("absolute left-0 w-[3px] rounded-full", ctx.compact ? "inset-y-1.5" : "inset-y-2")} style={{ background: threadCss(color) }} />
+      ) : active ? (
+        <span aria-hidden data-nav-part="row-bar" className={cn("absolute left-0 w-[2px]", ctx.compact ? "inset-y-2" : "inset-y-2.5")} style={{ background: "var(--foreground)" }} />
+      ) : null}
       {ctx.compact ? (
         <>
           {gutter}
@@ -550,6 +568,7 @@ function ThreadRow({ thread, active, depth, now, onNavigate, moveTargets, onMove
           {acct ? <AccountTag account={acct} /> : null}
           {onM1 ? <M1Mark item={onM1} threadId={thread.id} /> : null}
           <TagSwatches tags={tags} />
+          <ProfileBadge kind={ctx.profile(thread.id)} />
           {thread.isPinned ? <Icon name="Pin" className="size-3 shrink-0 text-muted-foreground" /> : null}
           {progress && fold ? <SubChip progress={progress} fold={fold} /> : null}
           {where ? (
@@ -571,6 +590,7 @@ function ThreadRow({ thread, active, depth, now, onNavigate, moveTargets, onMove
               <span className="min-w-0 flex-1 truncate leading-[18px]">{thread.displayTitle}</span>
               {onM1 ? <M1Mark item={onM1} threadId={thread.id} /> : null}
               <TagSwatches tags={tags} />
+          <ProfileBadge kind={ctx.profile(thread.id)} />
               {thread.isPinned ? <Icon name="Pin" className="size-3 shrink-0 text-muted-foreground" /> : null}
               <span className="relative inline-flex h-5 w-6 shrink-0 items-center justify-end text-[11px] font-normal text-muted-foreground" style={tnum}>
                 {running ? (
@@ -628,6 +648,14 @@ function ThreadRow({ thread, active, depth, now, onNavigate, moveTargets, onMove
         ))}
         {later ? <MenuSeparator /> : null}
         {later ? <MenuItem icon="X" label="Clear the flag" onSelect={() => void ctx.ops.setLater(targets, null)} /> : null}
+      </MenuSub>
+      <MenuSub lead={<span aria-hidden className="size-2.5 rounded-full border border-border" style={color ? { background: threadCss(color), borderColor: "transparent" } : undefined} />} label={targets.length > 1 ? `Colour (${targets.length})` : "Colour"}>
+        {THREAD_COLORS.map((c) => {
+          const on = targets.every((id) => threadColorOf(id, ctx.ops.state.threadColors) === c);
+          return <MenuItem key={c} lead={<span aria-hidden className="size-2.5 rounded-full" style={{ background: threadCss(c) }} />} label={THREAD_COLOR_LABEL[c]} checked={on} onSelect={() => ctx.ops.setThreadColor(targets, c)} />;
+        })}
+        <MenuSeparator />
+        <MenuItem label="No colour" checked={targets.every((id) => !threadColorOf(id, ctx.ops.state.threadColors))} onSelect={() => ctx.ops.setThreadColor(targets, null)} />
       </MenuSub>
       {tagsOn ? <MenuSub icon="ListTodo" label={targets.length > 1 ? `Tags (${targets.length})` : "Tags"}>
         {ctx.ops.state.tags.map((t) => {
@@ -886,6 +914,11 @@ export function Rail({ activeThreadId, activeProjectId, onNavigate }: PluginThre
   const todoCounts = useFolderTodoCounts();
   // Several tags at once now; the old single-tag key seeds it once.
   const [tagFilter, setTagFilter] = usePersisted<string[]>("nav-skin:tags", readOldTagFilter());
+  // Session profiles (EXTRA-AH): each chat's setup flag, and a filter on it.
+  const profilesOn = useFeature("EXTRA-AH");
+  const profileOf = useSessionProfiles(physical, profilesOn);
+  const [profileFilterPref, setProfileFilter] = usePersisted<ProfileFilterValue | null>("nav-skin:profile-filter", null);
+  const profileFilter = profilesOn ? profileFilterPref : null;
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   // Recent: one flat list of every chat, newest first, ignoring folders.
@@ -1006,9 +1039,9 @@ export function Rail({ activeThreadId, activeProjectId, onNavigate }: PluginThre
     () => {
       const stashed = new Set(attention.records.filter((r) => r.mode === "stashed").map((r) => r.threadId));
       const visible = onMachine.filter((t) => !(t.parentThreadId && stashed.has(t.parentThreadId)) && attentionVisible(t, attention.rows.find(r => r.threadId === t.id)?.status === "running" ? "running" : stateOf(t), attention.records, attention.foldWorking));
-      return buildModel(visible, projects, folders.available && foldersOn ? folders.data : null, harness, activeProjectId, ops.state, activeTags);
+      return buildModel(visible, projects, folders.available && foldersOn ? folders.data : null, harness, activeProjectId, ops.state, activeTags, profileFilter ? { of: profileOf, filter: profileFilter } : null);
     },
-    [onMachine, attention.records, attention.rows, attention.foldWorking, projects, folders.available, foldersOn, folders.data, harness, activeProjectId, ops.state, activeTags],
+    [onMachine, attention.records, attention.rows, attention.foldWorking, projects, folders.available, foldersOn, folders.data, harness, activeProjectId, ops.state, activeTags, profileFilter, profileOf],
   );
 
   const clearSelection = useCallback(() => {
@@ -1061,7 +1094,7 @@ export function Rail({ activeThreadId, activeProjectId, onNavigate }: PluginThre
     });
     onNavigate();
   };
-  const rowCtx: RowCtx = { ops, attention, m1: m1.items, selecting, selected, onSelectGesture, onNewTag: newTagFor, compact, exec, colorOf, close, account: (id) => accounts.get(id) };
+  const rowCtx: RowCtx = { ops, attention, m1: m1.items, selecting, selected, onSelectGesture, onNewTag: newTagFor, compact, exec, colorOf, close, account: (id) => accounts.get(id), profile: (id) => (profilesOn ? profileOf(id) : null) };
   // Row geometry for the tree guides: the gutter mark sits at the centre of line 1.
   const rowMid = compact ? 17 : 15;
   const kidLift = compact ? 10 : 23;
@@ -1091,7 +1124,9 @@ export function Rail({ activeThreadId, activeProjectId, onNavigate }: PluginThre
     const f = e.dataTransfer.getData(DRAG_FOLDER);
     if (t) {
       const { id, projectId: from } = JSON.parse(t) as { id: string; projectId: string };
-      if (from !== projectId) return toast.error("Chats can only move between folders of the same project.");
+      // A chat may be filed under a folder of any project (the listing moves, the
+      // chat keeps its own project). Another project's root has no folder to hold it.
+      if (from !== projectId && folderId === null) return toast.error("Drop the chat on a folder in that project.");
       folders.placeThread(id, projectId, folderId).catch(report("Move"));
     } else if (f) {
       const { id, projectId: from } = JSON.parse(f) as { id: string; projectId: string };
@@ -1669,6 +1704,9 @@ export function Rail({ activeThreadId, activeProjectId, onNavigate }: PluginThre
             </div>
           ) : null}
           <HarnessFilter counts={remoteOnly ? remoteCounts : model.counts} value={harness} onChange={setHarness} />
+          {profilesOn && !remoteOnly && (profileFilter !== null || physical.some((t) => !!profileOf(t.id))) ? (
+            <ProfileFilter className="mx-1 mb-2" value={profileFilter} onChange={setProfileFilter} counts={profileCounts(physical.filter((t) => !t.isHidden && !t.isArchived).map((t) => t.id), profileOf)} />
+          ) : null}
           {remoteOnly ? (
             <RemoteNewChat machine={machine} onStarted={() => undefined} />
           ) : (
@@ -1957,6 +1995,7 @@ function buildModel(
   activeProjectId: string | null,
   rail: { later: Record<string, { reason: string; at: number }>; assign: Record<string, string[]> },
   tagFilter: readonly string[],
+  profile: { of: (id: string) => SessionProfileKind | null | undefined; filter: ProfileFilterValue } | null = null,
 ) {
   const live = threads.filter((t) => !t.isHidden && !t.isArchived);
   const ids = new Set(live.map((t) => t.id));
@@ -1981,7 +2020,7 @@ function buildModel(
   const tagCounts = new Map<string, number>();
   for (const t of roots) for (const id of rail.assign[t.id] ?? []) tagCounts.set(id, (tagCounts.get(id) ?? 0) + 1);
   const match = (t: PluginSidebarThread) =>
-    (harness === null || harnessOf(t.providerId).key === harness) && (tagFilter.length === 0 || (rail.assign[t.id] ?? []).some((id) => tagFilter.includes(id)));
+    (harness === null || harnessOf(t.providerId).key === harness) && (tagFilter.length === 0 || (rail.assign[t.id] ?? []).some((id) => tagFilter.includes(id))) && (profile === null || matchesProfile(profile.of(t.id), profile.filter));
   const shown = roots.filter(match);
   const isLater = (t: PluginSidebarThread) => rail.later[t.id] !== undefined;
   const running = live.filter((t) => stateOf(t) === "running" && match(t)).sort((a, b) => b.updatedAt - a.updatedAt);

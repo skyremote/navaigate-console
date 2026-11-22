@@ -59,7 +59,7 @@ describe("rail render cost", () => {
           attention_state: () => copy({ records: [], foldWorking: false }), attention_fleet_inbox: () => copy({ rows: [], truncated: false, notices: [] }),
           thread_accounts: () => copy({ threads: { other: { accountId: "a", label: "dw", email: null, harness: "claude" } } }), fleet_board: () => copy({ available: true, board, error: null }),
           native_session_index: () => { reads.index++; return copy({ conversations: [conversation] }); },
-          state_get: () => copy({ tags: [], assign: {}, later: {}, order: [], collapsed: [], groups: [], within: {}, colors: {}, subOpen: [] }),
+          state_get: () => copy({ tags: [], assign: {}, later: {}, order: [], collapsed: [], groups: [], within: {}, colors: {}, subOpen: [], threadColors: {} }),
         } as never,
         context: { projectId: "p1", threadId: "x" },
         sdk: { plugins: { callRpc } } as never,

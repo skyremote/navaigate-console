@@ -84,6 +84,16 @@ describe("the Console's own section of the profile", () => {
     expect(consoleSectionProblems(p)[0]).toMatch(/^plugins\.console\.handoffFile: .*ignored/);
   });
 
+  it("starts a Local chat on Claude Code in Accept Edits by default, in Full Access only when the profile says so, and never in auto", () => {
+    expect(consoleSection(COMMUNITY_DEFAULTS).localPermissionMode).toBe("accept-edits");
+    expect(consoleSection(withSection({ localPermissionMode: "full" })).localPermissionMode).toBe("full");
+    expect(consoleSection(withSection({ localPermissionMode: "accept-edits" })).localPermissionMode).toBe("accept-edits");
+    const auto = withSection({ localPermissionMode: "auto", nasProject: "Shared work" });
+    expect(consoleSection(auto).localPermissionMode).toBe("accept-edits");
+    expect(consoleSection(auto).nasProject).toBe("Shared work");
+    expect(consoleSectionProblems(auto)[0]).toMatch(/^plugins\.console\.localPermissionMode: .*ignored/);
+  });
+
   it("ignores unknown keys quietly, and reads a section that is not an object as off, with a reason", () => {
     expect(consoleSectionProblems(withSection({ somethingNew: true }))).toEqual([]);
     expect(consoleSection(withSection("nonsense")).nasProject).toBeNull();

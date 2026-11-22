@@ -121,3 +121,10 @@ EXTRA-AD	Automation and usage	Hover the usage line under the chat box for a tren
 EXTRA-AE	Working across Macs	Send a chat to another Mac's own bb and follow its progress here, then pull the results back.
 EXTRA-AF	Models and agents	Open an Agents tab in any chat to see its family of sub-agents, read a session log and spin up a new agent.
 EXTRA-AG	Automation and usage	See each subscription on Home as a sphere of liquid: what is left, its burn rate, and flames while it is in use.
+EXTRA-AH	Models and agents	Choose Online or a model on this Mac for a new chat, flagged on the chat; warns when your skills will slow opencode's first reply.
+EXTRA-AI	Interface and maintenance	Give a chat a colour, and a coloured bar runs down its row in the sidebar.
+EXTRA-AJ	Models and agents	Send /mcp in a chat to open the connector manager with each connector's status. Needs the MCP Manager plugin.
+EXTRA-AK	Interface and maintenance	Drag a chat onto a folder of another project to file it there in the sidebar.
+EXTRA-AL	Models and agents	Load a local model into memory from the Local orb, or unload it, and see what is in memory now.
+EXTRA-AM	Models and agents	Experimental: run a Local chat in Claude Code itself, on a model on this Mac that can use tools. Needs Ollama or LM Studio.
+EXTRA-AN	Models and agents	Start a Claude chat with a smaller settings folder: fewer connectors and skills, so it starts with less text.

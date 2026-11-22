@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { defineRpcContract } from "@get-bb/plugin-sdk";
 import type { BbPluginApi, MessageDispatchHookContext } from "@get-bb/plugin-sdk";
-import { createNativeContext } from "./server-native-context";
+import { createNativeContext, isLocalContextRefusal } from "./server-native-context";
 import {
   appendNativeMember,
   armMatches,
@@ -109,8 +109,8 @@ const continuationProofSchema = z.object({ kind: z.literal("logical-continuation
 const CHANNEL = "native-sessions";
 const MAX_RECORD_BYTES = 230_000;
 
-export function createNativeSessions(bb: BbPluginApi) {
-  const context = createNativeContext(bb);
+export function createNativeSessions(bb: BbPluginApi, deps: { localOf?: (threadId: string) => Promise<{ profile: string } | null> } = {}) {
+  const context = createNativeContext(bb, { localOf: deps.localOf });
   const kv = bb.storage.kv;
   const locks = new Map<string, Promise<unknown>>();
 
@@ -528,10 +528,12 @@ export function createNativeSessions(bb: BbPluginApi) {
   bb.experimental_hooks.on("message.dispatch", async (ctx) => {
     const submission = ctx.experimental_submission;
     const ownContinuation = submission?.pluginId === bb.pluginId && submission.data !== null && typeof submission.data === "object" && !Array.isArray(submission.data) && submission.data.kind === "logical-continuation-v1";
+    let failure: unknown = null;
     try {
       await parallelContext(ctx);
       await capture(ctx);
     } catch (error) {
+      failure = error;
       const message = error instanceof Error ? error.message : String(error);
       bb.log.error(`Native conversation association failed; provider session remains accessible: ${message}`);
       const source = nativeHandoffSource(ctx.input.blocks);
@@ -544,6 +546,8 @@ export function createNativeSessions(bb: BbPluginApi) {
         publish(root);
       }
     }
+    // A continuation refused because the conversation includes a Local chat says so, not "stale".
+    if (ownContinuation && isLocalContextRefusal(failure)) return { action: "reject", message: `${failure.message} Your draft is kept.` };
     if (ownContinuation) {
       const proof = continuationProofSchema.safeParse(submission?.data);
       const claim = await kv.get<{ rootThreadId?: string; sourceThreadId?: string; generation?: string; composerKey?: string; projectId?: string; providerId?: string; model?: string | null; reasoningLevel?: string | null; serviceTier?: string | null }>(PROOF + ctx.thread.id);

@@ -1,12 +1,25 @@
 // Control room: one strip across every harness on bb's home screen: the four
 // states, each harness split by state, what needs you, and the three Macs.
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { experimental_useSidebarThreads as useSidebarThreads, type PluginHomepageSectionProps } from "@get-bb/plugin-sdk/app";
 import { cn } from "@/lib/utils";
 import { LIVE, Legend, Node, ago, caps, harnessOf, tnum } from "./shared";
 import { Card, CountUp, Heading, ensureHomeKitStyle } from "./home-kit";
 import { MachinesCard, StatTiles, threadModel } from "./home-panels";
 import { useRunning } from "./use-running";
+import { useFeature } from "./use-feature";
+import { ProfileFilter, profileCounts, useSessionProfiles } from "./session-profile-marks";
+import { matchesProfile, type ProfileFilterValue } from "./session-profile";
+
+const PROFILE_FILTER_KEY = "nav-skin:control-room-profile";
+function readProfileFilter(): ProfileFilterValue | null {
+  try {
+    const v = typeof localStorage === "undefined" ? null : localStorage.getItem(PROFILE_FILTER_KEY);
+    return v === "online" || v === "lean" || v === "local" || v === "local-unlocked" ? v : null;
+  } catch {
+    return null;
+  }
+}
 
 function SplitBar({ parts, total, max, delay }: { parts: Array<{ n: number; color: string; label: string }>; total: number; max: number; delay: number }) {
   return (
@@ -22,14 +35,35 @@ export function ControlRoom(_props: PluginHomepageSectionProps) {
   ensureHomeKitStyle();
   const { status, threads: physical } = useSidebarThreads();
   const now = Date.now();
-  const { threads, view, board } = useRunning(physical);
+  const { threads: all, view, board } = useRunning(physical);
+  // Session profiles (EXTRA-AH): narrow the strip to Online, Lean, Local or Local, unlocked chats.
+  const profilesOn = useFeature("EXTRA-AH");
+  const profileOf = useSessionProfiles(physical, profilesOn);
+  const [filterPref, setFilterPref] = useState<ProfileFilterValue | null>(readProfileFilter);
+  const filter = profilesOn ? filterPref : null;
+  const setFilter = (v: ProfileFilterValue | null) => {
+    setFilterPref(v);
+    try {
+      if (v) localStorage.setItem(PROFILE_FILTER_KEY, v);
+      else localStorage.removeItem(PROFILE_FILTER_KEY);
+    } catch {
+      /* private mode: the filter lasts for this page only */
+    }
+  };
+  const threads = useMemo(() => (filter ? all.filter((t) => matchesProfile(profileOf(t.id), filter)) : all), [all, filter, profileOf]);
   const model = useMemo(() => threadModel(threads), [threads]);
+  const anyMarked = profilesOn && physical.some((t) => !!profileOf(t.id));
 
   if (status !== "ready" && threads.length === 0) return null;
 
   return (
     <div data-nav-part="control-room" className="flex w-full flex-col gap-3">
-      <p className={cn(caps, "text-right")}>Every harness, live</p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {anyMarked || filter ? (
+          <ProfileFilter value={filter} onChange={setFilter} counts={profileCounts(physical.filter((t) => !t.isHidden && !t.isArchived).map((t) => t.id), profileOf)} />
+        ) : <span />}
+        <p className={cn(caps, "text-right")}>Every harness, live</p>
+      </div>
       <StatTiles tally={model.tally} running={{ view, machines: board?.columns.map((c) => c.key) ?? [] }} />
       <div className="grid items-start gap-3 md:grid-cols-[1.1fr_1fr]">
         <Card i={4} part="by-harness" label={<Heading label="By harness" figure={<CountUp value={model.live.length} />} note="chats" />}>

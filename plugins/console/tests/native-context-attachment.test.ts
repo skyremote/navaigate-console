@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { createFakePluginHost, makeThreadResponse } from "@get-bb/plugin-sdk/testing";
-import { createNativeContext, MAX_NATIVE_CONTEXT_FILE_BYTES } from "../server-native-context";
+import { createNativeContext, LOCAL_CONTEXT_REFUSED, MAX_NATIVE_CONTEXT_FILE_BYTES } from "../server-native-context";
 const hosts: ReturnType<typeof createFakePluginHost>[] = [];
 afterEach(async () => { for (const host of hosts.splice(0)) await host.harness.lifecycle.dispose(); });
-function fixture() {
+function fixture(opts: { localOf?: (threadId: string) => Promise<{ profile: string } | null> } = {}) {
   const source = makeThreadResponse({ id: "thr_source", projectId: "proj_fixture", providerId: "codex", deletedAt: null });
   const threads = new Map([[source.id, source]]);
   const events: any[] = [{ seq: 1, threadId: source.id, type: "client/turn/requested", data: { requestId: "user1", initiator: "user", systemMessageKind: "unlabeled", input: [{ type: "text", text: `Remember synthetic nonce4816. ${"Earlier visible facts. ".repeat(900)}` }] } }, { seq: 2, threadId: source.id, type: "item/completed", data: { item: { id: "assistant1", type: "agentMessage", text: "Remembered synthetic facts." } } }];
@@ -14,7 +14,7 @@ function fixture() {
     threads: { get: async ({ threadId }) => { const result = threads.get(threadId); if (!result) throw new Error("404"); return result; }, events: { list: async ({ threadId }) => events.filter((item) => item.threadId === threadId).sort((a, b) => b.seq - a.seq) } },
     projects: { attachments: { upload: async (args) => { uploads.push(args); const path = `.bb/attachments/fixture-${uploads.length}/${args.filename}`; hosted.set(path, new Uint8Array(args.clientFile as Uint8Array)); return { path, name: args.filename, type: args.mimeType, size: (args.clientFile as Uint8Array).length } as never; }, read: async ({ path }) => { const bytes = hosted.get(path); if (!bytes) throw new Error("missing attachment"); return { bytes: corrupt ? new Uint8Array([9]) : bytes, sizeBytes: bytes.length, mimeType: "text/plain" }; } } },
   } });
-  hosts.push(host); const context = createNativeContext(host.bb);
+  hosts.push(host); const context = createNativeContext(host.bb, { localOf: opts.localOf });
   const input = { sourceThreadId: source.id, rootThreadId: source.id, projectId: source.projectId };
   return { ...host, source, threads, events, hosted, uploads, context, input, corrupt() { corrupt = true; } };
 }
@@ -51,5 +51,18 @@ describe("real uploaded bounded continuation context", () => {
     const f = fixture(); const child = { ...f.source, id: "thr_child" }; f.threads.set(child.id, child);
     await expect(f.context.attachment({ ...f.input, sourceThreadId: child.id })).rejects.toThrow("member");
     f.corrupt(); await expect(f.context.attachment(f.input)).rejects.toThrow("byte verification");
+  });
+});
+
+describe("a conversation that includes a Local chat", () => {
+  it("never gives its messages to another model, and gives none when that cannot be checked", async () => {
+    const local = fixture({ localOf: async (id) => (id === "thr_source" ? { profile: "local" } : null) });
+    await expect(local.context.attachment(local.input)).rejects.toThrow(LOCAL_CONTEXT_REFUSED);
+    await expect(local.context.prepare({ ...local.input, threadId: "thr_parallel" })).rejects.toThrow(LOCAL_CONTEXT_REFUSED);
+    expect(local.uploads).toHaveLength(0);
+    const unknown = fixture({ localOf: async () => { throw new Error("db"); } });
+    await expect(unknown.context.attachment(unknown.input)).rejects.toThrow(/Could not check/);
+    const ordinary = fixture({ localOf: async () => null });
+    expect((await ordinary.context.attachment(ordinary.input)).messageCount).toBe(2);
   });
 });

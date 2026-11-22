@@ -71,7 +71,7 @@ describe("one index poll for the whole app", () => {
       home_agenda: () => ({ configured: true, error: null, reconnect: [], events: [] }), ask_log: () => ({ recent: [], jevDecisions: 0, overrides: 0 }),
       attention_state: () => ({ records: [], foldWorking: false }), attention_fleet_inbox: () => ({ rows: [], truncated: false, notices: [] }), thread_accounts: () => ({ threads: {} }),
       fleet_board: () => ({ available: true, board: copy(fixture.board), error: null }), native_session_index: () => { reads++; return copy(fixture.index); },
-      state_get: () => ({ tags: [], assign: {}, later: {}, order: [], collapsed: [], groups: [], within: {}, colors: {}, subOpen: [] }),
+      state_get: () => ({ tags: [], assign: {}, later: {}, order: [], collapsed: [], groups: [], within: {}, colors: {}, subOpen: [], threadColors: {} }),
     };
     const callRpc = async ({ method }: { method: string }) => {
       if (method === "list") return { folders: [], roots: [], bindings: {}, places: {} };

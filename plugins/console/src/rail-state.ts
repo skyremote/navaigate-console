@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRealtime, useRpc } from "@get-bb/plugin-sdk/app";
 import { toast } from "sonner";
 import type { RailState, rpcContract } from "../server";
-import type { ProjectColor } from "./rail-look";
+import type { ProjectColor, ThreadColor } from "./rail-look";
 import { keepIfSame } from "./stable";
 
 export type { RailState };
@@ -27,7 +27,7 @@ export const TAG_CSS: Record<TagColor, string> = {
   sand: "var(--input)",
 };
 
-const EMPTY: RailState = { tags: [], assign: {}, later: {}, order: [], collapsed: [], groups: [], within: {}, colors: {}, subOpen: [] };
+const EMPTY: RailState = { tags: [], assign: {}, later: {}, order: [], collapsed: [], groups: [], within: {}, colors: {}, subOpen: [], threadColors: {} };
 
 const fail = (verb: string) => (e: unknown) => {
   toast.error(`${verb} failed`, { description: e instanceof Error ? e.message : String(e) });
@@ -143,6 +143,20 @@ export function useRailState() {
         return { ...s, colors };
       });
       void apply(rpc.call("project_color_set", { projectId, color }), "Project colour");
+    },
+    /** Colour chats' rail bars; null takes the colour off. Applies at once, then syncs. */
+    setThreadColor: (threadIds: string[], color: ThreadColor | null) => {
+      if (threadIds.length === 0) return;
+      const ids = threadIds.slice(0, 200);
+      setState((s) => {
+        const threadColors = { ...(s.threadColors ?? {}) };
+        for (const id of ids) {
+          if (color) threadColors[id] = color;
+          else delete threadColors[id];
+        }
+        return { ...s, threadColors };
+      });
+      void apply(rpc.call("thread_color_set", { threadIds: ids, color }), "Chat colour");
     },
     forget: (threadIds: string[]) => apply(rpc.call("forget_threads", { threadIds }), "Tidy up"),
   };

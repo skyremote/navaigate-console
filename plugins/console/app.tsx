@@ -34,6 +34,7 @@ import { DashboardPage } from "./src/dashboard";
 import { M1HeaderButton, M1Panel } from "./src/m1";
 import { HomePage } from "./src/home";
 import { NewThreadHero } from "./src/new-thread-hero";
+import { RowProfileItem, useRowProfileData } from "./src/session-profile-marks";
 import { InboxPage } from "./src/inbox-page";
 import { HeaderMark } from "./src/header-mark";
 import { toggleMode } from "./src/mode-toggle";
@@ -110,6 +111,14 @@ export default definePluginApp((app) => {
   // Chrome-style tab strip across the top; docking rides on bb's own split.
   app.slots.experimental_appOverlay({ id: "tabs", component: gated("EXTRA-T", () => <Boundary label="Tabs" compact><TabStrip /></Boundary>) });
   app.slots.experimental_appOverlay({ id: "new-thread-hero", component: gated("EXTRA-U", NewThreadHero) });
+  // The Lean / Local flag on bb's own row metadata line too (an extra: bb draws that line only with its row-details experiment on).
+  if (at("EXTRA-AH") && typeof app.slots.experimental_threadRowMetadata === "function") {
+    try {
+      app.slots.experimental_threadRowMetadata({ id: "session-profile", order: 50, useData: useRowProfileData, component: gated("EXTRA-AH", RowProfileItem) });
+    } catch {
+      /* slot not offered by this bb */
+    }
+  }
   // Agents: the orchestration space on the right — family map, log, spin up.
   app.slots.experimental_tab({ context: { kind: "thread" }, availability: "action",
     id: "agents",

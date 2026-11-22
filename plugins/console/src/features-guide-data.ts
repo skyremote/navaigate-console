@@ -4265,5 +4265,225 @@ export const FEATURES: readonly Feature[] = [
       "gate": "'Usage' card on Home (src/usage-orbs.tsx, src/usage-orbs-model.ts, src/usage-orb-engine.ts)",
       "plugin": "console"
     }
+  },
+  {
+    "id": "EXTRA-AH",
+    "name": "Online or Local on the new-chat screen",
+    "description": "Choose Online or a model on this Mac for a new chat, flagged on the chat; warns when your skills will slow opencode's first reply.",
+    "area": "Models and agents",
+    "surface": "composer",
+    "status": {
+      "kind": "partly"
+    },
+    "where": "Console: open a new chat. Two orbs stand where the mark was. Online (the default) is a chat exactly as today. Local starts a chat on a model that runs on this Mac, through opencode, with Ollama or LM Studio: pick the model under the orb. The list comes from opencode; a model Ollama reports as served from its cloud (its remote fields, or a :cloud or -cloud tag) is left out, and so is every Ollama model when OLLAMA_HOST points Ollama at another machine. A Local chat writes its own title on this Mac, so its first message is not sent to bb's title service. The line under the box says Local, the model and runs on this Mac while the chat's model is one on this Mac. opencode can switch a chat to another model inside the chat: the line then says the chat started Local and names the model it runs on now, or the model picked for its next reply. Where Claude Code is switched on (EXTRA-AM), the orb checks each model first: only a model that can call tools and runs with a window of at least 65,536 tokens is offered on Claude Code, and any other model says why and runs in opencode. Local chats carry a flag on their sidebar row, and the sidebar and Control room can filter by it. A model you list as unlocked in the plugin's settings or your profile shows a padlock; with no list there is none. Where opencode will run a Local chat, a note under the orb warns when your skills make its first prompt large: opencode puts every skill from ~/.claude/skills and ~/.agents/skills (up to 200) into that prompt, and the note appears above about 90 skills with the count and an estimated prompt size.",
+    "gap": "Needs Ollama or LM Studio with a model already downloaded, and opencode. Tested on a 48 GB Apple Silicon Mac; 24 to 32 GB is untested and 16 GB is not a target. Runs on this Mac describes the model only: the chat's tools, a project's own connectors, web fetches and bb's own tools (which can message other chats) can still reach the network. The cloud check reads what Ollama reports about each model and has not been tried against a real cloud model; an opencode provider or a runner pointed at another machine is outside it. A Local chat's messages are kept in bb's own history, as every chat's are: if you hand the chat over to an online model, mention it with @ in an online chat, share messages from it through a guest review link, or ask another chat to read it, that model or that guest reads it. The Console does not move a Local chat to another machine, start new work on another Mac from it, or give its messages to a model started alongside it or to a continuation. With Local chats on Claude Code (EXTRA-AM) switched off, a Claude Code chat that a Local chat starts (from its Agents tab or its own tools) does not start: it would carry the Local chat's work to a Claude account, so bb shows an error saying a chat started by a Local chat stays on this Mac. Claude Code as the harness for a Local chat is a separate, experimental feature (EXTRA-AM). The skill note's size is an estimated floor from one 48 GB Apple Silicon Mac that was busy with other work: a whole first turn on a clean bb with no skills used about 11,000 tokens, each skill adds about 155, and three chats with 200 skills on a larger setup (about 48,700 tokens) gave no answer in 12 minutes. Nothing between 0 and 200 skills was measured, and it is not a measurement of your Mac.",
+    "evidence": {
+      "verdict": "UNVERIFIED",
+      "note": "Run once with LM Studio and opencode on a 48 GB Apple Silicon Mac, no skills: a file task answered correctly, the first answer after about 4 minutes.",
+      "date": "2026-11-22",
+      "build": "Console 1.13.0 candidate, standard bb 0.49"
+    },
+    "showMe": {
+      "kind": "compose"
+    },
+    "edition": "both",
+    "picker": {
+      "default": "on",
+      "requires": [],
+      "presets": [
+        "pro"
+      ],
+      "enforced": "inline",
+      "gate": "Hero on the new-chat screen (src/new-thread-hero.tsx, src/session-orbs.tsx)",
+      "plugin": "console"
+    }
+  },
+  {
+    "id": "EXTRA-AI",
+    "name": "Chat colours in the sidebar",
+    "description": "Give a chat a colour, and a coloured bar runs down its row in the sidebar.",
+    "area": "Interface and maintenance",
+    "surface": "rail",
+    "status": {
+      "kind": "live"
+    },
+    "where": "Console sidebar: right-click a chat, open 'Colour' and pick one, and a coloured bar runs down that chat's row with a light tint. 'No colour' takes it off. Select several chats first to colour them all at once.",
+    "gap": "",
+    "evidence": {
+      "verdict": "UNVERIFIED",
+      "note": "Built and unit tested; no live check is recorded yet.",
+      "date": "2026-11-21",
+      "build": "Console 0.35.0 branch"
+    },
+    "showMe": {
+      "kind": "none",
+      "reason": "Right-click a chat in the sidebar, then Colour"
+    },
+    "edition": "both",
+    "picker": {
+      "default": "on",
+      "requires": [],
+      "presets": [
+        "simple",
+        "pro"
+      ],
+      "enforced": "always",
+      "gate": "Part of the sidebar rail: the chat context menu and row drawing (src/rail.tsx, src/rail-look.tsx)",
+      "plugin": "console"
+    }
+  },
+  {
+    "id": "EXTRA-AJ",
+    "name": "Open the connector manager with /mcp",
+    "description": "Send /mcp in a chat to open the connector manager with each connector's status. Needs the MCP Manager plugin.",
+    "area": "Models and agents",
+    "surface": "composer",
+    "status": {
+      "kind": "live"
+    },
+    "where": "In a chat, send /mcp on its own, typed or picked from the slash menu. The message goes as usual, and the MCP Manager page opens with every connector, its live status and a way to sign in again.",
+    "gap": "Needs the separate MCP Manager plugin. Without it that page does not exist, so this is off unless you tick it.",
+    "evidence": {
+      "verdict": "UNVERIFIED",
+      "note": "Built and unit tested; no live check is recorded yet.",
+      "date": "2026-11-21",
+      "build": "Console 0.35.0 branch"
+    },
+    "showMe": {
+      "kind": "none",
+      "reason": "Send /mcp on its own in a chat"
+    },
+    "edition": "both",
+    "picker": {
+      "default": "off",
+      "requires": [],
+      "presets": [],
+      "enforced": "inline",
+      "gate": "src/composer-bridge.tsx: the page opens only while this feature is on (featureNow)",
+      "plugin": "console"
+    }
+  },
+  {
+    "id": "EXTRA-AK",
+    "name": "Drop a chat on another project's folder",
+    "description": "Drag a chat onto a folder of another project to file it there in the sidebar.",
+    "area": "Interface and maintenance",
+    "surface": "rail",
+    "status": {
+      "kind": "live"
+    },
+    "where": "Console sidebar: drag a chat onto a folder that belongs to another project, and the sidebar files it there; the chat keeps its own project. A drop on another project's top level still refuses with a message, because there is no folder there to hold it.",
+    "gap": "Needs Projects & Sections for folders.",
+    "evidence": {
+      "verdict": "UNVERIFIED",
+      "note": "Built; no live check is recorded yet.",
+      "date": "2026-11-21",
+      "build": "Console 0.35.0 branch"
+    },
+    "showMe": {
+      "kind": "none",
+      "reason": "Drag a chat onto a folder of another project in the sidebar"
+    },
+    "edition": "both",
+    "picker": {
+      "default": "on",
+      "requires": [],
+      "presets": [
+        "simple",
+        "pro"
+      ],
+      "enforced": "always",
+      "gate": "Part of the sidebar rail: drag and drop onto folders (src/rail.tsx)",
+      "plugin": "console"
+    }
+  },
+  {
+    "id": "EXTRA-AL",
+    "name": "Load and unload a local model from the Local orb",
+    "description": "Load a local model into memory from the Local orb, or unload it, and see what is in memory now.",
+    "area": "Models and agents",
+    "surface": "composer",
+    "status": {
+      "kind": "live"
+    },
+    "where": "Console: open a new chat and choose the Local orb. Under the model, a memory row says whether it is in memory, with Load, Unload and Stop, and lists up to two other models in memory, each with its own Unload. Works for Ollama and LM Studio models. Load asks LM Studio for a 65,536-token window, the window Claude Code needs, so on a Mac with less than 40 GB of memory Load refuses and says why: load the model in LM Studio itself with a smaller window instead. Load and Unload talk to Ollama and LM Studio on this Mac only: when OLLAMA_HOST points Ollama at another machine, Load refuses for Ollama models and says why.",
+    "gap": "Tested on a 48 GB Apple Silicon Mac. Keep one large model in memory at a time. The refusal on smaller Macs is unit tested only.",
+    "evidence": {
+      "verdict": "UNVERIFIED",
+      "note": "Load and Unload were used on a 48 GB Apple Silicon Mac before this release; the 40 GB refusal is unit tested only, not checked live.",
+      "date": "2026-11-21",
+      "build": "Console 0.35.0 branch"
+    },
+    "showMe": {
+      "kind": "compose"
+    },
+    "edition": "both",
+    "picker": {
+      "default": "on",
+      "requires": [
+        "feature:EXTRA-AH"
+      ],
+      "presets": [
+        "pro"
+      ],
+      "enforced": "always",
+      "gate": "Part of the Local orb (src/session-orbs.tsx ModelMemory; server-local-models.ts)",
+      "plugin": "console"
+    }
+  },
+  {
+    "id": "EXTRA-AM",
+    "name": "Local chats on the Claude Code harness (experimental)",
+    "description": "Experimental: run a Local chat in Claude Code itself, on a model on this Mac that can use tools. Needs Ollama or LM Studio.",
+    "area": "Models and agents",
+    "surface": "composer",
+    "status": {
+      "kind": "partly"
+    },
+    "where": "Console: open a new chat, choose the Local orb and a model, then Claude Code in the switch under it. The chat runs Claude Code itself with the model on this Mac, through a route on this bb server that forwards to Ollama or LM Studio, and the chat's own title is written on this Mac. Its transcript is kept on this Mac in ~/.claude-local/config/projects, apart from your main Claude Code history. A fork of the chat, or a chat it starts on Claude Code (up to four steps down), runs on the same local model; with this feature off, or on another machine, it is blocked and bb's error says why. Only a model that can call tools and runs with a window of at least 65,536 tokens is offered; any other model says why and runs in opencode. The chat starts in Accept Edits, so it asks before it changes anything outside its own folder, and the line under the switch says so. At the start, Approve for me is not used for a local model: it checks every step with that same model, one minute at a time, and one small file write took 16 minutes. Switching to it later in the chat is your choice. Full Access is your own choice, in bb's picker in the box or as localPermissionMode in your profile. Off unless you tick it in Setup.",
+    "gap": "Experimental. Tested on a 48 GB Apple Silicon Mac with a 27B Qwen model; 24 to 32 GB is untested and 16 GB is not a target. On our own bb build, a new chat's first reply took about 2.5 to 4 minutes on one 48 GB Apple Silicon Mac; on standard bb 0.49, with the same Mac busy with other work, it took about 12 minutes, because the first prompt (about 25,400 tokens) needed more than 5 minutes to read and a request with no reply after 5 minutes is sent again. Follow-ups in the same sitting took 9 to 32 seconds; a follow-up after the chat's session had closed took as long as a first reply. Any Mac that needs more than 5 minutes to read the first prompt can see the same long first reply, and this is not fixed yet. Runs on this Mac describes the model only: the chat's tools, a project's own connectors, web fetches and bb's own tools (which can message other chats) can still reach the network. A Local chat, or a chat made from it, can still reach your cloud account in these cases: (1) the plugin is not loaded, or bb drops its settings after bb's 5-second limit, when the chat starts or restarts; (2) its first start is on a machine other than the bb server's Mac and its Local mark cannot be read; (3) a chat it started begins while the plugin cannot read that chat's mark, or cannot read what started it while the plugin knows no Local chat on this Mac yet; or it is more than four steps down from the Local chat; or it runs on another harness such as Codex; (4) another plugin sets which claude program a chat runs before this one does. A fork made in case 1 or 2, or while the plugin cannot read it or what it was forked from, cannot find its history, so it fails instead of starting. Once the plugin knows a Local chat on this Mac, a Claude Code chat whose origin cannot be read is stopped for that one start with a message to send again; an ordinary chat then starts on the next try. And by your own choice: handing the chat over or continuing it in a new chat on an online model, mentioning it with @ in an online chat, sharing messages from it through a guest review link, or asking another chat to read it from bb's own history, which keeps every chat's messages. If the claude program is only on your shell's PATH (an npm or nvm install, say), the setup may not find it; Local chats on Claude Code are then blocked, with a line in the plugin log. bb's own model box and status bar still show a cloud model name on a Local chat.",
+    "evidence": {
+      "verdict": "UNVERIFIED",
+      "note": "Run once with LM Studio on a 48 GB Apple Silicon Mac: correct answers, but the first reply took about 12 minutes. Ollama was tried on a development bb only.",
+      "date": "2026-11-22",
+      "build": "Console 1.13.0 candidate, standard bb 0.49"
+    },
+    "showMe": {
+      "kind": "compose"
+    },
+    "edition": "both",
+    "picker": {
+      "default": "off",
+      "requires": [
+        "feature:EXTRA-AH"
+      ],
+      "presets": [],
+      "enforced": "inline",
+      "gate": "Harness switch under the Local orb (src/session-orbs.tsx, useSettledFeature); start guard for unreadable marks (server-session-profile.ts, localClaudeOn); start mode seeded only on that harness (src/session-orbs.tsx defaultPermissionMode, localClaudeRequest); chats made from a Local chat placed by their fork source and parent (server-session-profile.ts, localAncestor)",
+      "plugin": "console"
+    }
+  },
+  {
+    "id": "EXTRA-AN",
+    "name": "Lean Claude chats",
+    "description": "Start a Claude chat with a smaller settings folder: fewer connectors and skills, so it starts with less text.",
+    "area": "Models and agents",
+    "surface": "composer",
+    "status": {
+      "kind": "partly"
+    },
+    "where": "Console: open a new chat. Under the Online orb, Full or Lean: Lean starts a Claude chat with a separate, smaller Claude settings folder, with fewer connectors and skills, so it starts with less text. The switch shows only when that folder is ready on this Mac.",
+    "gap": "The lean folder is built by hand; there is no general way to build it yet.",
+    "evidence": {
+      "verdict": "UNVERIFIED",
+      "note": "Built and unit tested; no live check is recorded yet.",
+      "date": "2026-11-21",
+      "build": "Console 0.35.0 branch"
+    },
+    "showMe": {
+      "kind": "compose"
+    },
+    "edition": "private",
+    "privateReason": "The lean settings folder is built from one owner's own choice of connectors and skills by a personal script that does not ship, so a community user has no such folder and a Lean chat would start as a Full one."
   }
 ];

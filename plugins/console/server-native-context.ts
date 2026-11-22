@@ -97,7 +97,12 @@ export function priorConversationInstructions(snapshot: Snapshot): string | null
 }
 
 /** Private durable rows avoid an async warmup race in the synchronous instruction hook. */
-export function createNativeContext(bb: BbPluginApi) {
+/** The words used when a conversation's earlier messages are not given to another model because it includes a Local chat. */
+export const LOCAL_CONTEXT_REFUSED = "This conversation includes a Local chat, or one made from it: its messages stay on this Mac, so they are not given to another model.";
+export const LOCAL_CONTEXT_UNCHECKED = "Could not check whether this conversation includes a Local chat, so its messages are not given to another model.";
+/** Whether an error is one of the two refusals above (shown as they are, not as a generic failure). */
+export const isLocalContextRefusal = (e: unknown): e is Error => e instanceof Error && (e.message === LOCAL_CONTEXT_REFUSED || e.message === LOCAL_CONTEXT_UNCHECKED);
+export function createNativeContext(bb: BbPluginApi, deps: { localOf?: (threadId: string) => Promise<{ profile: string } | null> } = {}) {
   const db = bb.storage.database();
   db.exec("CREATE TABLE IF NOT EXISTS native_session_context_v1 (thread_id TEXT PRIMARY KEY, project_id TEXT NOT NULL, source_thread_id TEXT NOT NULL, root_thread_id TEXT NOT NULL, snapshot_json TEXT NOT NULL, instructions TEXT, created_at INTEGER NOT NULL)");
   const get = db.prepare("SELECT project_id, source_thread_id, root_thread_id, snapshot_json, instructions FROM native_session_context_v1 WHERE thread_id = ?");
@@ -128,6 +133,19 @@ export function createNativeContext(bb: BbPluginApi) {
     put.run(input.threadId, input.projectId, input.sourceThreadId, input.rootThreadId, JSON.stringify(snapshot), priorConversationInstructions(snapshot), Date.now());
   }
   async function collect(input: { projectId: string; sourceThreadId: string; rootThreadId: string }) {
+    // A Local chat's messages stay on this Mac: they are never packed for another model, and when that
+    // cannot be checked nothing is packed either.
+    if (deps.localOf) {
+      for (const id of new Set([input.sourceThreadId, input.rootThreadId])) {
+        let local: { profile: string } | null;
+        try {
+          local = await deps.localOf(id);
+        } catch {
+          throw new Error(LOCAL_CONTEXT_UNCHECKED);
+        }
+        if (local) throw new Error(LOCAL_CONTEXT_REFUSED);
+      }
+    }
     const previous = row(input.sourceThreadId);
     const inherited = previous?.project_id === input.projectId ? snapshotSchema.parse(JSON.parse(previous.snapshot_json)) : { messages: [], truncated: false };
     const messages = new Map(inherited.messages.map((message) => [`${message.source}:${message.id}`, message]));

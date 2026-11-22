@@ -8,6 +8,16 @@ import { alwaysOnMachine, expandHome, type Profile, type ProfileMachine } from "
 
 const nullableText = z.string().max(400).nullable();
 
+/**
+ * The permission modes a Local chat on the Claude Code harness can run in. Never "auto" (bb's
+ * "Approve for me"): its safety check runs on the chat's own local model with a 60 second limit,
+ * so one small file write took 16 minutes. Which one a chat starts in is `localPermissionMode`.
+ */
+export const LOCAL_START_MODES = ["accept-edits", "full"] as const;
+export type LocalStartMode = (typeof LOCAL_START_MODES)[number];
+/** bb's own names for the two modes, as its permission picker shows them. */
+export const LOCAL_START_MODE_LABEL: Record<LocalStartMode, string> = { "accept-edits": "Accept Edits", full: "Full Access" };
+
 export const consoleSectionSchema = z.object({
   /** Where the shared NAS folder is linked on this Mac (e.g. "~/Shared"), when it is not the mount itself. */
   nasLink: nullableText.default(null),
@@ -21,8 +31,19 @@ export const consoleSectionSchema = z.object({
   /** Folder name (inside the NAS) the generated daily brief is written to, and the name of the bb automation that makes it (its project id is `ids.projects.dailyBrief`). */
   dailyBriefDir: nullableText.default(null),
   dailyBriefAutomation: nullableText.default(null),
+  /**
+   * The permission mode a Local chat on the Claude Code harness starts in when bb's picker says
+   * "Approve for me" (auto). Auto checks each action with the chat's own local model, which takes
+   * minutes, so it is never used there. "accept-edits" asks before anything outside the chat's
+   * folder; "full" asks nothing.
+   */
+  localPermissionMode: z.enum(LOCAL_START_MODES).default("accept-edits"),
   /** Short text under a machine in the new-work picker, by machine id. */
   machineHints: z.record(z.string().max(40), z.string().max(200)).default({}),
+  /** Local models the owner treats as unlocked (padlock on the Local orb, chat flagged "Local, unlocked"): exact model ids or names. */
+  unlockedModels: z.array(z.string().min(1).max(300)).max(200).default([]),
+  /** Words that mark a local model as unlocked when its id or name contains them, in any case. Empty: none. */
+  unlockedWords: z.array(z.string().min(3).max(60)).max(20).default([]),
   /** What the inbox sort can file an email under: name to a plain description of what belongs there. */
   ventures: z.record(z.string().max(60), z.object({ what: z.string().max(600) })).default({
     Work: { what: "Paid work, clients, projects, colleagues, business admin and tools" },

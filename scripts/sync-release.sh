@@ -12,6 +12,11 @@
 # from (repository, branch, commit). The script refuses to run if a source
 # worktree has uncommitted changes to tracked files, and changes nothing then.
 #
+# The release number written to RELEASE_SOURCES.json is read from one place: the
+# header line of install.sh ("# NavAIgate Console X.Y.Z, ..."), which every release
+# bumps. Set RELEASE_VERSION to override it; the script stops if neither gives an
+# X.Y.Z number.
+#
 # Worktrees are looked up under $CR_BBWT (default /tmp/bbwt). The Claude Code
 # half of Prompt Stack is taken from a committed ref (git archive), never from a
 # working folder: repository $PROMPT_STACK_CLAUDE_REPO (default
@@ -90,6 +95,10 @@ fi
 command -v rsync >/dev/null || { echo "rsync is needed" >&2; exit 1; }
 command -v python3 >/dev/null || { echo "python3 is needed" >&2; exit 1; }
 for f in "$LICENSE_FROM" "$NOTICE_FROM" "$HOOK_SCRIPT"; do [ -f "$f" ] || { echo "Missing $f" >&2; exit 1; }; done
+
+# The release number: RELEASE_VERSION, else the install.sh header (the one place a release bumps it).
+RELEASE="${RELEASE_VERSION:-$(sed -n '1,5s/^# NavAIgate Console \([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\),.*/\1/p' "$OVERLAY/install.sh" | head -n 1)}"
+[[ "$RELEASE" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "No release number: set RELEASE_VERSION=X.Y.Z, or put '# NavAIgate Console X.Y.Z,' on install.sh's second line" >&2; exit 1; }
 
 # ------------------------------------------------------------ check first
 BAD=0
@@ -176,9 +185,9 @@ if wanted prompt-stack; then
   echo "synced plugins/prompt-stack/claude-plugin  <-  $(repo_name "$PS_REPO")"
 fi
 
-python3 - "$OVERLAY/RELEASE_SOURCES.json" "$ROWS" "$VENDOR" "${SPEC[@]}" <<'PY'
+python3 - "$OVERLAY/RELEASE_SOURCES.json" "$ROWS" "$VENDOR" "$RELEASE" "${SPEC[@]}" <<'PY'
 import json, sys, os
-path, rows, vendor, *spec = sys.argv[1:]
+path, rows, vendor, release, *spec = sys.argv[1:]
 order = ["plugins/" + s.split("|")[0] for s in spec]
 old = json.load(open(path)) if os.path.exists(path) else {}
 plugins = {e["folder"]: e for e in old.get("plugins", [])}
@@ -191,7 +200,7 @@ for line in open(vendor):
     vendored[f] = {"folder": f, "what": i, "sourceRepo": repo, "branch": branch, "commit": commit, "note": note}
 doc = {
     "about": "Where each release plugin folder was copied from. Written by scripts/sync-release.sh; do not edit by hand.",
-    "release": "1.12.5",
+    "release": release,
     "plugins": [plugins[f] for f in order if f in plugins],
     "vendored": list(vendored.values()),
 }

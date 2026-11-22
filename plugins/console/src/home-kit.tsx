@@ -31,6 +31,8 @@ const CSS = `
 .nav-hk-tile > button::after { content: ""; position: absolute; inset: 0; border-radius: inherit }
 .nav-hk-tile:has(> button:focus-visible) { outline: 2px solid var(--ring); outline-offset: 1px }
 .nav-hk-hover { transition: background-color 150ms ${EASE}, opacity 150ms ${EASE} }
+.nav-hero-orbs { display: flex; width: 100%; justify-content: center }
+.nav-hero-orbs [data-nav-part="session-orbs"] { justify-content: center }
 @media (prefers-reduced-motion: reduce) {
   .nav-hk-rise, .nav-hk-fade, .nav-hk-bar, .nav-hk-grow, .nav-hk-wipe, .nav-hk-pop, .nav-hk-row { animation: none !important }
   .nav-hk-bar > i, .nav-hk-meter i, .nav-hk-seg-ind, .nav-hk-seg > button, .nav-hk-hover { transition: none !important }
@@ -40,7 +42,11 @@ const CSS = `
 let injected = false;
 export function ensureHomeKitStyle() {
   if (injected || typeof document === "undefined") return;
-  if (!document.getElementById("nav-hk-style")) {
+  // A plugin reload keeps the page and its old style tag, so the text is replaced when it differs.
+  const old = document.getElementById("nav-hk-style");
+  if (old) {
+    if (old.textContent !== CSS) old.textContent = CSS;
+  } else {
     const el = document.createElement("style");
     el.id = "nav-hk-style";
     el.textContent = CSS;

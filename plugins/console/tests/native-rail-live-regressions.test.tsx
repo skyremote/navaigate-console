@@ -35,7 +35,7 @@ function thread(id: string, title: string, projectId = "p1", over: Record<string
 }
 const live = (id: string, over: Record<string, unknown> = {}) => ({ id, projectId: "p1", providerId: "claude-code", status: "idle", isHidden: true, isArchived: false, hasPendingInteraction: false, model: null, reasoningLevel: null, ...over });
 const project = { id: "p1", name: "Shared (away)", isPersonal: false, href: "/p1", settingsHref: "/s/p1", experimental_icon: { imageUrl: null, monogram: "NA", hue: 260 } };
-const EMPTY_STATE = { tags: [], assign: {}, later: {}, order: [], collapsed: [], groups: [], within: {}, colors: {}, subOpen: [] };
+const EMPTY_STATE = { tags: [], assign: {}, later: {}, order: [], collapsed: [], groups: [], within: {}, colors: {}, subOpen: [], threadColors: {} };
 
 // The live conversation: the visible root plus three hidden members, one failed, the active one running.
 const conversation = (active: Record<string, unknown> = { status: "active" }) => ({

@@ -54,6 +54,10 @@ import { createTeleport, teleportLinkSchema, teleportMoveInput, teleportMoveOutp
 import { createFleetUsageBridge } from "./server-usage-fleet";
 import { createUsageLinkAction, createUsageLinks } from "./server-usage-links";
 import { createUsageTrend, threadAccountsSchema, trendSchema } from "./server-usage-trend";
+import { createSessionProfiles, refuseLocalCopy, refuseLocalMove, sessionProfileConfigOutput, sessionProfilesInput, sessionProfilesOutput } from "./server-session-profile";
+import { LOCAL_CLAUDE_FEATURE } from "./src/session-profile";
+import { createLocalModels, createSkillCount, localModelActionOutput, localModelInput, localModelStateOutput, localModelToolsOutput, localModelsRemoteOutput, localSkillsCountOutput } from "./server-local-models";
+import { LOCAL_ROUTE, LOCAL_SERVER_PATH, blockedPath, createLocalClaudeRoute, createLocalClaudeSetup, ensureLocalClaude, localConfigPath } from "./server-local-claude";
 import { createNativeSessions, nativeSessionIndexSchema, nativeSessionStateSchema, nativeSessionArmInput, nativeSessionThreadInput, nativeSessionSelectInput, nativeSessionAdoptInput } from "./server-native-sessions";
 
 // ---- Rail state: tags, "come back later" marks, section order (synced via bb) ----
@@ -83,12 +87,17 @@ const stateSchema = z.object({
   // (running and needs-you sub-agents still peek out). Defaults, so older
   // state loads unchanged.
   subOpen: z.array(z.string()).default([]),
+  // Chat colours for the rail (threadId -> palette name), drawn as a bar down
+  // the row. Plain strings, like project colours, so an unknown name never
+  // fails the parse; defaults, so older state loads unchanged.
+  threadColors: z.record(z.string(), z.string().max(16)).default({}),
 });
 export type RailState = z.infer<typeof stateSchema>;
-const EMPTY: RailState = { tags: [], assign: {}, later: {}, order: [], collapsed: [], groups: [], within: {}, colors: {}, subOpen: [] };
+const EMPTY: RailState = { tags: [], assign: {}, later: {}, order: [], collapsed: [], groups: [], within: {}, colors: {}, subOpen: [], threadColors: {} };
 /** Open parents kept at most; the oldest drop off first. */
 const SUB_OPEN_MAX = 400;
 const PROJECT_COLORS = ["gold", "orange", "green", "teal", "plum", "rose", "slate"] as const;
+const THREAD_COLORS = ["red", "orange", "yellow", "green", "teal", "blue", "purple", "pink"] as const;
 const execSchema = z.object({ model: z.string(), reasoningLevel: z.string() });
 const ids = z.array(z.string().min(1).max(64)).min(1).max(200);
 
@@ -183,8 +192,22 @@ export const rpcContract = defineRpcContract({
   sub_open_set: { input: z.object({ threadIds: z.array(z.string().min(1).max(64)).min(1).max(SUB_OPEN_MAX), open: z.boolean() }), output: stateSchema },
   forget_threads: { input: z.object({ threadIds: ids }), output: stateSchema },
   project_color_set: { input: z.object({ projectId: z.string().min(1).max(80), color: z.enum(PROJECT_COLORS).nullable() }), output: stateSchema },
+  // Colour one or more chats' rail bars; null takes the colour off.
+  thread_color_set: { input: z.object({ threadIds: ids, color: z.enum(THREAD_COLORS).nullable() }), output: stateSchema },
   // Model and effort per chat for the two-line rail rows, asked in batches.
   thread_exec: { input: z.object({ ids: z.array(z.string().min(1).max(64)).min(1).max(200) }), output: z.record(z.string(), execSchema.nullable()) },
+  // Session profiles: the Lean / Local / Local, unlocked flag of each chat (none = Online), and the owner's unlocked-model list.
+  session_profiles: { input: sessionProfilesInput, output: sessionProfilesOutput },
+  session_profile_config: { input: z.null(), output: sessionProfileConfigOutput },
+  // Local models in memory (Ollama on this Mac): what is loaded, and load or unload one from the Local orb.
+  local_model_state: { input: z.null(), output: localModelStateOutput },
+  local_model_load: { input: localModelInput, output: localModelActionOutput },
+  local_model_unload: { input: localModelInput, output: localModelActionOutput },
+  local_model_tools: { input: localModelInput, output: localModelToolsOutput },
+  // The Ollama models served from Ollama's cloud, which the Local orb never lists.
+  local_models_remote: { input: z.null(), output: localModelsRemoteOutput },
+  // How many skills opencode would list in a Local chat's first prompt (numbers only), for the Local orb's note.
+  local_skills_count: { input: z.null(), output: localSkillsCountOutput },
   group_create: {
     input: z.object({ name: z.string().trim().min(1).max(48), parentId: z.string().nullable(), members: z.array(sectionId).max(50).optional() }),
     output: groupSchema,
@@ -364,7 +387,42 @@ export default async function plugin(bb: BbPluginApi) {
   const delivery = createDelivery(bb);
   const fleetDoctor = createFleetDoctor(bb);
   const helperModels = createHelperModels(bb, { featureOn: serverFeatureOn });
-  const nativeSessions = createNativeSessions(bb);
+  // A model started alongside a conversation, or a continuation, is given its earlier messages; never a Local chat's.
+  const nativeSessions = createNativeSessions(bb, { localOf: (id) => sessionProfiles.localOf(id) });
+  // Lean chats: CLAUDE_CONFIG_DIR for chats marked lean on this Mac, nothing for any other chat.
+  // Local chats on the Claude Code harness: the launcher and the route to Ollama or LM Studio (server-local-claude.ts).
+  // Set up only while that feature is on (it writes the launcher and guard into ~/.claude-local), so a
+  // community install with it off writes nothing and its route answers 401 to everyone. While it is on,
+  // it is set up ahead of time (at load, and when the Local orb checks a model), so the first Local chat
+  // does not pay for it inside bb's time limit for a chat's environment; a failure is kept for a minute.
+  const localClaudeSetup = createLocalClaudeSetup({ on: () => serverFeatureOn(LOCAL_CLAUDE_FEATURE), ensure: () => ensureLocalClaude(), warn: (m) => bb.log.warn(m) });
+  try {
+    localClaudeSetup();
+  } catch (e) {
+    bb.log.warn(`local claude: setup at load failed (${String(e)})`);
+  }
+  const localRoute = createLocalClaudeRoute({
+    secret: () => {
+      const setup = localClaudeSetup();
+      return setup.ok ? setup.secret : null;
+    },
+    log: (m) => bb.log.info(m),
+  });
+  // auth "none": the route checks its own secret, which only the launcher on this Mac holds.
+  bb.http.route("POST", `${LOCAL_ROUTE}/v1/messages`, (c) => localRoute.messages(c.req.raw), { auth: "none" });
+  bb.http.route("POST", `${LOCAL_ROUTE}/v1/messages/count_tokens`, (c) => localRoute.countTokens(c.req.raw), { auth: "none" });
+  const sessionProfiles = createSessionProfiles(bb, {
+    localSetup: () => {
+      const setup = localClaudeSetup();
+      return setup.ok ? { launcher: setup.launcher, guard: setup.guard } : { launcher: null, guard: null };
+    },
+    localServerPath: LOCAL_SERVER_PATH,
+    localConfigDir: localConfigPath(),
+    blocked: (why) => blockedPath(why),
+    localClaudeOn: () => serverFeatureOn(LOCAL_CLAUDE_FEATURE),
+  });
+  const localModels = createLocalModels({ warn: (m) => bb.log.warn(m) });
+  const skillCount = createSkillCount();
   const nativeWork = createNativeWork(bb, { sessions: nativeSessions, fleet, contextBundle: createContextBundleLink(bb) });
   const attention = createAttention(bb, Date.now, serverFeatureOn);
   const usageLinks = createUsageLinks(bb);
@@ -562,7 +620,11 @@ export default async function plugin(bb: BbPluginApi) {
     file_link_open: (input) => fileLinks.open(input),
     m1_machine: ({ projectId }) => machines.forProject(projectId),
     m1_machine_link: ({ projectId }) => machines.link(projectId),
-    native_work_start: (input) => nativeWork.start(input),
+    native_work_start: async (input) => {
+      // New work on another Mac carries the conversation it was started from; never a Local one.
+      if (input.includeContext !== false) await refuseLocalCopy((id) => sessionProfiles.localOf(id), [input.sourceThreadId, input.rootThreadId].filter((id): id is string => !!id), "it is not sent to another Mac with this work");
+      return nativeWork.start(input);
+    },
     native_work_receipt: (input) => nativeWork.receipt(input),
     fleet_board: () => fleet.board(),
     fleet_start: (input) => fleet.start(input),
@@ -579,6 +641,7 @@ export default async function plugin(bb: BbPluginApi) {
     hold_cancel: ({ threadId }) => holds.cancel(threadId),
     teleport_link: ({ threadId }) => teleport.getLink(threadId),
     teleport_move: async (input) => {
+      await refuseLocalMove((id) => sessionProfiles.localOf(id), input.threadId);
       const res = await teleport.move(input);
       if (res.via === "handoff") await m1.refresh();
       return res;
@@ -587,6 +650,7 @@ export default async function plugin(bb: BbPluginApi) {
     m1_log: ({ threadId }) => m1Log(threadId),
     m1_tell: ({ threadId, text }) => m1Tell(threadId, text),
     m1_handoff: async (input) => {
+      await refuseLocalMove((id) => sessionProfiles.localOf(id), input.threadId);
       const res = await handOff(input);
       await m1.refresh();
       return res;
@@ -695,9 +759,28 @@ export default async function plugin(bb: BbPluginApi) {
         if (color) s.colors[projectId] = color;
         else delete s.colors[projectId];
       }),
+    thread_color_set: ({ threadIds, color }) =>
+      mutate((s) => {
+        for (const id of threadIds) {
+          if (color) s.threadColors[id] = color;
+          else delete s.threadColors[id];
+        }
+      }),
     // bb keeps a chat's model and effort per turn, not on its list row, so ask
     // for each chat's current execution options, eight at a time. A chat that
     // has never run answers null; one that fails is left out and asked later.
+    session_profiles: ({ threadIds }) => sessionProfiles.marks(threadIds),
+    session_profile_config: () => sessionProfiles.config(),
+    local_model_state: () => localModels.state(),
+    local_model_load: ({ model }) => localModels.load(model),
+    local_model_unload: ({ model }) => localModels.unload(model),
+    local_model_tools: ({ model }) => {
+      // The Local orb asks this when a model is picked: a good moment to set up the launcher (no-op when ready or off).
+      localClaudeSetup();
+      return localModels.tools(model);
+    },
+    local_models_remote: () => localModels.remote(),
+    local_skills_count: () => skillCount.count(),
     thread_exec: async ({ ids: threadIds }) => {
       const out: Record<string, { model: string; reasoningLevel: string } | null> = {};
       let next = 0;
@@ -720,6 +803,7 @@ export default async function plugin(bb: BbPluginApi) {
         for (const id of threadIds) {
           delete s.assign[id];
           delete s.later[id];
+          delete s.threadColors[id];
         }
         const gone = new Set(threadIds);
         s.subOpen = s.subOpen.filter((x) => !gone.has(x));

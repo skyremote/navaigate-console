@@ -145,6 +145,18 @@ describe("reversible native attention", () => {
     });
     expect(f.rows.get("one")).toEqual(original);
   });
+  it("settling a failed chat clears it until a new turn fails again", async () => {
+    const f = fixture();
+    f.rows.set("one", { ...f.rows.get("one")!, status: "error" });
+    const statusOf = async () => (await f.engine.inbox()).rows.find((r) => r.threadId === "one")?.status;
+    expect(await statusOf()).toBe("failed");
+    await f.engine.apply({ threadIds: ["one"], action: "settle" });
+    expect(await statusOf()).toBe("accepted");
+    f.advance(60_000);
+    // The chat changed after the settle and its event log cannot prove otherwise: the failure comes back.
+    f.rows.set("one", { ...f.rows.get("one")!, updatedAt: 1_800_000_060_000 });
+    expect(await statusOf()).toBe("failed");
+  });
   it("protects active, queued, pending interaction and child jobs with independent bulk outcomes", async () => {
     const f = fixture();
     f.rows.set("two", {
