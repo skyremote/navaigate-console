@@ -234,7 +234,7 @@ If a companion is missing, the rest still works. Its feature shows greyed out wi
 ## What's new in 1.13.1
 
 - Fleet now installs from Git on standard bb. In 1.13.0 it stopped with `Could not resolve "@get-bb/plugin-sdk"`, because bb installs a Git plugin without its development packages and Fleet needs the SDK to build.
-- If the installer with `--edition pro` stopped on Fleet, run it again. If Fleet is already running for you, there's nothing to do.
+- If the installer with `--edition pro` stopped on Fleet, run it again, and then choose **Navigation: Rail**, **Thread list: NavAIgate rail** and the NavAIgate theme in **Settings, Appearance** and pick Simple or Pro in Setup, because the second run leaves those alone. If Fleet is already running for you, there's nothing to do.
 - Full notes: `docs/releases/1.13.1.md`.
 
 ## What's new in 1.13.0
