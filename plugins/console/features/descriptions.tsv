@@ -126,5 +126,6 @@ EXTRA-AI	Interface and maintenance	Give a chat a colour, and a coloured bar runs
 EXTRA-AJ	Models and agents	Send /mcp in a chat to open the connector manager with each connector's status. Needs the MCP Manager plugin.
 EXTRA-AK	Interface and maintenance	Drag a chat onto a folder of another project to file it there in the sidebar.
 EXTRA-AL	Models and agents	Load a local model into memory from the Local orb, or unload it, and see what is in memory now.
-EXTRA-AM	Models and agents	Experimental: run a Local chat in Claude Code itself, on a model on this Mac that can use tools. Needs Ollama or LM Studio.
+EXTRA-AM	Models and agents	Run a Local chat in Claude Code itself, with your own skills and agents, on a model on this Mac that can use tools.
 EXTRA-AN	Models and agents	Start a Claude chat with a smaller settings folder: fewer connectors and skills, so it starts with less text.
+EXTRA-AO	Models and agents	Choose the skills and agents Local chats on Claude Code get, with a live estimate of their first prompt.

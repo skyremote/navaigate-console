@@ -14,13 +14,16 @@ import { buildFeatures, renderModule, statusFromMap } from "../scripts/build-fea
 
 const ROOT = join(__dirname, "..");
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-const EXTRA_IDS = [...LETTERS, ..."ABCDEFGHIJKLMN".split("").map((l) => `A${l}`)].map((l) => `EXTRA-${l}`); // EXTRA-A to EXTRA-Z, then EXTRA-AA to EXTRA-AN
+const EXTRA_IDS = [...LETTERS, ..."ABCDEFGHIJKLMNO".split("").map((l) => `A${l}`)].map((l) => `EXTRA-${l}`); // EXTRA-A to EXTRA-Z, then EXTRA-AA to EXTRA-AO
 /** Features added after the 1 November live check carry the date and build of their own check. */
 const LATER_EVIDENCE: Record<string, [string, string]> = {
   "EXTRA-AG": ["2026-11-10", "bb 0.49.0"],
   ...Object.fromEntries(["AI", "AJ", "AK", "AL", "AN"].map((l): [string, [string, string]] => [`EXTRA-${l}`, ["2026-11-21", "Console 0.35.0 branch"]])),
   // Run on standard bb 0.49 with the 1.13.0 candidate (install test, 22 November 2026).
-  ...Object.fromEntries(["AH", "AM"].map((l): [string, [string, string]] => [`EXTRA-${l}`, ["2026-11-22", "Console 1.13.0 candidate, standard bb 0.49"]])),
+  ...Object.fromEntries(["AH"].map((l): [string, [string, string]] => [`EXTRA-${l}`, ["2026-11-22", "Console 1.13.0 candidate, standard bb 0.49"]])),
+  // Terminal runs and captures for the 1.14.0 candidate (22 November 2026); not yet run in bb.
+  "EXTRA-AM": ["2026-11-22", "Console 1.14.0 candidate, Claude Code 2.1.330"],
+  "EXTRA-AO": ["2026-11-22", "Console 1.14.0 candidate"],
 };
 const EXPECTED_IDS = [
   ...Array.from({ length: 83 }, (_, i) => `F${String(i + 1).padStart(2, "0")}`),
@@ -206,7 +209,7 @@ describe("the features data", () => {
       if (t.kind === "route") expect(t.href.startsWith("/plugins/") || t.href.startsWith("/settings"), f.id).toBe(true);
       if (t.kind === "none") expect(t.reason.length, f.id).toBeGreaterThan(3);
     }
-  });
+  }, 30_000); // loading the whole app took over 5 s on a busy Mac
 
   it("uses British English, sentence case names and no emoji", () => {
     const american = /\b(color|colors|organize|organized|behavior|favorite|center|license|gray|catalog)\b/i;

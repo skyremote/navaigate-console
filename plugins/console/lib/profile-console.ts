@@ -18,6 +18,9 @@ export type LocalStartMode = (typeof LOCAL_START_MODES)[number];
 /** bb's own names for the two modes, as its permission picker shows them. */
 export const LOCAL_START_MODE_LABEL: Record<LocalStartMode, string> = { "accept-edits": "Accept Edits", full: "Full Access" };
 
+/** The words that open the padlock unless a profile lists its own (an empty list: none). */
+export const DEFAULT_UNLOCKED_WORDS = ["abliterated", "uncensored"] as const;
+
 export const consoleSectionSchema = z.object({
   /** Where the shared NAS folder is linked on this Mac (e.g. "~/Shared"), when it is not the mount itself. */
   nasLink: nullableText.default(null),
@@ -42,8 +45,13 @@ export const consoleSectionSchema = z.object({
   machineHints: z.record(z.string().max(40), z.string().max(200)).default({}),
   /** Local models the owner treats as unlocked (padlock on the Local orb, chat flagged "Local, unlocked"): exact model ids or names. */
   unlockedModels: z.array(z.string().min(1).max(300)).max(200).default([]),
-  /** Words that mark a local model as unlocked when its id or name contains them, in any case. Empty: none. */
-  unlockedWords: z.array(z.string().min(3).max(60)).max(20).default([]),
+  /**
+   * Words that mark a local model as unlocked when its id or name contains them, in any case: the padlock opens
+   * on the Local orb and the chat is flagged "Local, unlocked". By default the two words model makers use for a
+   * model whose refusals were removed; the Console only labels such a model, it changes nothing about it. An
+   * explicit empty list in the profile switches the label off.
+   */
+  unlockedWords: z.array(z.string().min(3).max(60)).max(20).default([...DEFAULT_UNLOCKED_WORDS]),
   /** What the inbox sort can file an email under: name to a plain description of what belongs there. */
   ventures: z.record(z.string().max(60), z.object({ what: z.string().max(600) })).default({
     Work: { what: "Paid work, clients, projects, colleagues, business admin and tools" },

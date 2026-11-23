@@ -137,6 +137,21 @@ describe("the count the server serves", () => {
     await expect(broken.count()).resolves.toMatchObject({ skills: null });
   });
 
+  it("a count that could not start does not hold back the next ask", async () => {
+    let calls = 0;
+    const counter = createSkillCount({
+      home: () => "/nowhere",
+      count: (() => {
+        calls++;
+        if (calls === 1) throw new Error("could not start");
+        return Promise.resolve({ skills: 3, capped: false, complete: true });
+      }) as unknown as typeof countSkills,
+    });
+    expect(await counter.count()).toEqual(SKILLS_UNKNOWN);
+    expect(await counter.count()).toEqual({ skills: 3, capped: false, complete: true });
+    expect(calls).toBe(2);
+  });
+
   it("never starts a second count while one hangs: it answers unknown until that count itself finishes", async () => {
     let calls = 0;
     let finish: (v: LocalSkillsCount) => void = () => {};

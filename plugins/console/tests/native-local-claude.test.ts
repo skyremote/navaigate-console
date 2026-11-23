@@ -7,7 +7,7 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { localEnvFor } from "../server-session-profile";
 import type { SessionProfileMark } from "../src/session-profile";
-import { createLocalClaudeRoute, fixLmStudioEventLine, guardScript, launcherScript, ollamaErrorType, repairMessages, rewriteRequest, UNAUTHORISED_LOG_MS } from "../server-local-claude";
+import { LAUNCHER_UNSET, createLocalClaudeRoute, fixLmStudioEventLine, guardScript, launcherScript, ollamaErrorType, repairMessages, rewriteRequest, UNAUTHORISED_LOG_MS } from "../server-local-claude";
 
 /** Writes a script and a fake claude that prints its arguments and two variables, then runs the script. */
 function runScript(make: (fakeClaude: string) => string, args: string[], env: Record<string, string> = {}): { code: number; out: string; err: string } {
@@ -63,14 +63,26 @@ describe("the local environment rule (pure)", () => {
   });
   it("blocks a local chat it cannot run here, instead of letting it start as an ordinary Claude chat", () => {
     const only = (entries: ReturnType<typeof localEnvFor>) => {
-      expect(entries).toHaveLength(1);
-      expect(entries[0].name).toBe("BB_CLAUDE_CODE_EXECUTABLE");
+      expect(entries.map((e) => e.name)).toEqual(["BB_CLAUDE_CODE_EXECUTABLE", "NAV_LOCAL_BLOCKED"]);
+      expect(String(entries[1].value)).toMatch(/^This Local chat does not start: /);
       return String(entries[0].value);
     };
     expect(only(localEnvFor({ ...base, hostId: "host_other" }))).toBe("/blocked/local-chats-run-only-on-the-bb-server-mac");
     expect(only(localEnvFor({ ...base, primaryHostId: null }))).toContain("/blocked/");
     expect(only(localEnvFor({ ...base, launcher: null }))).toBe("/blocked/local-chat-setup-failed-see-plugin-log");
     expect(only(localEnvFor({ ...base, mark: { profile: "local", v: 1 } }))).toBe("/blocked/local-chat-has-no-model");
+  });
+  it("gives the launcher the reason in words with every block, so a chat bb starts through the old launcher says why", () => {
+    const off = localEnvFor({ ...base, allowed: false });
+    expect(off.find((e) => e.name === "NAV_LOCAL_BLOCKED")?.value).toBe(
+      "This Local chat does not start: Local chats on Claude Code are off in Setup. Switch them on in Setup to continue it here.",
+    );
+    const fork = localEnvFor({ ...base, allowed: false, line: "fork" });
+    expect(fork.find((e) => e.name === "NAV_LOCAL_BLOCKED")?.value).toMatch(/^This fork of a Local chat does not start: Local chats on Claude Code are off in Setup/);
+    const child = localEnvFor({ ...base, hostId: "host_other", line: "child" });
+    expect(child.find((e) => e.name === "NAV_LOCAL_BLOCKED")?.value).toMatch(/^This chat started by a Local chat does not start: Local chats run only on the Mac/);
+    // A chat that runs gets no reason, so the launcher goes on.
+    expect(localEnvFor(base).map((e) => e.name)).not.toContain("NAV_LOCAL_BLOCKED");
   });
   it("answers the same every time (a changed answer rebuilds the chat's session)", () => {
     expect(JSON.stringify(localEnvFor(base))).toBe(JSON.stringify(localEnvFor(base)));
@@ -90,6 +102,21 @@ describe("the launcher", () => {
     expect(script).toContain("export CLAUDE_CONFIG_DIR='/home/x/.claude-local/config'");
     expect(script.trimEnd().endsWith(`exec '/opt/x/claude' "$@"`)).toBe(true);
   });
+  it("reads settings from the Local settings folder only: --setting-sources user comes LAST, after bb's own, so it wins", () => {
+    // Claude Code takes the last --setting-sources it is given; one before bb's would lose (and a project's env
+    // could then send the chat to another address). Do not move it in front of "$@".
+    const make = (fake: string) => launcherScript({ secret: "s3cret", realClaude: fake, configDir: "/tmp/cfg" });
+    const bbArgs = ["--output-format", "stream-json", "--setting-sources=user,project,local", "--permission-mode=acceptEdits", "--settings", '{"autoMemoryEnabled":true}'];
+    const r = runScript(make, bbArgs, { NAV_LOCAL_BASE_URL: "http://127.0.0.1:1/local", NAV_LOCAL_MODEL: "qwen:27b" });
+    expect(r.code).toBe(0);
+    const args = /ARGS:(.*)/.exec(r.out)?.[1] ?? "";
+    expect(args).toBe(`${bbArgs.join(" ")} --setting-sources user`);
+    expect(args.lastIndexOf("--setting-sources")).toBeGreaterThan(args.indexOf("--setting-sources=user,project,local"));
+    const code = script.split("\n").filter((l) => !l.trimStart().startsWith("#")).join("\n");
+    expect(code.match(/--setting-sources user/g)).toHaveLength(2); // once before a bare --, once last
+    expect(code).not.toMatch(/exec [^\n]*--setting-sources/); // never on the exec line after "$@": a bare -- would swallow it
+    expect(script.match(/^exec /gm)).toHaveLength(1);
+  });
   it("runs on the chat's marked model whatever bb asks for, and starts Claude Code on it too", () => {
     const make = (fake: string) => launcherScript({ secret: "s3cret", realClaude: fake, configDir: "/tmp/cfg" });
     // A later turn after a session restart: bb asks for a Claude model; the mark says qwen.
@@ -104,6 +131,27 @@ describe("the launcher", () => {
     const old = runScript(make, ["--model", "qwen:27b"], { NAV_LOCAL_BASE_URL: "http://x" });
     expect(old.out).toContain("HEADER:x-nav-local-model: qwen:27b");
   });
+  it("prints the plugin's reason and stops, whatever else is set, when the chat is blocked", () => {
+    const make = (fake: string) => launcherScript({ secret: "s", realClaude: fake, configDir: "/tmp/cfg" });
+    const r = runScript(make, ["--model", "qwen:27b"], {
+      NAV_LOCAL_BLOCKED: "This Local chat does not start: Local chats on Claude Code are off in Setup. Switch them on in Setup to continue it here.",
+      NAV_LOCAL_BASE_URL: "http://x",
+      NAV_LOCAL_MODEL: "qwen:27b",
+    });
+    expect(r.code).toBe(78);
+    expect(r.out).not.toContain("ARGS:");
+    expect(r.err).toBe("claude-local: This Local chat does not start: Local chats on Claude Code are off in Setup. Switch them on in Setup to continue it here.\n");
+    // Shell characters in the reason are printed, never run.
+    const odd = runScript(make, [], { NAV_LOCAL_BLOCKED: "it's $(touch /tmp/nav-never) `x` %s \\n" });
+    expect(odd.code).toBe(78);
+    expect(odd.err).toBe("claude-local: it's $(touch /tmp/nav-never) `x` %s \\n\n");
+    expect(script.indexOf("NAV_LOCAL_BLOCKED")).toBeLessThan(script.indexOf("NAV_LOCAL_BASE_URL"));
+  });
+  it("keeps a long first reply in one request, and every agent on the local model", () => {
+    expect(script).toContain("export CLAUDE_STREAM_IDLE_TIMEOUT_MS=1800000");
+    expect(script).toContain("export CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1");
+    expect(script.indexOf("CLAUDE_STREAM_IDLE_TIMEOUT_MS")).toBeLessThan(script.indexOf("exec "));
+  });
   it("does not start at all without the local route", () => {
     const r = runScript((fake) => launcherScript({ secret: "s", realClaude: fake, configDir: "/tmp/cfg" }), ["--model", "qwen:27b"], { NAV_LOCAL_MODEL: "qwen:27b" });
     expect(r.code).toBe(78);
@@ -117,6 +165,135 @@ describe("the launcher", () => {
     expect(script).toContain("export CLAUDE_CODE_ATTRIBUTION_HEADER=0");
     expect(script).toContain('export CLAUDE_CODE_SUBAGENT_MODEL="$model"');
     expect(script.indexOf("CLAUDE_CODE_MAX_OUTPUT_TOKENS")).toBeLessThan(script.indexOf("exec "));
+  });
+});
+
+describe("the launcher keeps a Local chat on the route, whatever the environment, the settings or the arguments say", () => {
+  const ROUTE = "http://127.0.0.1:1/local";
+  const ELSEWHERE = "http://127.0.0.1:2";
+  // bb's own argument list for a Local chat (from a running bb, 22 Nov 2026), shortened.
+  const BB = ["--output-format", "stream-json", "--verbose", "--input-format", "stream-json", "--effort=high", "--model=qwen:27b", "--setting-sources=user,project,local", "--permission-mode=acceptEdits", "--session-id=s-1", "--settings", '{"autoMemoryEnabled":true}'];
+  /** Runs the generated launcher with a stand-in claude that prints each argument and its whole environment. */
+  const run = (args: string[], env: Record<string, string>) => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "nav-launch-"));
+    const fake = path.join(dir, "claude");
+    fs.writeFileSync(fake, "#!/bin/sh\nfor a in \"$@\"; do printf 'ARG:%s\\n' \"$a\"; done\nenv | sed 's/^/ENV:/'\n", { mode: 0o700 });
+    const script = path.join(dir, "claude-local");
+    fs.writeFileSync(script, launcherScript({ secret: "s3cret", realClaude: fake, configDir: "/tmp/cfg" }), { mode: 0o700 });
+    try {
+      const out = execFileSync("/bin/sh", [script, ...args], { env: { PATH: "/usr/bin:/bin", NAV_LOCAL_BASE_URL: ROUTE, NAV_LOCAL_MODEL: "qwen:27b", ...env }, encoding: "utf8" });
+      const lines = out.split("\n");
+      return { args: lines.filter((l) => l.startsWith("ARG:")).map((l) => l.slice(4)), env: Object.fromEntries(lines.filter((l) => l.startsWith("ENV:")).map((l) => [l.slice(4, l.indexOf("=")), l.slice(l.indexOf("=") + 1)])) };
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  };
+  /** The setting sources Claude Code uses: the last --setting-sources before a bare "--" (it takes the last one given). */
+  const sources = (args: string[]) => {
+    let out = "";
+    const end = args.indexOf("--") < 0 ? args.length : args.indexOf("--");
+    for (let i = 0; i < end; i++) {
+      if (args[i] === "--setting-sources") out = args[i + 1] ?? "";
+      else if (args[i].startsWith("--setting-sources=")) out = args[i].slice("--setting-sources=".length);
+    }
+    return out.split(",");
+  };
+  /**
+   * Where Claude Code 2.1.330 sent the request in the captures made for this release:
+   * a provider switch in the environment goes to the provider; a redirect in project, local or (for a chat in the
+   * home folder) home settings is read when the project or local source is on; a proxy is used unless NO_PROXY
+   * starts with the loopback; otherwise ANTHROPIC_BASE_URL.
+   */
+  const where = (r: { args: string[]; env: Record<string, string> }, redirectIn: "project" | "local" | null) => {
+    if (Object.keys(r.env).some((k) => k.startsWith("CLAUDE_CODE_USE_") && r.env[k])) return "elsewhere";
+    if (r.env.ANTHROPIC_UNIX_SOCKET || r.env.CLAUDE_CODE_API_KEY_FILE_DESCRIPTOR) return "elsewhere";
+    // Telemetry and tracing: the collector gets the chat's events (and its prompts when asked).
+    if (Object.keys(r.env).some((k) => /^(ANT_)?OTEL_/.test(k)) || ["CLAUDE_CODE_ENABLE_TELEMETRY", "CLAUDE_CODE_ENHANCED_TELEMETRY_BETA", "ENABLE_BETA_TRACING_DETAILED", "BETA_TRACING_ENDPOINT"].some((k) => r.env[k])) return "elsewhere";
+    // With the host switch on, a creds file replaces the route's key and headers.
+    if (r.env.CLAUDE_CODE_HOST_CREDS_FILE && r.env.CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST === "1") return "elsewhere";
+    // A redirect inside --settings applies unless the host switch is on.
+    const flagSettings = r.args.flatMap((a, i) => (r.args[i - 1] === "--settings" ? [a] : []));
+    if (r.env.CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST !== "1" && flagSettings.some((x) => /"env"\s*:\s*\{[^}]*ANTHROPIC_BASE_URL/.test(x))) return "elsewhere";
+    if (redirectIn && sources(r.args).includes(redirectIn)) return "elsewhere";
+    const proxy = r.env.HTTPS_PROXY || r.env.HTTP_PROXY || r.env.https_proxy || r.env.http_proxy || r.env.ALL_PROXY || r.env.all_proxy;
+    const bypass = (r.env.NO_PROXY ?? r.env.no_proxy ?? "").split(",");
+    if (proxy && !bypass.includes("127.0.0.1")) return "elsewhere";
+    return r.env.ANTHROPIC_BASE_URL === ROUTE ? "route" : "elsewhere";
+  };
+  // Each case: what comes in (environment, arguments, where a redirect sits) and where the request goes.
+  const cases: Array<[string, Record<string, string>, string[], "project" | "local" | null]> = [
+    ["project settings (.claude/settings.json env)", {}, BB, "project"],
+    ["project settings.local.json", {}, BB, "local"],
+    ["the home folder as the chat folder (~/.claude/settings.json read as the project's)", {}, BB, "project"],
+    ["Vertex in the project's settings", {}, BB, "project"],
+    ["Bedrock in the environment", { CLAUDE_CODE_USE_BEDROCK: "1", AWS_REGION: "us-east-1" }, BB, null],
+    ["a bare -- in the arguments", {}, [...BB, "--"], "project"],
+    ["proxy variables, NO_PROXY without the loopback", { HTTPS_PROXY: ELSEWHERE, HTTP_PROXY: ELSEWHERE, NO_PROXY: "example.com" }, BB, null],
+    ["proxy variables, NO_PROXY with the loopback", { HTTPS_PROXY: ELSEWHERE, NO_PROXY: "127.0.0.1" }, BB, null],
+    ["the account pool's variables", { ANTHROPIC_BASE_URL: ELSEWHERE, ANTHROPIC_AUTH_TOKEN: "pool-token", ANTHROPIC_CUSTOM_HEADERS: "x-pool-account: a1" }, BB, null],
+    ["every provider switch at once", { CLAUDE_CODE_USE_VERTEX: "1", CLAUDE_CODE_USE_FOUNDRY: "1", CLAUDE_CODE_USE_GATEWAY: "1", CLAUDE_CODE_USE_ANTHROPIC_AWS: "1" }, BB, null],
+    ["ALL_PROXY", { ALL_PROXY: ELSEWHERE, all_proxy: ELSEWHERE }, BB, null],
+    ["the user's own key", { ANTHROPIC_API_KEY: "sk-user-own" }, BB, null],
+    // Found beyond the audit (Claude Code 2.1.330): a unix socket takes the whole request off the route, and a key
+    // given through a file descriptor is added to the route's request as x-api-key.
+    ["ANTHROPIC_UNIX_SOCKET", { ANTHROPIC_UNIX_SOCKET: "/tmp/elsewhere.sock" }, BB, null],
+    ["CLAUDE_CODE_API_KEY_FILE_DESCRIPTOR", { CLAUDE_CODE_API_KEY_FILE_DESCRIPTOR: "7" }, BB, null],
+    // Telemetry (captured: with these, the collector got the prompt and the reply; now it gets nothing).
+    ["telemetry: logs and metrics, with prompt logging", { CLAUDE_CODE_ENABLE_TELEMETRY: "1", OTEL_LOGS_EXPORTER: "otlp", OTEL_METRICS_EXPORTER: "otlp", OTEL_EXPORTER_OTLP_PROTOCOL: "http/json", OTEL_EXPORTER_OTLP_ENDPOINT: ELSEWHERE, OTEL_LOG_USER_PROMPTS: "1" }, BB, null],
+    ["telemetry: logs and metrics, without prompt logging", { CLAUDE_CODE_ENABLE_TELEMETRY: "1", OTEL_LOGS_EXPORTER: "otlp", OTEL_METRICS_EXPORTER: "otlp", OTEL_EXPORTER_OTLP_ENDPOINT: ELSEWHERE }, BB, null],
+    ["telemetry: beta tracing, with prompt logging", { ENABLE_BETA_TRACING_DETAILED: "1", BETA_TRACING_ENDPOINT: ELSEWHERE, OTEL_LOG_USER_PROMPTS: "1" }, BB, null],
+    ["telemetry: beta tracing, without prompt logging", { ENABLE_BETA_TRACING_DETAILED: "1", BETA_TRACING_ENDPOINT: ELSEWHERE }, BB, null],
+    ["telemetry: enhanced beta and ANT_OTEL_*", { CLAUDE_CODE_ENHANCED_TELEMETRY_BETA: "1", ANT_OTEL_EXPORTER_OTLP_ENDPOINT: ELSEWHERE, OTEL_TRACES_EXPORTER: "otlp" }, BB, null],
+    ["a creds file with the host switch on", { CLAUDE_CODE_HOST_CREDS_FILE: "/tmp/creds.json", CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST: "1" }, BB, null],
+    ["a redirect inside a bb-style --settings", {}, [...BB.slice(0, -2), "--settings", `{"autoMemoryEnabled":true,"env":{"ANTHROPIC_BASE_URL":"${ELSEWHERE}"}}`], null],
+  ];
+  it.each(cases)("%s: route hit, elsewhere not hit", (_name, env, args, redirectIn) => {
+    const r = run(args, env);
+    expect(where(r, redirectIn)).toBe("route");
+    expect(r.env.ANTHROPIC_BASE_URL).toBe(ROUTE);
+    expect(r.env.ANTHROPIC_AUTH_TOKEN).toBe("s3cret");
+    expect(r.env.ANTHROPIC_API_KEY).toBeUndefined();
+    expect(r.env.ANTHROPIC_CUSTOM_HEADERS).toBe("x-nav-local-model: qwen:27b");
+    expect(sources(r.args)).toEqual(["user"]);
+    expect(r.env.CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST).toBe("1");
+    expect(r.env.CLAUDE_CODE_HOST_CREDS_FILE).toBeUndefined();
+  });
+  it("puts --setting-sources user before a bare --, or last, and passes every other argument on unchanged", () => {
+    const plain = run(BB, {});
+    expect(plain.args).toEqual([...BB, "--setting-sources", "user"]);
+    const dashed = run([...BB, "--", "--setting-sources=user,project,local", "rest"], {});
+    expect(dashed.args).toEqual([...BB, "--setting-sources", "user", "--", "--setting-sources=user,project,local", "rest"]);
+    // Only the first bare -- counts: what follows it is left exactly as it was.
+    expect(run(["a", "--", "--", "b"], {}).args).toEqual(["a", "--setting-sources", "user", "--", "--", "b"]);
+  });
+  it("lets no CLAUDE_CODE_USE_*, OTEL_* or ANT_OTEL_* variable through, whatever its name", () => {
+    const r = run(BB, { CLAUDE_CODE_USE_BEDROCK: "1", CLAUDE_CODE_USE_SOMETHING_NEW_2099: "1", CLAUDE_CODE_USE_X: "", OTEL_SOMETHING_NEW_2099: "x", ANT_OTEL_SOMETHING_NEW: "x", OTEL_LOG_USER_PROMPTS: "1" });
+    expect(Object.keys(r.env).filter((k) => /^(CLAUDE_CODE_USE_|OTEL_|ANT_OTEL_)/.test(k))).toEqual([]);
+    for (const k of ["CLAUDE_CODE_ENABLE_TELEMETRY", "CLAUDE_CODE_ENHANCED_TELEMETRY_BETA", "ENABLE_BETA_TRACING_DETAILED", "BETA_TRACING_ENDPOINT"]) expect(run(BB, { [k]: "1" }).env[k], k).toBeUndefined();
+  });
+  it("puts the loopback first in both proxy exceptions, then the user's NO_PROXY, then the user's no_proxy", () => {
+    const both = "127.0.0.1,localhost,::1";
+    const cases: Array<[Record<string, string>, string]> = [
+      [{}, both],
+      [{ NO_PROXY: "example.com,.corp" }, `${both},example.com,.corp`],
+      [{ no_proxy: "intranet" }, `${both},intranet`],
+      [{ NO_PROXY: "example.com,.corp", no_proxy: "intranet" }, `${both},example.com,.corp,intranet`],
+    ];
+    for (const [env, want] of cases) {
+      const r = run(BB, env);
+      expect(r.env.NO_PROXY, JSON.stringify(env)).toBe(want);
+      expect(r.env.no_proxy, JSON.stringify(env)).toBe(want);
+    }
+  });
+  it("turns the host switch on, and removes every name on its fixed list", () => {
+    const none = run(BB, {});
+    expect(none.env.CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST).toBe("1");
+    for (const name of LAUNCHER_UNSET) expect(run(BB, { [name]: "from-the-user" }).env[name] ?? "", name).not.toBe("from-the-user");
+  });
+  it("removes what the environment must not decide before any of its own exports", () => {
+    const s = launcherScript({ secret: "s", realClaude: "/x/claude", configDir: "/tmp/cfg" });
+    const lastUnset = Math.max(s.lastIndexOf("\nunset "), s.lastIndexOf('do unset "$v"'));
+    expect(s.indexOf("\nexport ")).toBeGreaterThan(lastUnset);
   });
 });
 
@@ -199,16 +376,16 @@ describe("the route", () => {
     expect(lines).toContainEqual(expect.stringMatching(/answered 404 \(not_found_error\) for model "claude-opus-5-5": No local model called/));
     expect(lines.join("\n")).not.toContain("secret plans");
   });
-  it("logs only the status and error type of an error answer from Ollama, and passes the body on unchanged", async () => {
+  it("logs only the status and error type of an error answer from Ollama, and turns a 5xx into a 400 with Ollama's own message", async () => {
     const log = vi.fn();
     const err = JSON.stringify({ type: "error", error: { type: "api_error", message: "could not parse tool call: secret plans" } });
     const fetch = vi.fn(async (url: string) => (String(url).endsWith("/api/tags") ? tags() : new Response(err, { status: 500, headers: { "content-type": "application/json" } })));
     const route = createLocalClaudeRoute({ secret: () => "s3cret", fetch: fetch as unknown as typeof globalThis.fetch, log });
     const res = await route.messages(post({ authorization: "Bearer s3cret" }, { model: "qwen:27b", messages: [{ role: "user", content: "secret plans" }] }));
-    expect(res.status).toBe(500);
-    expect(await res.text()).toBe(err);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ type: "error", error: { type: "invalid_request_error", message: "Ollama answered 500: could not parse tool call: secret plans" } });
     const lines = log.mock.calls.map((c) => String(c[0]));
-    expect(lines).toContainEqual('local claude: answered 500 (from Ollama, api_error) for model "qwen:27b"');
+    expect(lines).toContainEqual('local claude: answered 400 (from Ollama: 500, api_error) for model "qwen:27b"');
     expect(lines.join("\n")).not.toContain("secret plans");
   });
   it("writes no log line per refused caller: the first, then one line every ten minutes with how many", async () => {

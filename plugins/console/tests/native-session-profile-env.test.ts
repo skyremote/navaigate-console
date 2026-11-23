@@ -113,6 +113,7 @@ describe("the lean environment as bb calls it", () => {
     // A chat marked Local is never left to start as an ordinary chat, even without the Local route set up: it is blocked.
     expect(await resolve({ threadId: "thr_local", projectId: "p", hostId: MAIN })).toEqual([
       { name: "BB_CLAUDE_CODE_EXECUTABLE", value: path.join(home, ".claude-local", "blocked", "local-chat-setup-failed-see-plugin-log"), reason: expect.any(String) },
+      { name: "NAV_LOCAL_BLOCKED", value: expect.stringMatching(/^This Local chat does not start: /), reason: expect.any(String) },
     ]);
     expect(await resolve({ threadId: null, projectId: null, hostId: MAIN })).toEqual([]);
     expect(await resolve({ threadId: "thr_lean", projectId: "p", hostId: OTHER })).toEqual([]);
@@ -150,11 +151,13 @@ describe("the lean environment as bb calls it", () => {
       createSessionProfiles(a.bb as never, deps());
       expect(await a.resolve({ threadId: "thr_local", projectId: "p", hostId: OTHER })).toEqual([
         { name: "BB_CLAUDE_CODE_EXECUTABLE", value: "/blocked/local-chats-run-only-on-the-bb-server-mac", reason: expect.any(String) },
+        { name: "NAV_LOCAL_BLOCKED", value: expect.stringMatching(/^This Local chat does not start: /), reason: expect.any(String) },
       ]);
       const b = setup(metadata);
       createSessionProfiles(b.bb as never, deps({ launcher: null }));
       expect(await b.resolve({ threadId: "thr_local", projectId: "p", hostId: MAIN })).toEqual([
         { name: "BB_CLAUDE_CODE_EXECUTABLE", value: "/blocked/local-chat-setup-failed-see-plugin-log", reason: expect.any(String) },
+        { name: "NAV_LOCAL_BLOCKED", value: expect.stringMatching(/^This Local chat does not start: /), reason: expect.any(String) },
       ]);
     });
     it("starts a chat whose mark cannot be read through the guard, on the bb server's Mac with the guard in place", async () => {
@@ -199,6 +202,7 @@ describe("the lean environment as bb calls it", () => {
       // And on another machine it is blocked, not passed to an ordinary claude.
       expect(await later.resolve({ threadId: "thr_local", projectId: "p", hostId: OTHER })).toEqual([
         { name: "BB_CLAUDE_CODE_EXECUTABLE", value: "/blocked/local-chats-run-only-on-the-bb-server-mac", reason: expect.any(String) },
+        { name: "NAV_LOCAL_BLOCKED", value: expect.stringMatching(/^This Local chat does not start: /), reason: expect.any(String) },
       ]);
     });
     it("with Local chats on Claude Code switched off: the guard leaves ordinary chats alone, and a chat marked Local is blocked", async () => {
@@ -209,7 +213,8 @@ describe("the lean environment as bb calls it", () => {
       const b = setup(metadata);
       createSessionProfiles(b.bb as never, deps({ localClaudeOn: off }));
       expect(await b.resolve({ threadId: "thr_local", projectId: "p", hostId: MAIN })).toEqual([
-        { name: "BB_CLAUDE_CODE_EXECUTABLE", value: "/blocked/local-chats-on-claude-code-are-switched-off", reason: expect.any(String) },
+        { name: "BB_CLAUDE_CODE_EXECUTABLE", value: "/blocked/local-chats-on-claude-code-are-off-in-setup", reason: expect.any(String) },
+        { name: "NAV_LOCAL_BLOCKED", value: expect.stringMatching(/^This Local chat does not start: /), reason: expect.any(String) },
       ]);
       // Switched off, nothing is set up on disk: the setup is never asked for.
       const setupCalls = vi.fn(() => ({ launcher: "/l/claude-local", guard: "/l/claude-guard" }));
@@ -217,7 +222,8 @@ describe("the lean environment as bb calls it", () => {
       createSessionProfiles(d.bb as never, { home, localServerPath: "/local", blocked: (why: string) => `/blocked/${why}`, exists: () => true, localClaudeOn: off, localSetup: setupCalls });
       expect(await d.resolve({ threadId: "thr_fail", projectId: "p", hostId: MAIN })).toEqual([]);
       expect(await d.resolve({ threadId: "thr_local", projectId: "p", hostId: MAIN })).toEqual([
-        { name: "BB_CLAUDE_CODE_EXECUTABLE", value: "/blocked/local-chats-on-claude-code-are-switched-off", reason: expect.any(String) },
+        { name: "BB_CLAUDE_CODE_EXECUTABLE", value: "/blocked/local-chats-on-claude-code-are-off-in-setup", reason: expect.any(String) },
+        { name: "NAV_LOCAL_BLOCKED", value: expect.stringMatching(/^This Local chat does not start: /), reason: expect.any(String) },
       ]);
       expect(setupCalls).not.toHaveBeenCalled();
       // Switched on, the setup is asked for on first use.
@@ -278,13 +284,82 @@ describe("the lean environment as bb calls it", () => {
       const localSetup = vi.fn(() => ({ launcher: "/l/claude-local", guard: "/l/claude-guard" }));
       const profiles = createSessionProfiles(bb as never, deps({ localClaudeOn: () => false, localSetup }));
       expect(await resolve({ threadId: "thr_fork", projectId: "p", hostId: MAIN })).toEqual([
-        { name: "BB_CLAUDE_CODE_EXECUTABLE", value: "/blocked/a-fork-of-a-local-chat-stays-on-this-mac--local-chats-on-claude-code-are-switched-off", reason: expect.stringContaining("Fork of a Local chat blocked") },
+        { name: "BB_CLAUDE_CODE_EXECUTABLE", value: "/blocked/a-fork-of-a-local-chat-stays-on-this-mac--local-chats-on-claude-code-are-off-in-setup", reason: expect.stringContaining("Fork of a Local chat blocked") },
+        { name: "NAV_LOCAL_BLOCKED", value: expect.stringMatching(/^This fork of a Local chat does not start: Local chats on Claude Code are off in Setup/), reason: expect.any(String) },
         // Given with the block too, so bb fails on the blocked path (shown in its error), not on a missing history.
         { name: "CLAUDE_CONFIG_DIR", value: CONFIG, reason: expect.any(String) },
       ]);
       expect(localSetup).not.toHaveBeenCalled();
       // Blocked, so the rail does not label it as running on this Mac.
       expect(await profiles.marks(["thr_fork"])).toEqual({});
+    });
+
+    it("keeps a chat blocked as made from a Local chat blocked, answered from its stored entry with no read, even once it is moved away", async () => {
+      // The auditor's case: Local chat thr_local starts a Claude Code child; the feature is off, so the child is blocked.
+      const rows: Record<string, Row> = { thr_moved: { parentThreadId: "thr_local" } };
+      const { bb, resolve } = setup(metadata, { rows });
+      const profiles = createSessionProfiles(bb as never, deps({ localClaudeOn: () => false, retryPauseMs: 0 }));
+      expect(valueOf(await resolve({ threadId: "thr_moved", projectId: "p", hostId: MAIN }), "BB_CLAUDE_CODE_EXECUTABLE")).toMatch(/^\/blocked\/a-chat-started-by-a-local-chat/);
+      expect(JSON.parse(fs.readFileSync(knownFile(), "utf8")).chats.thr_moved.placed).toBe("blocked");
+      // Moved out from under its parent: the plugin cannot tell "moved under" from "started by", so nothing is read
+      // again and the block stays, on disk too.
+      rows.thr_moved = { parentThreadId: null };
+      bb.sdk.threads.get.mockClear();
+      bb.sdk.threads.getPluginMetadata.mockClear();
+      const again = await resolve({ threadId: "thr_moved", projectId: "p", hostId: MAIN });
+      expect(valueOf(again, "BB_CLAUDE_CODE_EXECUTABLE")).toMatch(/^\/blocked\/a-chat-started-by-a-local-chat/);
+      expect(valueOf(again, "NAV_LOCAL_BLOCKED")).toMatch(/^This chat started by a Local chat does not start: /);
+      expect(bb.sdk.threads.get).not.toHaveBeenCalled();
+      expect(bb.sdk.threads.getPluginMetadata).not.toHaveBeenCalled();
+      expect(JSON.parse(fs.readFileSync(knownFile(), "utf8")).chats.thr_moved.placed).toBe("blocked");
+      // Every guard that keeps a Local chat's messages on this Mac still sees it as made from a Local chat.
+      expect(await profiles.localOf("thr_moved")).toMatchObject({ profile: "local" });
+      // A new plugin run (bb restarted) reads the same entry from disk: still blocked, still Local for the guards.
+      const later = setup(metadata, { rows });
+      const laterProfiles = createSessionProfiles(later.bb as never, deps({ localClaudeOn: () => false, retryPauseMs: 0 }));
+      expect(valueOf(await later.resolve({ threadId: "thr_moved", projectId: "p", hostId: MAIN }), "BB_CLAUDE_CODE_EXECUTABLE")).toMatch(/^\/blocked\//);
+      expect(later.bb.sdk.threads.get).not.toHaveBeenCalled();
+      expect(await laterProfiles.localOf("thr_moved")).toMatchObject({ profile: "local" });
+    });
+
+    it("keeps a blocked chat blocked whatever its new line, long or short", async () => {
+      const rows: Record<string, Row> = { thr_far: { parentThreadId: "thr_local" } };
+      const { bb, resolve } = setup(metadata, { rows });
+      createSessionProfiles(bb as never, deps({ localClaudeOn: () => false, retryPauseMs: 0 }));
+      expect(valueOf(await resolve({ threadId: "thr_far", projectId: "p", hostId: MAIN }), "BB_CLAUDE_CODE_EXECUTABLE")).toMatch(/^\/blocked\//);
+      const chain = Array.from({ length: LINEAGE_DEPTH + 1 }, (_, i) => `thr_c${i}`);
+      rows.thr_far = { parentThreadId: chain[0] };
+      chain.forEach((id, i) => (rows[id] = { parentThreadId: chain[i + 1] ?? null }));
+      expect(valueOf(await resolve({ threadId: "thr_far", projectId: "p", hostId: MAIN }), "BB_CLAUDE_CODE_EXECUTABLE")).toMatch(/^\/blocked\//);
+      rows.thr_far = { parentThreadId: "thr_short" };
+      rows.thr_short = { parentThreadId: null };
+      expect(valueOf(await resolve({ threadId: "thr_far", projectId: "p", hostId: MAIN }), "BB_CLAUDE_CODE_EXECUTABLE")).toMatch(/^\/blocked\//);
+    });
+
+    it("never reads again a chat that runs on the local model (placed through the launcher)", async () => {
+      const { bb, resolve } = setup(metadata, { rows: { thr_fork: { sourceThreadId: "thr_local" } } });
+      createSessionProfiles(bb as never, deps());
+      await resolve({ threadId: "thr_fork", projectId: "p", hostId: MAIN });
+      bb.sdk.threads.get.mockClear();
+      await resolve({ threadId: "thr_fork", projectId: "p", hostId: MAIN });
+      expect(bb.sdk.threads.get).not.toHaveBeenCalled();
+    });
+
+    it("waits a moment before the second read of a chat's mark", async () => {
+      const { bb, resolve } = setup(metadata);
+      const at: number[] = [];
+      bb.sdk.threads.getPluginMetadata.mockImplementationOnce(async () => {
+        at.push(Date.now());
+        throw new Error("blip");
+      });
+      bb.sdk.threads.getPluginMetadata.mockImplementationOnce(async () => {
+        at.push(Date.now());
+        return {};
+      });
+      createSessionProfiles(bb as never, deps());
+      expect(await resolve({ threadId: "thr_unmarked2", projectId: "p", hostId: MAIN })).toEqual([]);
+      expect(at).toHaveLength(2);
+      expect(at[1] - at[0]).toBeGreaterThanOrEqual(240);
     });
 
     it("treats a chat started by a Local chat (its parent) the same way, and says so when it blocks it", async () => {
@@ -428,10 +503,108 @@ describe("the lean environment as bb calls it", () => {
       await resolve({ threadId: "thr_local", projectId: "p", hostId: MAIN }); // the list is no longer empty
       expect(await resolve({ threadId: "thr_new", projectId: "p", hostId: MAIN })).toEqual([
         { name: "BB_CLAUDE_CODE_EXECUTABLE", value: "/blocked/could-not-check-whether-a-local-chat-started-this-chat--send-again", reason: expect.any(String) },
+        { name: "NAV_LOCAL_BLOCKED", value: expect.stringMatching(/^This chat does not start: bb could not check/), reason: expect.any(String) },
       ]);
       // Nothing was remembered: once the read works, the ordinary chat starts as it is.
       failRow.clear();
       expect(await resolve({ threadId: "thr_new", projectId: "p", hostId: MAIN })).toEqual([]);
+    });
+
+    it("gives the whole line one deadline: reads that hang, or fail with pauses, end as a failed read well inside bb's 5 seconds", async () => {
+      // A line of chats whose rows never answer: without the deadline the walk would wait for ever.
+      const { bb, resolve } = setup(metadata, { rows: { thr_slow: { parentThreadId: "thr_p1" } } });
+      bb.sdk.threads.get.mockImplementation(async ({ threadId }: { threadId: string }) => {
+        if (threadId === "thr_slow") return { id: threadId, sourceThreadId: null, parentThreadId: "thr_p1" };
+        return new Promise(() => undefined);
+      });
+      createSessionProfiles(bb as never, deps({ lineDeadlineMs: 300 }));
+      // With no Local chat known on this Mac, a failed read starts the chat as it is.
+      let t = Date.now();
+      expect(await resolve({ threadId: "thr_slow", projectId: "p", hostId: MAIN })).toEqual([]);
+      expect(Date.now() - t).toBeLessThan(1_000);
+      expect(bb.log.warn).toHaveBeenCalledWith(expect.stringContaining("took longer than allowed"));
+      // Once a Local chat is known, the same failed read blocks this one start, again within the deadline.
+      await resolve({ threadId: "thr_local", projectId: "p", hostId: MAIN });
+      t = Date.now();
+      expect(valueOf(await resolve({ threadId: "thr_slow", projectId: "p", hostId: MAIN }), "BB_CLAUDE_CODE_EXECUTABLE")).toBe("/blocked/could-not-check-whether-a-local-chat-started-this-chat--send-again");
+      expect(Date.now() - t).toBeLessThan(1_000);
+    });
+
+    it("on a slow bb (every read 800 ms) an ordinary chat four levels down starts by its second try, and localOf answers", async () => {
+      // The auditor's case, at real scale: LINE_DEADLINE_MS 3 s for a start, LOCAL_OF_DEADLINE_MS for localOf.
+      const rows: Record<string, Row> = { thr_d4: { parentThreadId: "thr_d3" }, thr_d3: { parentThreadId: "thr_d2" }, thr_d2: { parentThreadId: "thr_d1" }, thr_d1: { parentThreadId: "thr_d0" }, thr_d0: {} };
+      const { bb, resolve } = setup(metadata, { rows });
+      const slow = <T>(fn: (a: never) => Promise<T>) => async (a: never) => {
+        await new Promise((r) => setTimeout(r, 800));
+        return fn(a);
+      };
+      bb.sdk.threads.get.mockImplementation(slow(bb.sdk.threads.get.getMockImplementation()!) as never);
+      bb.sdk.threads.getPluginMetadata.mockImplementation(slow(bb.sdk.threads.getPluginMetadata.getMockImplementation()!) as never);
+      const profiles = createSessionProfiles(bb as never, deps());
+      // Someone who has used Local: a failed read blocks one start.
+      await resolve({ threadId: "thr_local", projectId: "p", hostId: MAIN });
+      const first = await resolve({ threadId: "thr_d4", projectId: "p", hostId: MAIN });
+      const second = first.length === 0 ? first : await resolve({ threadId: "thr_d4", projectId: "p", hostId: MAIN });
+      expect(second).toEqual([]);
+      // localOf is not under bb's 5-second limit: it answers for a fresh chat as deep.
+      rows.thr_e4 = { parentThreadId: "thr_e3" };
+      rows.thr_e3 = { parentThreadId: "thr_e2" };
+      rows.thr_e2 = { parentThreadId: "thr_e1" };
+      rows.thr_e1 = { parentThreadId: "thr_e0" };
+      rows.thr_e0 = {};
+      expect(await profiles.localOf("thr_e4")).toBeNull();
+    }, 30_000);
+
+    it("does not join a read that never answers for longer than localOf's limit: a later start reads again and recovers", async () => {
+      const { bb, resolve } = setup(metadata, { rows: { thr_stuck: { parentThreadId: "thr_p" }, thr_p: {} } });
+      const plain = bb.sdk.threads.get.getMockImplementation()!;
+      let hang = true;
+      bb.sdk.threads.get.mockImplementation(async (a: { threadId: string }) => (hang && a.threadId === "thr_p" ? new Promise(() => undefined) : plain(a)));
+      createSessionProfiles(bb as never, deps({ lineDeadlineMs: 100, localOfDeadlineMs: 200 }));
+      await resolve({ threadId: "thr_local", projectId: "p", hostId: MAIN }); // a Local chat is known: a failed read blocks one start
+      expect(valueOf(await resolve({ threadId: "thr_stuck", projectId: "p", hostId: MAIN }), "BB_CLAUDE_CODE_EXECUTABLE")).toMatch(/could-not-check/);
+      hang = false;
+      // Within the lifetime the stuck read is still joined; after it, a new read is made and the chat starts.
+      await new Promise((r) => setTimeout(r, 250));
+      expect(await resolve({ threadId: "thr_stuck", projectId: "p", hostId: MAIN })).toEqual([]);
+    });
+
+    it("asks for the guard only through localGuard, which gives none where Local chats on Claude Code were never used", async () => {
+      const localSetup = vi.fn(() => ({ launcher: "/l/claude-local", guard: "/l/claude-guard" }));
+      const second = setup(metadata, { failMeta: new Set(["thr_unreadable"]) });
+      createSessionProfiles(second.bb as never, deps({ localSetup, localGuard: () => null, retryPauseMs: 0 }));
+      expect(await second.resolve({ threadId: "thr_unreadable", projectId: "p", hostId: MAIN })).toEqual([]);
+      expect(localSetup).not.toHaveBeenCalled();
+    });
+
+    it("reads the primary host under the same deadline: a hung read blocks a Local chat in time, never lets it through", async () => {
+      const { bb, resolve } = setup(metadata);
+      bb.sdk.system.config.mockImplementation(() => new Promise(() => undefined));
+      createSessionProfiles(bb as never, deps({ lineDeadlineMs: 300 }));
+      const t = Date.now();
+      expect(valueOf(await resolve({ threadId: "thr_local", projectId: "p", hostId: MAIN }), "BB_CLAUDE_CODE_EXECUTABLE")).toBe("/blocked/bb-could-not-tell-which-mac-runs-local-models");
+      expect(Date.now() - t).toBeLessThan(1_000);
+    });
+
+    it("counts every pause against the deadline: a long line of failing reads stops at the deadline, not after all its pauses", async () => {
+      // Every row read fails once, then works: each step would pay RETRY_PAUSE_MS.
+      const chain = Array.from({ length: LINEAGE_DEPTH + 2 }, (_, i) => `thr_q${i}`);
+      const rows: Record<string, Row> = { thr_deep: { parentThreadId: chain[0] } };
+      chain.forEach((id, i) => (rows[id] = { parentThreadId: chain[i + 1] ?? null }));
+      const { bb, resolve } = setup(metadata, { rows });
+      const failedOnce = new Set<string>();
+      const plain = bb.sdk.threads.get.getMockImplementation()!;
+      bb.sdk.threads.get.mockImplementation(async (a: { threadId: string }) => {
+        if (!failedOnce.has(a.threadId)) {
+          failedOnce.add(a.threadId);
+          throw new Error("busy");
+        }
+        return plain(a);
+      });
+      createSessionProfiles(bb as never, deps({ retryPauseMs: 250, lineDeadlineMs: 600 }));
+      const t = Date.now();
+      await resolve({ threadId: "thr_deep", projectId: "p", hostId: MAIN });
+      expect(Date.now() - t).toBeLessThan(900);
     });
   });
 
@@ -447,8 +620,9 @@ describe("the lean environment as bb calls it", () => {
       thr_lean: { profile: "lean", v: 1 },
       thr_local: { profile: "local", model: "ollama/qwen", v: 1 },
     });
-    // The fixture profile lists nothing, so only the setting's list counts; the lean folder is built in this home.
-    expect(await profiles.config()).toEqual({ unlockedModels: ["my-model", "other"], unlockedWords: [], leanReady: true });
+    // The fixture profile lists no models, so only the setting's list counts; it sets no words either, so the
+    // default words apply. The lean folder is built in this home.
+    expect(await profiles.config()).toEqual({ unlockedModels: ["my-model", "other"], unlockedWords: ["abliterated", "uncensored"], leanReady: true });
   });
   it("adds the profile's unlocked models and words, and says Lean is not ready without the lean folder", async () => {
     const { bb } = setup(metadata);

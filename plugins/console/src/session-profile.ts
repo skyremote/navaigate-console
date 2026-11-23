@@ -65,11 +65,13 @@ export function parseUnlockedList(text: string): string[] {
 /**
  * The owner's own unlocked models: exact ids or names (from the plugin's settings or the profile)
  * and words that mark a model as unlocked when its id or name contains them (from the profile only).
- * Both are empty by default, so no model is unlocked unless its owner lists it.
+ * No model is listed by default; the words default to "abliterated" and "uncensored" (lib/profile-console.ts),
+ * and an empty word list in the profile with no models listed means no padlock at all. NO_UNLOCKED is the
+ * empty list used until the server has answered.
  */
 export type UnlockedList = { models: readonly string[]; words: readonly string[] };
 export const NO_UNLOCKED: UnlockedList = { models: [], words: [] };
-/** Whether the owner listed anything at all; without a list the padlock is never drawn. */
+/** Whether any model or word is set (the default words are); with none the padlock is never drawn. */
 export const hasUnlockedList = (list: UnlockedList): boolean => list.models.length > 0 || list.words.length > 0;
 
 /**
@@ -84,8 +86,10 @@ export function isUnlockedModel(model: { id: string; name?: string | null }, lis
   return names.some((n) => listed.has(n));
 }
 
-/** The feature-map ids of the two parts that are not for everyone: Local chats on Claude Code (experimental, off by default for the community) and Lean chats (private). */
+/** The feature-map ids of Local chats on Claude Code (comes on with Online or Local, unless a saved pick says off) and Lean chats (private). */
 export const LOCAL_CLAUDE_FEATURE = "EXTRA-AM";
+/** The Local loadout: part of Local chats on Claude Code (always on with it; the panel's None gives a chat none of your skills and agents). */
+export const LOCAL_LOADOUT_FEATURE = "EXTRA-AO";
 export const LEAN_FEATURE = "EXTRA-AN";
 
 /** What the home screen's orbs are set to. Online + Full is today's behaviour. */
@@ -102,7 +106,7 @@ export const canRunOnClaude = (modelId: string): boolean => modelId.toLowerCase(
  * Whether the chosen model can call tools on the Claude Code harness, as the server reads it from
  * Ollama or LM Studio: "checking" until it answers, "unknown" when the runtime did not say.
  */
-export type ToolCheck = { state: "checking" | "yes" | "no" | "small" | "remote" | "unknown"; reason?: string; window?: number | null; need?: number };
+export type ToolCheck = { state: "checking" | "yes" | "no" | "small" | "remote" | "unknown" | "family"; reason?: string; window?: number | null; need?: number };
 /**
  * The harness a Local chat on this model really uses. Claude Code only when it is allowed (the
  * feature is ticked) and for a model that can call tools: Claude Code is built around tools, and a

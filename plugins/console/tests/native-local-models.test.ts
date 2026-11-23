@@ -1,7 +1,7 @@
 // Local models in memory: what the server reports from Ollama, a load that
 // returns at once, and an unload that waits for Ollama's answer.
 import { describe, expect, it, vi } from "vitest";
-import { ALL_OLLAMA, LMSTUDIO_LOAD_MIN_MEMORY, LMSTUDIO_SMALL_MEMORY_REASON, LMSTUDIO_TOKEN_REASON, OLLAMA_ELSEWHERE_REASON, createLocalModels, isRemoteModel, ollamaBaseFrom, lmStudioReady, localModelInput, numCtxFromParameters, ollamaName, toolSupportFromShow, trainedContext } from "../server-local-models";
+import { ALL_OLLAMA, TOOLS_FAILED_REASON, failedToolFamily, LMSTUDIO_LOAD_MIN_MEMORY, LMSTUDIO_SMALL_MEMORY_REASON, LMSTUDIO_TOKEN_REASON, OLLAMA_ELSEWHERE_REASON, createLocalModels, isRemoteModel, ollamaBaseFrom, lmStudioReady, localModelInput, numCtxFromParameters, ollamaName, toolSupportFromShow, trainedContext } from "../server-local-models";
 
 const json = (body: unknown, ok = true, status = 200) => ({ ok, status, json: async () => body }) as unknown as Response;
 
@@ -135,6 +135,22 @@ describe("whether a local model can call tools", () => {
     await models.tools("ollama/qwen:27b");
     expect(calls.filter((c) => c.startsWith("/api/show"))).toHaveLength(2);
     expect(await models.tools("ollama/gone:1b")).toEqual({ tools: null, reason: "Ollama does not list this model" });
+  });
+});
+
+describe("model families that failed our own tool tests", () => {
+  it("are matched on the family after the runner's prefix, whatever the size or variant", () => {
+    for (const id of ["ollama/deepseek-r1:14b", "ollama/deepseek-r1:latest", "ollama/deepseek-r1-tuned-64k:14b", "lmstudio/deepseek/deepseek-r1-0528-qwen3-8b", "lmstudio/deepseek-r1-distill-qwen-14b", "deepseek-r1"])
+      expect(failedToolFamily(id)).toBe("deepseek-r1");
+    for (const id of ["ollama/qwen:27b", "ollama/deepseek-v3:8b", "ollama/deepseek-r10:1b", "lmstudio/qwen/qwen3.8-27b", "ollama/mydeepseek-r1x:1b"]) expect(failedToolFamily(id)).toBeNull();
+  });
+  it("are not offered Claude Code even when the template passes the check, and say why in plain words, asking the runner nothing", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify({ capabilities: ["tools"], template: QWEN_JINJA, parameters: "num_ctx 65536" })));
+    const models = createLocalModels({ fetch: fetch as unknown as typeof globalThis.fetch });
+    expect(await models.tools("ollama/deepseek-r1:14b")).toEqual({ tools: false, why: "family", reason: TOOLS_FAILED_REASON });
+    expect(await models.tools("lmstudio/deepseek/deepseek-r1-0528-qwen3-8b")).toEqual({ tools: false, why: "family", reason: TOOLS_FAILED_REASON });
+    expect(fetch).not.toHaveBeenCalled();
+    expect(TOOLS_FAILED_REASON).toBe("Claude Code is not offered for DeepSeek R1 models: two 14B versions did not use tools dependably in our tests, and other versions were not tried. This one runs as a chat model in opencode.");
   });
 });
 
@@ -275,11 +291,20 @@ describe("LM Studio models", () => {
     const models = createLocalModels({ fetch: studio(lm(65536), calls) as unknown as typeof globalThis.fetch, totalMemory: () => 48 * 1024 ** 3 });
     await models.load("lmstudio/qwen/qwen3.8-27b");
     const load = calls.find(([u]) => u.endsWith("/api/v1/models/load"))!;
-    expect(JSON.parse(String(load[1]!.body))).toEqual({ model: "qwen/qwen3.8-27b", context_length: 65536 });
+    // One slot: a request sent again then reuses what the model has already read.
+    expect(JSON.parse(String(load[1]!.body))).toEqual({ model: "qwen/qwen3.8-27b", context_length: 65536, parallel: 1 });
     expect((await models.state()).loaded).toContainEqual({ model: "lmstudio/qwen/qwen3.8-27b", bytes: 17_000_000_000, until: null });
     expect(await models.unload("lmstudio/qwen/qwen3.8-27b")).toEqual({ ok: true });
     const unload = calls.find(([u]) => u.endsWith("/api/v1/models/unload"))!;
     expect(JSON.parse(String(unload[1]!.body))).toEqual({ instance_id: "qwen/qwen3.8-27b" });
+  });
+
+  it("reports how many slots LM Studio holds a model with, and only a whole positive number", async () => {
+    const withSlots = (parallel: unknown) => ({ models: [{ key: "qwen/qwen3.8-27b", type: "llm", size_bytes: 17_000_000_000, loaded_instances: [{ id: "qwen/qwen3.8-27b", config: { context_length: 65536, parallel } }] }] });
+    const state = async (parallel: unknown) => (await createLocalModels({ fetch: studio(withSlots(parallel)) as unknown as typeof globalThis.fetch }).state()).loaded[0];
+    expect(await state(4)).toEqual({ model: "lmstudio/qwen/qwen3.8-27b", bytes: 17_000_000_000, until: null, slots: 4 });
+    expect(await state(1)).toMatchObject({ slots: 1 });
+    for (const odd of [0, -1, 1.5, "4", null, undefined]) expect(await state(odd)).not.toHaveProperty("slots");
   });
 
   it("refuses an LM Studio load on a Mac with less than 40 GB of memory, says why, and asks LM Studio nothing", async () => {

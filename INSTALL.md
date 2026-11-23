@@ -1,4 +1,4 @@
-# Install the NavAIgate Console 1.13
+# Install the NavAIgate Console 1.14
 
 You need **bb 0.48 or later** on macOS or Linux, open and signed in to your chosen AI harness (Claude Code, Codex or Cursor).
 
@@ -53,192 +53,82 @@ The brain kit is in `extras/brain-selfhost-kit` in this repository. The installe
 
 ## Local models (optional)
 
-The Console can start a chat on a model that runs on your own Mac. You choose it on the new-chat screen with the **Local** orb. Nothing is downloaded for you: you install the runner and the model yourself, and the Console uses what is already there. A step-by-step page with screenshots is at [skyremote.github.io/navaigate-console/local-models.html](https://skyremote.github.io/navaigate-console/local-models.html).
+The Console can start a chat on a model that runs on your own Mac, in Claude Code or in opencode, and in Claude Code it gets your own skills and agents too. Nothing is downloaded for you, so you install the runner and the model yourself, and the Console uses what's already there. There's a short page with pictures at [skyremote.github.io/navaigate-console/local-models.html](https://skyremote.github.io/navaigate-console/local-models.html).
 
 ### What you need
 
-- **A runner:** [Ollama](https://ollama.com) or [LM Studio](https://lmstudio.ai), running on the same Mac as your bb server.
-- **opencode:** Local chats run through bb's opencode harness by default. Install opencode and check it in bb's provider list.
-- **A downloaded model.** A model of about 27B parameters is what we tested.
-- **Enough memory.** We tested on one 48 GB Apple Silicon Mac. A 27B Qwen model with a 65,536-token window used about 18 GB in LM Studio there. Macs with 24 to 32 GB are untested. 16 GB is not a target.
+- **A runner:** [Ollama](https://ollama.com) or [LM Studio](https://lmstudio.ai), on the same Mac as your bb.
+- **opencode:** the list of models under the Local orb comes from bb's opencode harness, so install opencode and check it in bb's provider list, even if your chats run in Claude Code.
+- **Claude Code** for Local chats on Claude Code.
+- **A model:** the two we test with are in [Main models](#main-models) below.
+- **Memory:** we tested on one 48 GB Apple silicon Mac, and the Qwen model needs about 21 GB while it's loaded. Smaller Macs and Windows aren't tested.
 
-### Get a model ready
+### Main models
 
-With Ollama:
+These are the two models we test with. Both are "abliterated", which means their makers say they removed the model's refusals, and the Console only puts a padlock on them as a label, it doesn't change anything about the model.
 
-```sh
-ollama pull <model>
-ollama run <model> "hello"
-```
-
-The first command downloads the model. The second checks that it answers. Replace `<model>` with the model's name from the Ollama library.
-
-With LM Studio:
+**Qwen 3.8 27B abliterated** (Ollama, works in Claude Code and opencode, 18.3 GB on disk):
 
 ```sh
-lms get <model>
-lms server start
-lms load <model>
+ollama pull hf.co/huihui-ai/Huihui-Qwen3.8-27B-abliterated-GGUF:UD-Q4_K_XL
+printf 'FROM hf.co/huihui-ai/Huihui-Qwen3.8-27B-abliterated-GGUF:UD-Q4_K_XL\nPARAMETER num_ctx 65536\n' > Modelfile
+ollama create qwen3.8-abliterated-64k:27b -f Modelfile
 ```
 
-The first command downloads the model. The second starts LM Studio's local server. The third loads the model into memory. In LM Studio's server settings, turn off **Require Authentication**, because Local chats do not send a token.
+The first line downloads the model, and the other two make a copy with the 65,536-token window Claude Code needs, with no second download. Then pick `qwen3.8-abliterated-64k:27b` under the Local orb.
 
-Run `opencode models` and check that your model appears with an `ollama/` or `lmstudio/` prefix. If it does not, add the runner to `~/.config/opencode/opencode.json`:
+**DeepSeek R1 14B abliterated** (Ollama, a chat model in opencode only, 9.0 GB on disk):
 
-```json
-{
-  "provider": {
-    "lmstudio": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "LM Studio (local)",
-      "options": { "baseURL": "http://localhost:1234/v1" },
-      "models": { "<model>": { "name": "<model>" } }
-    },
-    "ollama": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Ollama (local)",
-      "options": { "baseURL": "http://localhost:11434/v1" },
-      "models": { "<model>": { "name": "<model>" } }
-    }
-  }
-}
+```sh
+ollama pull huihui_ai/deepseek-r1-abliterated:14b
+printf 'FROM huihui_ai/deepseek-r1-abliterated:14b\nPARAMETER num_ctx 65536\n' > Modelfile
+ollama create deepseek-r1-abliterated-64k:14b -f Modelfile
 ```
 
-Use the model names exactly as `ollama list` or `lms ls` print them.
+Claude Code isn't offered for DeepSeek R1 models, because two 14B versions didn't use tools dependably in our tests, and we haven't tried other versions.
+
+**LM Studio:** the model we tested there is the standard `qwen/qwen3.8-27b`, not the abliterated one. **Load** under the orb asks LM Studio for the 65,536-token window and one slot, and on a Mac with less than 40 GB of memory it refuses and says why.
 
 ### Start a Local chat
 
-1. Open **Setup** and check that **Online or Local on the new-chat screen** is ticked. The orbs only show while it is ticked. A fresh install with the Simple preset leaves it unticked. The Pro preset ticks it. If you finished Setup before 1.13, it is ticked after the update, because a new feature starts in its default.
-2. If you want Local chats to run in Claude Code, also tick **Local chats on the Claude Code harness (experimental)**. Read [the section below](#local-chats-on-the-claude-code-harness-experimental) first.
-3. Save Setup.
-4. Open a new chat in bb.
-5. Choose the **Local** orb.
-6. Pick your model in the list under the orb. The list comes from bb's opencode harness: it shows the models opencode lists from Ollama and LM Studio, the ones whose names start with `ollama/` or `lmstudio/`. A model that Ollama reports as coming from its cloud is left out, and so is every Ollama model when `OLLAMA_HOST` points Ollama at another machine.
-7. Type your message in the box below the orbs and send it.
+1. In **Setup**, tick **Online or Local on the new-chat screen** and save. That switches the two orbs on, and Local chats on Claude Code come with it, unless you saved Setup with them off.
+2. Open a new chat, pick the **Local** orb, pick your model under it, and choose **Claude Code** or **opencode**.
+3. Under the orb you'll see **Not in memory** with a **Load** button, or **In memory** with the size and an **Unload** button. If you don't press Load, your first message loads the model by itself.
+4. Type your message and send it.
 
-The line under the chat box says **Local**, the model's name and **runs on this Mac**. If you switch an opencode chat to another model inside the chat, the line says the chat started Local and names the model it runs on now, or the model picked for its next reply. The chat gets a **Local** flag in the sidebar, and the sidebar and Control room can filter by it.
+A Local chat on Claude Code starts in **Accept Edits**, so edits inside the chat's folder go through and anything outside it asks you once, and Approve for me isn't used for Local chats. If the runner is off, the chat tells you so.
 
-#### Your skill list and opencode
+### The Local loadout
 
-opencode sends your skill list to the model. opencode puts every skill in `~/.claude/skills` and `~/.agents/skills`, up to 200, into the first prompt of each new chat. On a clean standard bb with no skills, our Local chat through opencode used about 11,000 tokens and answered in about 4 minutes on a 48 GB Mac. With 200 skills on a larger setup, the first prompt was about 48,700 tokens, and three test chats gave no answer in 12 minutes while that Mac was busy with other work. From about 90 skills the Local orb shows a note with your count and an estimated size (about 11,000 tokens plus about 155 per skill; only 0 and 200 skills were measured). To shorten the first prompt, move skills you do not use out of those two folders. Your other Claude Code and agent chats stop seeing them too. The Console does not trim the list for you yet.
+The line under the orb says how many of your skills and agents a Local chat gets and how many tokens the chat starts with, and **Change** opens the Local loadout, which is a tick list of your skills and agents.
 
-At 200 skills the note shows two sizes: the estimate (about 42,000 tokens) and the size measured with 200 skills on a larger setup (about 48,000 tokens).
+- By default every skill is ticked except the ones that are too large (a skill whose own text is over a third of the room), and agents are unticked.
+- A skill costs about 6 tokens to list by name, and its own text is only read when the model uses it. A ticked agent is listed in full in every first prompt.
+- The bar shows how much room is left before Claude Code starts to shorten the chat, which is at 44,344 tokens of a 65,536-token window.
+- **Most used** ticks up to 20 of the skills it finds most often in your Claude Code chats on this Mac from the last 30 days, not counting Local chats. It only ticks boxes, and **Save** applies them.
+- Twelve Claude Code tools a Local chat doesn't need are left out by default, so Claude Code's own start is about 8,500 tokens instead of about 18,800, and one option brings them back.
+- In your first Local chat the Console measures bb's part of the start, and the tick list uses that figure from then on.
 
-To count your skills, run this in a terminal. The number is rough, because it counts every entry in both folders.
+### Speed
 
-```sh
-ls ~/.claude/skills ~/.agents/skills | wc -l
-```
+On one 48 GB Apple silicon Mac, on a clean, standard bb 0.49 with Qwen 3.8 27B abliterated on Ollama and 8 small test skills, a new chat started at about 14,600 tokens, the first words came after 72 to 73 seconds with the model not in memory, and the first words of a follow-up came after 2 to 3 seconds. On 1.13.0 a chat in the same project started at about 25,800 tokens. So plan on about a minute to a minute and a half to the first words of a new chat, and then follow-ups in a few seconds.
 
-The memory row under the orb shows whether the model is in memory. **Load** loads it, **Unload** frees the memory, and **Stop** cancels a load. Keep one large model in memory at a time. For an LM Studio model, **Load** asks for a 65,536-token window. On a Mac with less than 40 GB of memory, **Load** refuses and says why. On those Macs, load the model in LM Studio with a smaller window and chat through opencode.
-
-### Local chats on the Claude Code harness (experimental)
-
-This runs Claude Code itself with the model on your Mac. It is off until you tick **Local chats on the Claude Code harness (experimental)** in **Setup**.
-
-- **Window:** the model must run with a window of at least 65,536 tokens.
-- **Tools:** the model must be able to call tools. The orb checks each model. A model that fails either check says why and runs in opencode instead.
-- **Speed:** the first reply is slow, because the model reads Claude Code's start-up text first. In our test on standard bb 0.49 that first prompt was about 25,400 tokens.
-  - On our own bb build, a new chat's first reply took about 2.5 to 4 minutes.
-  - In our test on standard bb 0.49, with the Mac busy with other work, the first reply took about 12 minutes. The model needed more than 5 minutes to read the first prompt. A request with no reply after 5 minutes is sent again, so the first reply waited for those re-sends.
-  - Follow-ups in the same sitting took 9 to 32 seconds.
-  - A follow-up after the chat's session had closed took as long as a first reply.
-  - Any Mac that needs more than 5 minutes to read the first prompt can see the long first reply. We have not fixed this yet.
-- **Permission mode at the start:** the chat starts in **Accept Edits**, so it asks before it changes anything outside its own folder.
-- **Full Access** only if you choose it. Pick it in bb's permission picker in the new-chat box, or set `"localPermissionMode": "full"` under `plugins.console` in your Console profile (`~/.config/navaigate-console/profile.json`).
-- **Approve for me is not used at the start.** That mode checks every step with the same local model, one minute at a time. One small file write took 16 minutes. If you pick it in the box, the chat starts in Accept Edits, or in Full Access when that is your profile's choice.
-- Switching modes later in the chat is up to you.
-- Local chats in opencode, and Online chats, start in their usual mode.
-
-To give an Ollama model the window, create a copy with a larger `num_ctx`:
-
-```sh
-printf 'FROM <model>\nPARAMETER num_ctx 65536\n' > Modelfile
-ollama create <model>-64k -f Modelfile
-```
-
-Then pick `<model>-64k` under the Local orb.
-
-For an LM Studio model, use **Load** under the orb on a Mac with 40 GB or more, or run:
-
-```sh
-lms load <model> --context-length 65536
-```
+In opencode there's no tick list, and opencode sends every skill in the first prompt, so on our own Mac a Local chat there took 12 minutes to answer with 180 skills.
 
 ### What stays on your Mac
 
-"Runs on this Mac" describes the model, and only the model. A Local chat sends its prompts to a model in Ollama or LM Studio on this Mac, not to a Claude or Codex account. It does not mean the chat is cut off from the internet. The chat's tools, a project's own connectors, web fetches and bb's own tools (which can message other chats) can still reach the network.
-
-- The label under the box only shows where the Console holds the chat to that model. On Claude Code, the launcher locks the model. In opencode, the Console checks the chat's current model. No other harness ever shows the label.
-- A Local chat writes its own title on your Mac, so its first message is not sent to bb's title service.
-- The Console leaves out a model Ollama reports as coming from its cloud (its own remote fields, or a `:cloud` or `-cloud` tag), and every Ollama model when `OLLAMA_HOST` points Ollama at another machine. That check has not been tried against a real cloud model. An opencode provider or runner pointed at another machine is outside it.
-- A Local chat on Claude Code keeps its transcript on this Mac, in `~/.claude-local/config/projects`. That is apart from your main Claude Code history in `~/.claude/projects`, so tools that read the main history do not see Local chats. Like every chat, its messages are also kept in bb's own history on this Mac.
-
-#### Forks, and chats a Local chat starts
-
-- A fork of a Local chat on Claude Code, or a chat any Local chat starts on Claude Code (up to four steps down), is treated as the Local chat.
-- With Local chats on Claude Code switched on, it runs on the same local model, whatever model was picked for it.
-- With Local chats on Claude Code switched off, or on another machine, it does not start. bb shows an error saying a fork, or a chat started by a Local chat, stays on this Mac.
-- A fork of a Local chat in opencode is different. bb keeps the fork in opencode on the same model, and the fork carries no Local label.
-- For a Local chat on Claude Code, a fork the plugin misses cannot find the Local chat's history, so it fails instead of starting.
-- Once the plugin knows any Local chat on this Mac, a Claude Code chat whose origin cannot be read is stopped for that one start, with a message to send again. An ordinary chat then starts on the next try.
-- A chat on another harness that a Local chat started (a Codex agent, say) runs on its own model. It is never labelled Local.
-
-#### When a chat marked Local can still reach a cloud account on its own
-
-A Local chat in opencode is not itself sent to a Claude or Codex account by the Console. A chat it starts can be, in cases 1, 3 and 4 below.
-
-For a Local chat on Claude Code (experimental), and for a Claude Code chat that any Local chat starts, there are exactly four cases:
-
-1. The plugin is not loaded, or bb drops the plugin's settings after bb's 5-second limit, when the chat starts or restarts.
-2. The chat's first start is on a machine other than the bb server's Mac, and its Local mark cannot be read.
-3. A chat it started does not get held to the local model, in one of these ways: it begins while the plugin cannot read that chat's own mark; it begins while the plugin cannot read what started it and does not yet know any Local chat on this Mac; it is more than four steps down from the Local chat; or it runs on another harness, such as Codex.
-4. Another plugin sets which claude program a chat runs before the Console does.
-
-#### Labels that bb and other plugins show on a Local chat
-
-- On the Claude Code harness, bb's own model box shows a cloud model name, such as "Opus 5.5", already on the new-chat screen.
-- From the second message on, the sidebar and bb's record of the chat show that cloud model name too.
-- The chat still runs on the local model. The Console's label under the box is the one to trust. Only bb can change its own labels.
-- The **Cache Clock** card shows cloud cache prices and a **Keep warm** button on Local chats as well. They do not apply to a Local chat, which has no cloud cache. Do not press **Keep warm** on a Local chat.
-
-#### Your own choices that take a Local chat's content elsewhere
-
-bb keeps every chat's messages in its own history, Local chats included. A Local chat's content goes to another model or person if you do any of these:
-
-- hand the chat over, or continue it in a new chat, on an online model;
-- mention it with @ in an online chat;
-- share messages from it through a guest review link;
-- ask another chat to read it from bb's history;
-- in opencode, switch the chat itself to an online model.
-
-The Console refuses three things for a Local chat or a chat made from one, because each would carry the conversation away:
-
-- moving it to another machine;
-- starting new work on another Mac from it, when "Include conversation context" is on;
-- giving its messages to a model started alongside it, or to a continuation.
+"Runs on this Mac" describes the model. A Local chat reads only its own settings, and it doesn't read a project's CLAUDE.md or your main one, or a project's hooks or settings, but your ticked skills and agents still arrive. The chat's tools, web fetches and bb's own tools can still reach the network, and before a web fetch of a new site Claude Code asks Anthropic whether the site may be fetched (the site's name only). A fork of a Local chat stays Local. A few rare cases can still send a chat marked Local to a cloud account, and the Features guide inside the Console lists them. Settings an administrator manages for the Mac were not tested.
 
 ### Switch it off again
 
-- To stop offering Local chats, open **Setup** and untick **Online or Local on the new-chat screen**.
-- To stop offering the Claude Code harness only, untick **Local chats on the Claude Code harness (experimental)** in **Setup**.
-- To free the memory, press **Unload** under the Local orb, or run `ollama stop <model>` or `lms unload <model>`.
-- Existing Local chats keep their flag. A Local chat on the Claude Code harness does not start while that feature is unticked: bb blocks it rather than send it to a cloud account. In our test on standard bb, the error for a continued chat said "no local route was given, so this chat does not start" rather than naming the Setup box.
+- To stop offering Local chats, untick **Online or Local on the new-chat screen** in **Setup**.
+- To stop offering Claude Code for them, untick **Local chats on the Claude Code harness** in **Setup**.
+- To free the memory, press **Unload** under the orb, or run `ollama stop <model>` or `lms unload <model>`.
 
-### Which version you have
+### After an update from 1.13
 
-After the update, bb's plugin list still shows version 0.35.0 for the Console (`navaigate-skin`), because bb updates the Console by commit. The release number is in `RELEASE_SOURCES.json` in this repository and in the release notes.
-
-### After an update from 1.12
-
-We updated a test install that had finished Setup on the Simple preset and had a chat. This is what we saw:
-
-- All seven plugins updated in place. Nothing was removed.
-- Setup did not open again. Your saved Setup choices stay as they were.
-- The new-chat screen shows the Online and Local orbs, with Online chosen.
-- In Setup, **Online or Local on the new-chat screen** is ticked and **Local chats on the Claude Code harness (experimental)** is unticked.
-- A chat you made on a local model before 1.13 has no Local mark. The sidebar counts it as Online.
-- If you save Setup after the update, the preset name changes from "simple" to "custom". Your earlier ticks do not change.
+- If you saved Setup on Console 1.13 with Local chats on the Claude Code harness unticked, as a fresh 1.13 install or a preset chosen there did, they stay off; tick them in Setup to use them. The Local orb says "Local chats on Claude Code are off in Setup." with a link to Setup.
+- bb's plugin list still shows version 0.35.0 for the Console (`navaigate-skin`), because bb updates it by commit. The release number is in `RELEASE_SOURCES.json` and in the release notes.
 
 ## Appearance and optional tools
 

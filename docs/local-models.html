@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Local models in the NavAIgate Console 1.13.0</title>
-<meta name="description" content="How to run a model on your own Mac from bb's new-chat screen with the NavAIgate Console 1.13.0: what you need, how to switch it on, what it can and cannot do, and what runs on your Mac.">
+<title>Local models in the NavAIgate Console 1.14.0</title>
+<meta name="description" content="Run a model on your own Mac from bb's new-chat screen, in Claude Code, with your own skills and agents: what's new in the NavAIgate Console 1.14.0, how to start, how fast it is and what stays on your Mac.">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Local models in the NavAIgate Console 1.13.0">
-<meta property="og:description" content="Run a model on your own Mac from bb's new-chat screen: what you need, how to switch it on, what we measured and what &quot;runs on this Mac&quot; really means.">
-<meta property="og:image" content="https://skyremote.github.io/navaigate-console/img/local-models/hero.png">
-<meta property="og:image:width" content="1084">
-<meta property="og:image:height" content="576">
-<meta property="og:image:alt" content="The Local orb with a Qwen model in memory and the label Local, qwen/qwen3.8-27b, runs on this Mac.">
+<meta property="og:title" content="Local models in the NavAIgate Console 1.14.0">
+<meta property="og:description" content="A model on your own Mac, in Claude Code, with your own skills and agents: how to start, how fast it is and what stays on your Mac.">
+<meta property="og:image" content="https://skyremote.github.io/navaigate-console/img/local-models/local-orb-loop-poster.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="676">
+<meta property="og:image:alt" content="The Online and Local orbs on bb's new-chat screen, with the Local orb unlocked and Qwen 3.8 abliterated picked.">
 <meta property="og:url" content="https://skyremote.github.io/navaigate-console/local-models.html">
 <meta name="twitter:card" content="summary_large_image">
 <style>
@@ -124,6 +124,10 @@
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
   @media print { nav.toc { break-after: page; } figure { break-inside: avoid; } }
+  video.loop { display: block; width: 100%; height: auto; border-radius: var(--radius); background: #0c0c0d; }
+  ul.cards { list-style: none; padding: 0; display: grid; gap: var(--s4); }
+  ul.cards > li { border: 1px solid var(--rule); border-radius: var(--radius); padding: var(--s4); margin: 0; }
+  ul.cards > li > strong:first-child { display: block; margin-bottom: var(--s1); }
 </style>
 </head>
 <body>
@@ -131,403 +135,91 @@
 <header class="top">
   <div class="bar">
     <span class="brand">NavAIgate Console</span>
-    <span>Version 1.13.0 · Local models</span>
+    <span>Version 1.14.0 · Local models</span>
   </div>
 </header>
 
 <main id="content" class="page">
   <div class="col intro">
-    <p class="eyebrow">NavAIgate Console 1.13.0</p>
-    <h1>Run a model on your own Mac from the new-chat screen</h1>
-    <p class="lead">So with this release you open a new chat in bb, you pick Local instead of Online, you choose a model that is already on your Mac, and the chat sends its prompts to that model in Ollama or LM Studio, and it goes through opencode by default, or through Claude Code itself if you switch that on.</p>
-    <p>On 22 November we installed the release on a clean copy of standard bb 0.49, the same bb you download, and a Local chat through opencode with a 27B Qwen model in LM Studio listed a folder, read a file, added up the numbers in it and gave the right answer in about 4 minutes on a 48 GB Apple Silicon Mac. It's honestly a good result, and it's also slow, and the Claude Code side is still experimental, so this page tells you exactly what we measured, what you need, what "runs on this Mac" really means and where it stops.</p>
+    <p class="eyebrow">NavAIgate Console 1.14.0</p>
+    <h1>A model on your own Mac, in Claude Code, with your own skills and agents</h1>
+    <p class="lead">So you open a new chat in bb, you pick Local and a model on your Mac, and the chat runs in Claude Code with the skills and agents you tick, or in opencode if you'd rather.</p>
     <p class="byline">NavAIgate · November 2026</p>
-
-    <nav class="toc" aria-labelledby="toc-title">
-      <h2 id="toc-title">On this page</h2>
-      <ol>
-        <li><a href="#one-screen">What you get</a></li>
-        <li><a href="#how-it-connects">How a Local chat runs</a></li>
-        <li><a href="#what-you-need">What you need</a></li>
-        <li><a href="#switch-it-on">How to switch it on</a></li>
-        <li><a href="#harnesses">opencode or Claude Code</a></li>
-        <li><a href="#skills">Your skill list and opencode</a></li>
-        <li><a href="#speed">Speed</a></li>
-        <li><a href="#permissions">Permission settings</a></li>
-        <li><a href="#privacy">Privacy, straight</a></li>
-        <li><a href="#limits">Known limits</a></li>
-        <li><a href="#get-it">Where to get it</a></li>
-      </ol>
-    </nav>
   </div>
 
-  <section id="one-screen" aria-labelledby="h-one-screen">
-    <div class="col">
-      <h2 id="h-one-screen"><span class="num">1</span>What you get</h2>
-      <p>The new-chat screen now has two choices at the top. Online is a chat exactly as you have it today, and Local is a chat on a model on your Mac, with the model picked from a list under the orb and a row that tells you whether that model is in memory, with a Load and Unload button next to it.</p>
-    </div>
-    <figure class="wide small">
-      <a class="shot" href="img/local-models/p02_local_orb_default_not_in_memory.png"><img src="img/local-models/p02_local_orb_default_not_in_memory.png" width="940" height="472" alt="Two orbs on the new-chat screen. Online on the left, Every connector and skill. Local on the right, chosen, Qwen on this Mac, with a Qwen model picked in a list below it and a row reading Not in memory with a Load button."></a>
-      <figcaption>The Local orb as it comes, on a clean copy of standard bb 0.49, before the model is loaded.</figcaption>
-    </figure>
-    <div class="col">
-      <p>Once a Local chat is running, the line under the chat box says Local, the model and "runs on this Mac", and the <a href="#privacy">Privacy</a> section explains exactly what that line does and doesn't promise.</p>
-    </div>
-    <figure class="wide small">
-      <a class="shot" href="img/local-models/p04_label_and_context_opencode.png"><img src="img/local-models/p04_label_and_context_opencode.png" width="1000" height="112" alt="The line under a Local chat's box: Local, qwen/qwen3.8-27b, runs on this Mac. Below it the context meter reads 11k of 66k, 17 per cent."></a>
-      <figcaption>The label and the context meter on a Local chat through opencode, on standard bb.</figcaption>
-    </figure>
-  </section>
+  <figure class="wide">
+    <video class="loop" autoplay muted loop playsinline preload="metadata" poster="img/local-models/local-orb-loop-poster.jpg" aria-label="The two orbs on bb's new-chat screen, Online and Local. The Local orb opens its padlock and reads Local, unlocked, with Qwen 3.8 abliterated picked under it.">
+      <source src="img/local-models/local-orb-loop.mp4" type="video/mp4">
+    </video>
+    <figcaption>The Local orb with Qwen 3.8 27B abliterated picked. The padlock opens because the model's name says abliterated.</figcaption>
+  </figure>
 
-  <section id="how-it-connects" aria-labelledby="h-how">
+  <section id="new" aria-labelledby="h-new">
     <div class="col">
-      <h2 id="h-how"><span class="num">2</span>How a Local chat runs</h2>
-      <p>Everything in this picture is on the same Mac. The one difference between the two harnesses is that Claude Code doesn't know how to talk to Ollama or LM Studio by itself, so the Console adds a small route inside bb, on 127.0.0.1, which takes Claude Code's requests and passes them to your runner, and opencode talks to the runner directly.</p>
-      <div class="diagram">
-        <svg viewBox="0 0 400 712" role="img" aria-labelledby="dg-title dg-desc" xmlns="http://www.w3.org/2000/svg">
-          <title id="dg-title">How a Local chat runs on one Mac</title>
-          <desc id="dg-desc">The new-chat screen hands the chat to bb. bb starts it on opencode or on Claude Code. opencode talks to Ollama or LM Studio directly. Claude Code goes through the Console's local route inside bb on 127.0.0.1, which forwards to Ollama or LM Studio. Ollama or LM Studio runs the model in memory. All of this is on the same Mac. Your cloud account sits outside; the Privacy section lists the four cases where a chat marked Local can still reach it.</desc>
-          <defs>
-            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#111318"/></marker>
-            <marker id="ahb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2a5bff"/></marker>
-          </defs>
-          <g font-family="Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif" fill="#111318">
-            <rect x="6" y="6" width="388" height="606" fill="#f4f5f7" stroke="#b9bfc8" stroke-width="1.5" rx="2"/>
-            <text x="22" y="34" font-size="15" font-weight="700" letter-spacing="0.5">THIS MAC</text>
-            <rect x="36" y="52" width="328" height="62" fill="#fff" stroke="#111318" stroke-width="1.5" rx="2"/>
-            <text x="200" y="78" font-size="17" font-weight="700" text-anchor="middle">New-chat screen</text>
-            <text x="200" y="100" font-size="15" text-anchor="middle" fill="#464c56">Local orb, model picked</text>
-            <path d="M200 114 V138" stroke="#111318" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
-            <rect x="36" y="140" width="328" height="62" fill="#fff" stroke="#111318" stroke-width="1.5" rx="2"/>
-            <text x="200" y="166" font-size="17" font-weight="700" text-anchor="middle">bb</text>
-            <text x="200" y="188" font-size="15" text-anchor="middle" fill="#464c56">starts the chat on a harness</text>
-            <path d="M200 202 V220 H108 V242" stroke="#111318" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
-            <path d="M200 220 H292 V242" stroke="#2a5bff" stroke-width="1.5" fill="none" marker-end="url(#ahb)"/>
-            <rect x="20" y="244" width="176" height="66" fill="#fff" stroke="#111318" stroke-width="1.5" rx="2"/>
-            <text x="108" y="272" font-size="17" font-weight="700" text-anchor="middle">opencode</text>
-            <text x="108" y="294" font-size="15" text-anchor="middle" fill="#464c56">the default</text>
-            <rect x="204" y="244" width="176" height="66" fill="#fff" stroke="#2a5bff" stroke-width="2" rx="2"/>
-            <text x="292" y="272" font-size="17" font-weight="700" text-anchor="middle">Claude Code</text>
-            <text x="292" y="294" font-size="15" text-anchor="middle" fill="#464c56">experimental</text>
-            <path d="M292 310 V340" stroke="#2a5bff" stroke-width="1.5" fill="none" marker-end="url(#ahb)"/>
-            <rect x="204" y="342" width="176" height="84" fill="#fff" stroke="#2a5bff" stroke-width="2" rx="2"/>
-            <text x="292" y="368" font-size="17" font-weight="700" text-anchor="middle">Console route</text>
-            <text x="292" y="390" font-size="15" text-anchor="middle" fill="#464c56">inside bb</text>
-            <text x="292" y="411" font-size="15" text-anchor="middle" fill="#464c56">127.0.0.1</text>
-            <path d="M108 310 V456" stroke="#111318" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
-            <path d="M292 426 V456" stroke="#2a5bff" stroke-width="1.5" fill="none" marker-end="url(#ahb)"/>
-            <rect x="20" y="458" width="360" height="62" fill="#fff" stroke="#111318" stroke-width="1.5" rx="2"/>
-            <text x="200" y="484" font-size="17" font-weight="700" text-anchor="middle">Ollama or LM Studio</text>
-            <text x="200" y="506" font-size="15" text-anchor="middle" fill="#464c56">the runner, on 127.0.0.1</text>
-            <path d="M200 520 V542" stroke="#111318" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
-            <rect x="20" y="544" width="360" height="54" fill="#111318" stroke="#111318" stroke-width="1.5" rx="2"/>
-            <text x="200" y="577" font-size="17" font-weight="700" text-anchor="middle" fill="#ffffff">The model, in memory</text>
-            <rect x="6" y="636" width="388" height="70" fill="#fff" stroke="#8a919c" stroke-width="1.5" stroke-dasharray="6 5" rx="2"/>
-            <text x="200" y="664" font-size="17" font-weight="700" text-anchor="middle">Your cloud account</text>
-            <text x="200" y="688" font-size="15" text-anchor="middle" fill="#464c56">four cases can reach it, see Privacy</text>
-          </g>
-        </svg>
-      </div>
-      <ol>
-        <li>On the new-chat screen you pick Local and a model from the list, which leaves out a model Ollama reports as coming from its cloud, and leaves out every Ollama model when <code>OLLAMA_HOST</code> points Ollama at another machine.</li>
-        <li>bb starts the chat on opencode, or on Claude Code if you've switched that on in Setup and the model passes the check.</li>
-        <li>opencode sends the conversation straight to Ollama or LM Studio on this Mac.</li>
-        <li>Claude Code sends it to the Console's route inside bb on 127.0.0.1, and the route passes it to Ollama or LM Studio, and gives a clear error if the runner is off or the model isn't loaded.</li>
-        <li>Ollama or LM Studio runs the model in your Mac's memory and the answer comes back the same way.</li>
-      </ol>
-      <p>That picture is about where the model's prompts go, and it doesn't mean the chat is cut off from the internet, because the chat's tools can still reach the network, and <a href="#privacy">Privacy</a> goes through that properly.</p>
-    </div>
-  </section>
-
-  <section id="what-you-need" aria-labelledby="h-need">
-    <div class="col">
-      <h2 id="h-need"><span class="num">3</span>What you need</h2>
-      <ul>
-        <li><strong>bb with the NavAIgate Console 1.13.0</strong>, and the opencode harness in bb. For Local on Claude Code you also need Claude Code in bb as you have it today.</li>
-        <li><strong>Ollama or LM Studio</strong> running on the Mac, with a model already downloaded. The Console doesn't download models for you in this release, so you do that in Ollama or LM Studio first.</li>
-        <li><strong>A short skill list, if you use opencode.</strong> opencode puts your skills into the first prompt of every new chat, so count them before you start, and <a href="#skills">Your skill list and opencode</a> shows why and how.</li>
-        <li><strong>For Claude Code, a model that can use tools</strong> and runs with a window of at least 65,536 tokens. The Console checks both and only offers Claude Code for a model that passes.</li>
-        <li><strong>Enough memory</strong>, and this is the part to be honest about, because we've only tested one size of Mac.</li>
+      <h2 id="h-new"><span class="num">1</span>What's new in 1.14.0</h2>
+      <ul class="cards">
+        <li><strong>On by default</strong>Local chats on Claude Code aren't experimental any more. If you saved Setup on Console 1.13 with Local chats on the Claude Code harness unticked, as a fresh 1.13 install or a preset chosen there did, they stay off; tick them in Setup to use them.</li>
+        <li><strong>Your skills and agents, ticked</strong>The Local loadout is a tick list of your skills and agents, with a bar that shows how much room is left before Claude Code starts to shorten the chat, and Most used ticks the skills you use most in your Claude Code chats on this Mac, not counting Local chats.</li>
+        <li><strong>A smaller, faster start</strong>Twelve Claude Code tools a Local chat doesn't need are left out, so Claude Code's own start is about 8,500 tokens instead of about 18,800.</li>
+        <li><strong>Long answers arrive once</strong>A long answer no longer gets sent again after five minutes, and on our own Mac one answer streamed for 26 minutes and arrived once.</li>
+        <li><strong>The padlock</strong>It opens for a model whose name contains abliterated or uncensored, which means its maker says they removed its refusals, and the Console only labels it.</li>
       </ul>
-      <div class="table-wrap">
-        <table>
-          <caption>What we can say for each size of Mac. Only the 48 GB row is tested.</caption>
-          <thead>
-            <tr><th scope="col">Memory</th><th scope="col">opencode</th><th scope="col">Claude Code (experimental)</th></tr>
-          </thead>
-          <tbody>
-            <tr><th scope="row" class="num">16 GB</th><td>Not a target for this release</td><td>Not a target</td></tr>
-            <tr><th scope="row" class="num">24 to 32 GB</th><td>Untested</td><td>Untested. LM Studio's Load button refuses below 40 GB, because it asks for the 65,536-token window</td></tr>
-            <tr><th scope="row" class="num">48 GB</th><td>Right answer in about 4 minutes with a 27B Qwen model in LM Studio, on standard bb with no skills</td><td>Tested with a 27B Qwen model on Ollama and on LM Studio, on our own bb build, and on LM Studio on standard bb, about 18 GB in memory in LM Studio</td></tr>
-            <tr><th scope="row" class="num">64 GB and up</th><td>Untested</td><td>Untested</td></tr>
-          </tbody>
-        </table>
-      </div>
     </div>
   </section>
 
-  <section id="switch-it-on" aria-labelledby="h-on">
+  <section id="start" aria-labelledby="h-start">
     <div class="col">
-      <h2 id="h-on"><span class="num">4</span>How to switch it on</h2>
+      <h2 id="h-start"><span class="num">2</span>Start a Local chat</h2>
       <ol class="steps">
-        <li><strong>Get a model onto your Mac.</strong> Install Ollama or LM Studio and download a model there. We used Qwen3.8 27B in LM Studio for the screenshots on this page.</li>
-        <li><strong>Install or update the Console.</strong> Use the command in <a href="#get-it">Where to get it</a>, then reload bb.</li>
-        <li><strong>Count your skills.</strong> Run <code>ls ~/.claude/skills ~/.agents/skills | wc -l</code> in a terminal, and if the number is high, read <a href="#skills">Your skill list and opencode</a> before your first Local chat, because that number decides how long the first reply takes.</li>
-        <li><strong>Tick the boxes in Setup.</strong> Open the Console's Setup screen and tick <em>Online or Local on the new-chat screen</em>, because a fresh install on the Simple preset leaves it unticked and the orbs only show once it's ticked. If you want Claude Code as the harness, tick <em>Local chats on the Claude Code harness (experimental)</em> too, and it stays off until you tick it.</li>
+        <li><strong>Get a model.</strong>The two we test with are Qwen 3.8 27B abliterated (18.3 GB, works in Claude Code and opencode) and DeepSeek R1 14B abliterated (9.0 GB, a chat model in opencode only), both on Ollama, and the commands are under <a href="https://github.com/skyremote/navaigate-console/blob/main/INSTALL.md#main-models">Main models</a> in the install guide. opencode lists your models under the Local orb, so install it too, even for chats in Claude Code.</li>
+        <li><strong>Tick it in Setup.</strong>Tick <em>Online or Local on the new-chat screen</em> and save, and Local chats on Claude Code come with it, unless you saved Setup with them off.</li>
+        <li><strong>Pick Local.</strong>Open a new chat, pick the Local orb, pick your model under it, and choose Claude Code or opencode.</li>
+        <li><strong>Send.</strong>Under the orb you'll see Not in memory with a Load button, or In memory with the size, and if you don't press Load, your first message loads the model by itself.</li>
       </ol>
-    </div>
-    <figure class="wide">
-      <a class="shot" href="img/local-models/p01_setup_local_features.png"><img src="img/local-models/p01_setup_local_features.png" width="1280" height="544" alt="The Console's Setup screen with four boxes: Online or Local on the new-chat screen, ticked; Open the connector manager with /mcp, not ticked; Load and unload a local model from the Local orb, always on; Local chats on the Claude Code harness (experimental), ticked."></a>
-      <figcaption>Setup on standard bb with the experimental Claude Code box ticked. It comes unticked.</figcaption>
-    </figure>
-    <div class="col">
-      <ol class="steps" start="5" style="counter-reset: step 4;">
-        <li><strong>Open a new chat and pick Local.</strong> Then choose your model from the list under the orb, like the first screenshot on this page.</li>
-        <li><strong>Press Load.</strong> The light goes green and the row shows how much memory the model takes. For LM Studio, Load asks for a 65,536-token window, and on a Mac with less than 40 GB it refuses and tells you to load the model in LM Studio with a smaller window and use opencode. For Ollama, a model needs its window set to 65,536 (Ollama calls it <code>num_ctx</code>) to be offered on Claude Code.</li>
-        <li><strong>Pick the harness.</strong> If you ticked Claude Code and the model passes the check, a switch appears with Claude Code and opencode, and on Claude Code the line under it tells you which mode the chat starts in.</li>
-      </ol>
-    </div>
-    <figure class="wide">
-      <a class="shot" href="img/local-models/p05_claude_code_switch_and_note.png"><img src="img/local-models/p05_claude_code_switch_and_note.png" width="1496" height="580" alt="The Local orb with the model loaded and a switch reading Claude Code and opencode, Claude Code chosen. Below it: The box below starts in Accept Edits. Approve for me picked here starts as Accept Edits: it would check each step with this model, which takes minutes. Changing the mode later in the chat is up to you. Then a row: In memory, 18 GB, Unload."></a>
-      <figcaption>After Load, with Claude Code ticked in Setup, on standard bb.</figcaption>
-    </figure>
-    <figure class="wide small">
-      <a class="shot" href="img/local-models/12_chat_only_note_no_tools.png"><img src="img/local-models/12_chat_only_note_no_tools.png" width="1792" height="264" alt="A note under the Local orb that reads: Chat only, in opencode: this model cannot use tools, so Claude Code is not offered. Below it a row reads Not in memory, with a Load button."></a>
-      <figcaption>With Claude Code ticked, a model that can't use tools still works in opencode and the orb says why. From our own bb build, with the model name cropped out.</figcaption>
-    </figure>
-    <div class="col">
-      <ol class="steps" start="8" style="counter-reset: step 7;">
-        <li><strong>Type and send.</strong> The first reply takes a few minutes on either harness, and on Claude Code on a busy Mac it took about 12 minutes, so leave it, and follow-ups are much quicker while the model stays in memory.</li>
-        <li><strong>Press Unload when you're done.</strong> That gives the memory back to the rest of your Mac.</li>
-      </ol>
-    </div>
-    <figure class="wide">
-      <a class="shot" href="img/local-models/p03_opencode_chat_answer.png"><img src="img/local-models/p03_opencode_chat_answer.png" width="1496" height="580" alt="A Local chat through opencode. The question asks it to list the files in a demo folder and add up the numbers in numbers.txt. Worked for 4m 12s. The answer: There are 4 files, alpha.txt, beta.txt, notes.md and numbers.txt. The numbers in numbers.txt are 17, 25 and 58, which add up to 100."></a>
-      <figcaption>A Local chat through opencode on a clean copy of standard bb 0.49, with no skills installed: right answer, 4 minutes 12 seconds.</figcaption>
-    </figure>
-  </section>
-
-  <section id="harnesses" aria-labelledby="h-harness">
-    <div class="col">
-      <h2 id="h-harness"><span class="num">5</span>opencode or Claude Code</h2>
-      <p>We kept both, because they do different jobs, and the honest way to put it is that opencode is the default, it takes any model on the list and it's the one we've now timed on standard bb, and Claude Code is still experimental, and we've tested it mostly on our own bb build and once on standard bb.</p>
-      <div class="table-wrap">
-        <table>
-          <caption>The two harnesses for a Local chat.</caption>
-          <thead>
-            <tr><th scope="col"></th><th scope="col">opencode</th><th scope="col">Claude Code, experimental</th></tr>
-          </thead>
-          <tbody>
-            <tr><th scope="row">Switched on</th><td>Yes, it's the default</td><td>Off until you tick it in Setup</td></tr>
-            <tr><th scope="row">Which models</th><td>Any model the list shows from Ollama or LM Studio, including ones that can't use tools</td><td>Only models that can use tools and run with a 65,536-token window</td></tr>
-            <tr><th scope="row">How it reaches the model</th><td>Straight to Ollama or LM Studio</td><td>Through the Console's route inside bb, on 127.0.0.1</td></tr>
-            <tr><th scope="row">First prompt</th><td>About 11,000 tokens with no skills, plus your skill list, up to 200 skills</td><td>31,000 to 35,000 tokens in our own bb build</td></tr>
-            <tr><th scope="row">What we've proved</th><td>On standard bb 0.49: listed a folder, read a file and gave the right answer in about 4 minutes</td><td>On our own bb build: reading and listing files on Ollama and LM Studio, and writing files in Accept Edits and Full Access. On standard bb 0.49: listed a folder, read a file and gave the right answer after about 12 minutes on a busy Mac</td></tr>
-            <tr><th scope="row">Starts in</th><td>bb's usual mode for opencode</td><td>Accept Edits, unless you choose Full Access</td></tr>
-            <tr><th scope="row">Model box in bb</th><td>Shows the local model's name</td><td>Still shows a cloud model name, see <a href="#privacy">Privacy</a></td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p>So Claude Code isn't the smaller or the faster one, because its own start-up text is bigger than opencode's with no skills, and the reason to pick it is that it's the Claude Code you already know, with its tools and bb's permission picker.</p>
-    </div>
-    <figure class="wide">
-      <a class="shot" href="img/local-models/07_local_chat_answer.png"><img src="img/local-models/07_local_chat_answer.png" width="1496" height="720" alt="A Local chat on Claude Code. The question asks how many text files are in a demo folder and what two.txt says. Below it: Explored 1 list, 1 file; Permission granted: Read; Thought 36s. The answer reads: There are 5 .txt files, and two.txt says Buy flour, eggs and milk."></a>
-      <figcaption>A Local chat on Claude Code, from our own bb build, in a small demo folder of five text files.</figcaption>
-    </figure>
-  </section>
-
-  <section id="skills" aria-labelledby="h-skills">
-    <div class="col">
-      <h2 id="h-skills"><span class="num">6</span>Your skill list and opencode</h2>
-      <p>This is the one thing I'd check before anything else, because opencode takes every skill it finds in <code>~/.claude/skills</code> and <code>~/.agents/skills</code>, up to 200, and puts them into the first prompt of every new chat, so a Local chat through opencode gets slower with every skill you have installed.</p>
-      <p>Here's what we measured on one 48 GB Apple Silicon Mac on 21 and 22 November, with a 27B Qwen model in LM Studio and a 65,536-token window:</p>
-      <div class="table-wrap">
-        <table>
-          <caption>opencode first turns, one 48 GB Mac.</caption>
-          <thead>
-            <tr><th scope="col">Setup</th><th scope="col">First prompt</th><th scope="col">Result</th></tr>
-          </thead>
-          <tbody>
-            <tr><th scope="row">Standard bb 0.49, no skills</th><td class="num">About 11,000 tokens for the whole first turn</td><td>First output after 196 seconds, right answer after about 4 minutes, with two file reads</td></tr>
-            <tr><th scope="row">200 skills on a larger setup, with the Mac busy with other work</th><td class="num">About 48,700 tokens</td><td>Three test chats gave no answer in 12 minutes</td></tr>
-            <tr><th scope="row">Plain opencode in a terminal, no skills</th><td class="num">6,077 tokens</td><td>Right answer in 161 seconds, follow-up in 41 seconds</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p>With that window, opencode starts to shorten a chat by itself at 49,536 tokens, and bb shows nothing while it does it, so with 200 skills you can be sitting there with no sign anything is happening.</p>
-      <h3>What the Console tells you</h3>
-      <p>From about 90 skills, the Local orb shows a note for opencode with your count and an estimated size, which is about 11,000 tokens plus about 155 per skill, and from about 190 skills it also tells you the 200-skill result above. Below about 90 skills it shows nothing. We only measured 0 and 200 skills, so everything in between is an estimate, and it isn't a measurement of your Mac.</p>
-      <h3>What you can do today</h3>
-      <ul>
-        <li><strong>Count them.</strong> <code>ls ~/.claude/skills ~/.agents/skills | wc -l</code> gives you a rough number, because it counts every entry in both folders.</li>
-        <li><strong>Move the ones you don't use</strong> out of <code>~/.claude/skills</code> and <code>~/.agents/skills</code>, and bear in mind your other Claude Code and agent chats stop seeing them too.</li>
-      </ul>
-      <p>The Console doesn't trim the skill list for a Local chat yet. That's the next piece of work, a small setup for Local chats on opencode that's sized to the model, and until then the list is yours to manage.</p>
+      <p>The line under the orb says how many skills and agents the chat gets and how many tokens it starts with, and Change opens the Local loadout. A Local chat on Claude Code starts in Accept Edits, so edits inside the chat's folder go through and anything outside it asks you once.</p>
     </div>
   </section>
 
   <section id="speed" aria-labelledby="h-speed">
     <div class="col">
-      <h2 id="h-speed"><span class="num">7</span>Speed</h2>
-      <p>These are the numbers from one 48 GB Apple Silicon Mac with a 27B Qwen model, and we haven't measured other machines, so read each row with the harness and the bb it was measured on.</p>
-      <div class="table-wrap">
-        <table>
-          <caption>Measured times, one 48 GB Mac.</caption>
-          <thead>
-            <tr><th scope="col">What you do</th><th scope="col" class="num">Time to the reply</th></tr>
-          </thead>
-          <tbody>
-            <tr><th scope="row">opencode on standard bb, no skills, first reply</th><td class="num">First output after 196 seconds, right answer after about 4 minutes</td></tr>
-            <tr><th scope="row">opencode with 200 skills, first reply</th><td class="num">No answer in 12 minutes, in three test chats</td></tr>
-            <tr><th scope="row">Claude Code harness, our own bb build, first reply</th><td class="num">About 2.5 to 4 minutes</td></tr>
-            <tr><th scope="row">Claude Code harness, standard bb 0.49, Mac busy with other work, first reply</th><td class="num">About 12 minutes</td></tr>
-            <tr><th scope="row">Claude Code harness, follow-up in the same sitting</th><td class="num">9 to 32 seconds</td></tr>
-            <tr><th scope="row">Claude Code harness, follow-up after the chat's session had closed</th><td class="num">As long as a first reply</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p>The first reply is slow because a model on your Mac has to read the whole first prompt once before it writes a word, and that's the harness's own start-up text, its instructions and its list of tools, plus your skills on opencode. After that the model keeps it, so a follow-up only reads the new part, and that's why the second message comes back in seconds. If the chat's session has closed, a follow-up took as long as a first reply in our tests. On standard bb, Claude Code's first prompt was about 25,400 tokens, and when the Mac is busy the model can need more than 5 minutes to read it, and a request with no reply after 5 minutes is sent again, which is why our standard bb test took about 12 minutes to its first reply, and any Mac that needs more than 5 minutes to read that prompt can see the same long first reply, and we haven't fixed it yet.</p>
+      <h2 id="h-speed"><span class="num">3</span>How fast it is</h2>
+      <p>On a clean, standard bb 0.49 with Qwen 3.8 27B abliterated on Ollama and 8 small test skills, a new chat started at about 14,600 tokens, and the first words came after 72 to 73 seconds with the model not in memory, where 1.13.0 started a chat in the same project at about 25,800 tokens, and the first words of a follow-up came after 2 to 3 seconds. So plan on about a minute to a minute and a half to the first words of a new chat, and then follow-ups in a few seconds.</p>
     </div>
-    <figure class="wide label">
-      <a class="shot" href="img/local-models/10_context_window_32k_of_66k.png"><img src="img/local-models/10_context_window_32k_of_66k.png" width="800" height="112" alt="The context meter under the chat box reading 32k of 66k, 49 per cent."></a>
-      <figcaption>A Local chat on Claude Code after two turns, on our own bb build: 32k of the 66k window used, most of it Claude Code's start-up text.</figcaption>
-    </figure>
-    <figure class="wide">
-      <a class="shot" href="img/local-models/09_local_follow_up_warm.png"><img src="img/local-models/09_local_follow_up_warm.png" width="1496" height="444" alt="A follow-up in the same chat asking to read four.txt. Below: Explored 1 file; Permission granted: Read; Thought 10s. The answer reads: four.txt says Return the library book."></a>
-      <figcaption>A follow-up on Claude Code with the model still in memory came back in 30 seconds, and that includes one Allow once click.</figcaption>
-    </figure>
-  </section>
-
-  <section id="permissions" aria-labelledby="h-perm">
-    <div class="col">
-      <h2 id="h-perm"><span class="num">8</span>Permission settings, in plain words</h2>
-      <p>This is about the mode a Local chat starts in, and once it's running, switching modes in the chat is up to you.</p>
-    </div>
-    <figure class="wide small">
-      <a class="shot" href="img/local-models/p06_permission_picker.png"><img src="img/local-models/p06_permission_picker.png" width="576" height="500" alt="bb's permission mode menu with three choices. Accept Edits, ticked: applies edits inside the workspace automatically, anything beyond the workspace asks you first. Approve for me: same workspace sandbox, with requests reviewed automatically, high-risk actions can still come back to you. Full Access: no sandbox and no approvals, the agent can run anything on your machine."></a>
-      <figcaption>bb's own permission picker on a Local chat on Claude Code, on standard bb, with Accept Edits chosen.</figcaption>
-    </figure>
-    <div class="col">
-      <ul>
-        <li><strong>A Local chat on Claude Code starts in Accept Edits</strong>, so it asks before it changes anything outside its own folder. In our test a write outside the folder needed exactly one Allow once click.</li>
-        <li><strong>It starts in Full Access only if you choose that</strong>, either in bb's picker in the new-chat box or as <code>localPermissionMode</code> in your profile. In our test a write and read-back in Full Access finished in 159 seconds with no waiting.</li>
-        <li><strong>At the start, Approve for me isn't used for a local model.</strong> It checks every step with that same model, one minute at a time, and one small file write took 16 minutes. If you pick it in the box, the chat starts in Accept Edits, or in Full Access when that's your profile's choice.</li>
-        <li><strong>Local chats in opencode, and Online chats, start in their usual mode.</strong> On our clean copy of standard bb that was Full Access for opencode, so check the picker before you send.</li>
-      </ul>
-    </div>
-    <figure class="wide">
-      <a class="shot" href="img/local-models/06_accept_edits_approval_card.png"><img src="img/local-models/06_accept_edits_approval_card.png" width="1496" height="384" alt="An approval card in the chat: Approval needed. Path is outside allowed working directories. Tool: Read. Permission: Network access. Buttons: Deny, Allow for session, Allow once."></a>
-      <figcaption>Accept Edits asking before Claude Code reads a file outside the chat's folder, on our own bb build. bb's card labels it "Network access", but it was a file read in the demo folder.</figcaption>
-    </figure>
   </section>
 
   <section id="privacy" aria-labelledby="h-privacy">
     <div class="col">
-      <h2 id="h-privacy"><span class="num">9</span>Privacy, straight</h2>
-      <p>Everything in this section is true of the release code, and it was proved on our own bb build and checked by reading standard bb's code. On standard bb 0.49 we also ran the fork rule, the block when Claude Code is switched off and the clear error with the model unloaded, on an earlier build of this release, and they held, and the rest wasn't run there.</p>
-
-      <h3>What "runs on this Mac" means</h3>
-      <p>"Runs on this Mac" describes the model, and only the model. A Local chat sends its prompts to a model in Ollama or LM Studio on this Mac, not to a Claude or Codex account, and it doesn't mean the chat is cut off from the internet, because the chat's tools, a project's own connectors, web fetches and bb's own tools, which can message other chats, can still reach the network.</p>
-      <p>The label under the box only shows where the Console holds the chat to that model. On Claude Code, the launcher locks the model. In opencode, the Console checks the chat's current model, so if you switch an opencode chat to another model inside the chat, the label says it started Local and names the model it runs on now, or the model picked for its next reply. No other harness ever shows the label.</p>
-      <p>The Console leaves out a model Ollama reports as coming from its cloud, by its own remote fields or a <code>:cloud</code> or <code>-cloud</code> tag, and it leaves out every Ollama model when <code>OLLAMA_HOST</code> points Ollama at another machine. That check hasn't been tried against a real cloud model, and an opencode provider or runner pointed at another machine is outside it.</p>
+      <h2 id="h-privacy"><span class="num">4</span>What stays on your Mac</h2>
+      <p>"Runs on this Mac" describes the model. A Local chat reads only its own settings, so it doesn't read a project's CLAUDE.md or your main one, or a project's hooks or settings, but your ticked skills and agents still arrive. The chat's tools, web fetches and bb's own tools can still reach the network, and before a web fetch of a new site Claude Code asks Anthropic whether the site may be fetched (the site's name only).</p>
+      <p>In 1.13.0 a project's own Claude settings could send a Local chat on Claude Code to another address, and 1.14.0 closes that, so it's worth updating.</p>
     </div>
-    <figure class="wide">
-      <a class="shot" href="img/local-models/p07_composer_model_box.png"><img src="img/local-models/p07_composer_model_box.png" width="1496" height="336" alt="The new-chat box for a Local chat on Claude Code. The placeholder reads: Ask qwen/qwen3.8-27b, on this Mac, in Claude Code. bb's model box in the corner still reads Opus 5.5 Medium, and the row below reads Allowance not reported."></a>
-      <figcaption>On standard bb, bb's own model box still reads "Opus 5.5 Medium" on a Local chat on Claude Code. That's bb's display and only bb can change it, and the Local label under a running chat is the one to trust.</figcaption>
-    </figure>
-    <div class="col">
-      <h3>The four cases where a chat marked Local can still reach a cloud account on its own</h3>
-      <p>A Local chat in opencode isn't itself sent to a Claude or Codex account by the Console, but a chat it starts can be, in cases 1, 3 and 4 below. For a Local chat on Claude Code, and for a Claude Code chat that any Local chat starts, there are exactly four cases:</p>
-      <ol>
-        <li>The plugin isn't loaded, or bb drops the plugin's settings after bb's 5-second limit, when the chat starts or restarts.</li>
-        <li>The chat's first start is on a machine other than the bb server's Mac, and its Local mark can't be read.</li>
-        <li>A chat it started doesn't get held to the local model, in one of these ways:
-          <ul>
-            <li>it begins while the plugin can't read that chat's own mark;</li>
-            <li>it begins while the plugin can't read what started it and doesn't yet know any Local chat on this Mac;</li>
-            <li>it's more than four steps down from the Local chat;</li>
-            <li>it runs on another harness, such as Codex.</li>
-          </ul>
-        </li>
-        <li>Another plugin sets which <code>claude</code> program a chat runs before the Console does.</li>
-      </ol>
-
-      <h3>Your own choices that take a Local chat's content elsewhere</h3>
-      <p>bb keeps every chat's messages in its own history, Local chats included, and a Local chat's content goes to another model or person if you do any of these:</p>
-      <ul>
-        <li>hand the chat over, or continue it in a new chat, on an online model;</li>
-        <li>mention it with @ in an online chat;</li>
-        <li>share messages from it through a guest review link;</li>
-        <li>ask another chat to read it from bb's history;</li>
-        <li>in opencode, switch the chat itself to an online model.</li>
-      </ul>
-      <p>The Console refuses three things for a Local chat or a chat made from one, because each would carry the conversation away:</p>
-      <ul>
-        <li>moving it to another machine;</li>
-        <li>starting new work on another Mac from it, when "Include conversation context" is on;</li>
-        <li>giving its messages to a model started alongside it, or to a continuation.</li>
-      </ul>
-
-      <h3>Forks, and chats a Local chat starts</h3>
-      <p>A fork of a Local chat on Claude Code, or a chat any Local chat starts on Claude Code, up to four steps down, is treated as the Local chat. With Local chats on Claude Code switched on, it runs on the same local model, whatever model was picked for it, and with Local chats on Claude Code switched off, or on another machine, it doesn't start, and bb shows an error saying a fork, or a chat started by a Local chat, stays on this Mac.</p>
-      <p>A fork of a Local chat in opencode is different, because bb keeps the fork in opencode on the same model, and the fork carries no Local label.</p>
-      <p>For a Local chat on Claude Code, a fork the plugin misses can't find the Local chat's history, so it fails instead of starting. Once the plugin knows any Local chat on this Mac, there's one more stop: a Claude Code chat whose origin can't be read is stopped for that one start, with a message to send again, and an ordinary chat then starts on the next try.</p>
-      <p>A chat on another harness that a Local chat started, a Codex agent for example, runs on its own model, and it's never labelled Local.</p>
-
-      <h3>Where Local transcripts are kept</h3>
-      <p>A Local chat on Claude Code keeps its transcript on this Mac, in <code>~/.claude-local/config/projects</code>. That's apart from your main Claude Code history in <code>~/.claude/projects</code>, so tools that read the main history don't see Local chats, and like every chat, its messages are also kept in bb's own history on this Mac.</p>
-
-      <h3>What we measured</h3>
-      <ul>
-        <li><strong>If the runner is off, the chat stops.</strong> With Ollama stopped, a Local chat on Claude Code said "Ollama is not running on this Mac. Start Ollama, then send again." and with the model unloaded it gave the error below, and in both cases nothing fell back to a cloud model.</li>
-        <li><strong>Where Claude Code's own traffic went.</strong> During our Claude Code test turns on our own bb build, which only read and wrote files, we sampled the Claude Code process and everything it started about 1,800 times, and it only talked to 127.0.0.1. A connection shorter than half a second could have been missed, and this says nothing about what a chat's tools would reach if you asked them to.</li>
-      </ul>
-    </div>
-    <figure class="wide">
-      <a class="shot" href="img/local-models/11_clear_error_model_not_loaded.png"><img src="img/local-models/11_clear_error_model_not_loaded.png" width="1496" height="520" alt="A Local chat where the question What does five.txt say? got the reply: API Error: 400 qwen/qwen3.8-27b is not loaded in LM Studio. Load it from the Local orb, or run: lms load qwen/qwen3.8-27b --context-length 65536."></a>
-      <figcaption>With the model unloaded, a Local chat on Claude Code stops with a clear error and tells you how to load it. From our own bb build.</figcaption>
-    </figure>
   </section>
 
   <section id="limits" aria-labelledby="h-limits">
     <div class="col">
-      <h2 id="h-limits"><span class="num">10</span>Known limits</h2>
+      <h2 id="h-limits"><span class="num">5</span>Limits</h2>
       <ul>
-        <li><strong>What we've run on standard bb.</strong> On a separate, clean copy of standard bb 0.49, the public installer put the Console in, the same installer, run again against a local copy of this release, updated it in place, a Local chat through opencode gave the right answer, and with the Claude Code box unticked the Local orb showed no Claude Code switch.</li>
-        <li><strong>The Claude Code harness on standard bb.</strong> On the same clean copy of standard bb 0.49, a Local chat on Claude Code gave the right answer, but the first reply took about 12 minutes with the Mac busy with other work, because its first prompt, about 25,400 tokens, needed more than 5 minutes to read and a request with no reply after 5 minutes is sent again, and follow-ups in the same sitting took 9 to 32 seconds, and any Mac that needs more than 5 minutes to read that prompt can see the same long first reply, and we haven't fixed it yet.</li>
-        <li><strong>The Claude Code harness is experimental</strong>, and apart from that test, the fork rule, the block when it's switched off and the error with the model unloaded, which ran on an earlier build of this release and weren't run again on the final one, everything we proved on it ran on our own bb build.</li>
-        <li><strong>Your skill list slows opencode down</strong>, and the Console doesn't trim it yet, see <a href="#skills">Your skill list and opencode</a>.</li>
-        <li><strong>One Mac tested.</strong> A 48 GB Apple Silicon Mac. 24 to 32 GB is untested, 16 GB isn't a target, and nothing was run on Windows or Linux.</li>
-        <li><strong>Online wasn't tested on the clean copy.</strong> That copy wasn't signed in to a Claude account, so an Online chat there wasn't tried.</li>
-        <li><strong>Updating from 1.12 was tested.</strong> On a second clean copy we finished Setup on 1.12.5, made a chat, and updated to the final build from a local copy of this release: everything updated in place, Setup kept your choices, and the new-chat screen showed the Online and Local orbs with Online chosen.</li>
-        <li><strong>Old local chats aren't marked.</strong> A chat you made on a local model before 1.13 has no Local mark after the update, so the sidebar counts it as Online.</li>
-        <li><strong>Saving Setup after the update</strong> changes the preset name from "simple" to "custom", and nothing you ticked before changes.</li>
-        <li><strong>The skill-list note was checked on standard bb too</strong>, in that second run on the final build, at 120, 200 and 260 skills. At 200 skills it gives two sizes, the estimate of about 42,000 tokens and the about 48,000 we measured on a larger setup.</li>
-        <li><strong>Passing the check isn't a promise.</strong> The check shows the model is given the tools and has the window, and that doesn't prove every model that passes will use the tools well.</li>
-        <li><strong>One large model at a time.</strong> A 27B model takes about 18 GB in LM Studio, so load one and unload it when you're done.</li>
-        <li><strong>Downloads are on you.</strong> The Console doesn't download or set up models in this release.</li>
-        <li><strong>The version number doesn't move.</strong> After the update the Console plugin still reports 0.35.0 in bb's plugin list, because bb updates plugins by commit, so the number isn't how you tell you're on 1.13.0.</li>
-        <li><strong>bb resends a failed turn.</strong> If a Local turn fails because Ollama was off, bb's retry can resend it by itself once Ollama is back, and in our test that resend ran on the local model.</li>
-        <li><strong>The Cache Clock card shows up on Local chats</strong> with cloud cache prices and a Keep warm button, and none of that applies to a Local chat, so don't press Keep warm on one.</li>
-        <li><strong>The tour has no step for Local yet.</strong> The guided tour doesn't point at the Local orb in this release.</li>
-        <li><strong>The four cloud cases and the cloud model name in bb's box</strong> are described under <a href="#privacy">Privacy</a>.</li>
+        <li>We tested it on one 48 GB Apple silicon Mac, and the Qwen model needs about 21 GB of memory while it's loaded. Smaller Macs and Windows aren't tested.</li>
+        <li>A new chat takes about a minute or more to start, and the model is as good as the local model, which is Qwen 3.8 27B, not Claude.</li>
+        <li>In opencode there's no tick list, and opencode sends every skill in the first prompt, so on our own Mac a Local chat there took 12 minutes to answer with 180 skills.</li>
+        <li>A few rare cases can still send a chat marked Local to a cloud account, and the Features guide inside the Console lists them.</li>
+        <li>Settings an administrator manages for the Mac were not tested.</li>
       </ul>
     </div>
   </section>
 
   <section id="get-it" aria-labelledby="h-get">
     <div class="col">
-      <h2 id="h-get"><span class="num">11</span>Where to get it</h2>
-      <p>The Console is free to use for yourself and your own business, and it lives at <a href="https://github.com/skyremote/navaigate-console">github.com/skyremote/navaigate-console</a>. You need bb 0.48 or later, open and signed in, and then you run one command in a terminal, and if you already have the Console the same command updates it:</p>
+      <h2 id="h-get"><span class="num">6</span>Where to get it</h2>
+      <p>The Console lives at <a href="https://github.com/skyremote/navaigate-console">github.com/skyremote/navaigate-console</a>, and you need bb 0.48 or later (Local chats were tested on bb 0.49), open and signed in, and then one command in a terminal, which also updates the Console if you already have it:</p>
 <pre><code>curl -fsSL https://raw.githubusercontent.com/skyremote/navaigate-console/main/install.sh | bash</code></pre>
-      <p>It's a good habit to read a script before you run it, and the README in the repository shows how to see every step first with <code>--dry-run</code>. Then reload bb, count your skills, tick <em>Online or Local on the new-chat screen</em> in Setup, open a new chat and pick Local, and if you want Claude Code as the harness, tick it in Setup first.</p>
-      <p>If you try it on a Mac with a different amount of memory, tell us in the community how much memory you've got, how many skills and how long the first reply took, because that's exactly the number we don't have yet.</p>
+      <p>Set up, the models and everything else: <a href="https://github.com/skyremote/navaigate-console/blob/main/INSTALL.md#local-models-optional">INSTALL.md, Local models</a>.</p>
     </div>
   </section>
 
   <footer>
     <div class="col">
-      <p>NavAIgate Console 1.13.0. Measurements from one 48 GB Apple Silicon Mac on 21 and 22 November 2026, on our own bb build and on a clean copy of standard bb 0.49. Each caption says which one a screenshot comes from.</p>
+      <p>NavAIgate Console 1.14.0. Figures from one 48 GB Apple silicon Mac, November 2026, on a clean, standard bb 0.49 unless the line says our own Mac.</p>
     </div>
   </footer>
 </main>

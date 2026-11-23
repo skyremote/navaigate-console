@@ -6,7 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createLocalClaudeRoute, createLocalClaudeSetup, ensureLocalClaude, findRealClaude, localConfigPath, ownProjectsFolder, SETUP_RETRY_MS } from "../server-local-claude";
+import { createLocalClaudeRoute, createLocalClaudeSetup, ensureLocalClaude, findRealClaude, readStoredSecret, LOCAL_TRIMMED_TOOLS, localConfigPath, ownProjectsFolder, SETUP_RETRY_MS } from "../server-local-claude";
 
 let home: string;
 let bin: string;
@@ -77,7 +77,21 @@ describe("ensureLocalClaude", () => {
     fs.writeFileSync(path.join(home, ".claude", "settings.json"), JSON.stringify({ cleanupPeriodDays: 365, hooks: { Stop: [] }, enabledPlugins: { x: true } }));
     const got = ensureLocalClaude(home, { PATH: bin });
     expect(got.ok).toBe(true);
-    expect(JSON.parse(fs.readFileSync(path.join(localConfigPath(home), "settings.json"), "utf8"))).toEqual({ enabledPlugins: {}, hooks: {}, cleanupPeriodDays: 365 });
+    expect(JSON.parse(fs.readFileSync(path.join(localConfigPath(home), "settings.json"), "utf8"))).toEqual({ enabledPlugins: {}, hooks: {}, cleanupPeriodDays: 365, permissions: { deny: [...LOCAL_TRIMMED_TOOLS] } });
+  });
+
+  it("leaves Claude Code's scheduling, watching, messaging, workflow and worktree tools out of a Local chat, unless all tools are kept", () => {
+    fakeClaude(bin);
+    expect(ensureLocalClaude(home, { PATH: bin }).ok).toBe(true);
+    const file = path.join(localConfigPath(home), "settings.json");
+    const deny = (JSON.parse(fs.readFileSync(file, "utf8")) as { permissions?: { deny?: string[] } }).permissions?.deny ?? [];
+    expect(deny).toEqual(["Monitor", "SendMessage", "ListAgents", "Workflow", "ScheduleWakeup", "CronCreate", "CronDelete", "CronList", "EnterWorktree", "ExitWorktree", "ReportFindings", "WebSearch"]);
+    // File work, the shell, skills and agents stay.
+    for (const kept of ["Read", "Edit", "Write", "NotebookEdit", "Bash", "Skill", "Agent", "TaskStop", "WebFetch"]) expect(deny).not.toContain(kept);
+    expect(deny.some((d) => d.startsWith("mcp__"))).toBe(false);
+    // Keeping everything: no deny rules, and the file is rewritten to say so.
+    expect(ensureLocalClaude(home, { PATH: bin }, { allTools: true }).ok).toBe(true);
+    expect(JSON.parse(fs.readFileSync(file, "utf8"))).toEqual({ enabledPlugins: {}, hooks: {} });
   });
 
   it("says why it cannot set up when there is no claude program, and writes nothing", () => {
@@ -148,7 +162,7 @@ describe("the setup as bb's server uses it", () => {
     const ensure = vi.fn(() => ensureLocalClaude(home, { PATH: bin }));
     fakeClaude(bin);
     const setup = createLocalClaudeSetup({ on: () => false, ensure, warn: vi.fn() });
-    expect(setup()).toEqual({ ok: false, reason: "Local chats on Claude Code are switched off" });
+    expect(setup()).toEqual({ ok: false, reason: "Local chats on Claude Code are off in Setup" });
     const fetch = vi.fn();
     const route = createLocalClaudeRoute({ secret: () => (setup().ok ? "never" : null), fetch: fetch as unknown as typeof globalThis.fetch });
     const req = new Request("http://x/local/v1/messages", { method: "POST", headers: { authorization: "Bearer anything" }, body: "{}" });
@@ -193,5 +207,35 @@ describe("the setup as bb's server uses it", () => {
   it("turns a throw into a failure with its reason", () => {
     const setup = createLocalClaudeSetup({ on: () => true, ensure: () => { throw new Error("disk full"); }, warn: vi.fn() });
     expect(setup()).toEqual({ ok: false, reason: "disk full" });
+  });
+});
+
+describe("readStoredSecret (the route after a plugin reload)", () => {
+  it("reads the secret a launcher already on disk holds, and writes nothing", () => {
+    expect(readStoredSecret(home)).toBeNull();
+    expect(fs.existsSync(path.join(home, ".claude-local"))).toBe(false);
+    fakeClaude(bin);
+    const got = ensureLocalClaude(home, { PATH: bin });
+    if (!got.ok) throw new Error("setup failed");
+    const before = fs.statSync(path.join(home, ".claude-local", "secret")).mtimeMs;
+    expect(readStoredSecret(home)).toBe(got.secret);
+    expect(fs.statSync(path.join(home, ".claude-local", "secret")).mtimeMs).toBe(before);
+  });
+  it("takes no secret from a damaged file, or through a linked Local folder", () => {
+    fs.mkdirSync(path.join(home, ".claude-local"), { recursive: true });
+    fs.writeFileSync(path.join(home, ".claude-local", "secret"), "short\n", { mode: 0o600 });
+    expect(readStoredSecret(home)).toBeNull();
+    // A well-formed secret that others can read is refused too.
+    fs.writeFileSync(path.join(home, ".claude-local", "secret"), "B".repeat(43) + "\n");
+    fs.chmodSync(path.join(home, ".claude-local", "secret"), 0o644);
+    expect(readStoredSecret(home)).toBeNull();
+    fs.chmodSync(path.join(home, ".claude-local", "secret"), 0o600);
+    expect(readStoredSecret(home)).toBe("B".repeat(43));
+    fs.rmSync(path.join(home, ".claude-local"), { recursive: true });
+    const elsewhere = path.join(home, ".claude", "x");
+    fs.mkdirSync(elsewhere, { recursive: true });
+    fs.writeFileSync(path.join(elsewhere, "secret"), "A".repeat(43) + "\n");
+    fs.symlinkSync(path.join(home, ".claude", "x"), path.join(home, ".claude-local"));
+    expect(readStoredSecret(home)).toBeNull();
   });
 });

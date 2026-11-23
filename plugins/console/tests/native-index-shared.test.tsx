@@ -105,5 +105,5 @@ describe("one index poll for the whole app", () => {
     expect(polls.peak).toBe(1);
     view.unmount();
     expect(polls.active.size).toBe(0);
-  });
+  }, 30_000); // it loads the whole app: 0.3 s alone, over 5 s in the full suite on a busy Mac
 });

@@ -21,7 +21,7 @@ const toasts = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), warning: vi
 vi.mock("sonner", () => ({ toast: toasts }));
 
 import { Hero, findHostComposer } from "../src/new-thread-hero";
-import { OPENCODE_BASE_TOKENS, OPENCODE_TOKENS_PER_SKILL, SKILLS_SLOW_TOKENS, SKILLS_STALL_TOKENS, forgetLocalModels, forgetSkillCount, localModeNote, memoryStatus, offlineText, opencodeFirstPromptTokens, skillsNote } from "../src/session-orbs";
+import { OPENCODE_BASE_TOKENS, OPENCODE_TOKENS_PER_SKILL, SKILLS_SLOW_TOKENS, SKILLS_STALL_TOKENS, forgetLocalModels, forgetSkillCount, localModeNote, memoryStatus, offlineText, opencodeFirstPromptTokens, skillsNote, slotsNote } from "../src/session-orbs";
 import { getProfile, setProfileState } from "../src/use-profile";
 import { fixtureProfile } from "./setup-profile";
 import {
@@ -143,7 +143,7 @@ const LOCAL = [
   { id: "opencode/big-pickle", model: "opencode/big-pickle", displayName: "Big Pickle", isDefault: false },
 ];
 
-function mountHero(opts: { choice?: HomeChoice; models?: typeof LOCAL | "fail"; tools?: (model: string) => { tools: boolean | null; reason: string } | Promise<never>; remote?: string[]; words?: string[]; leanReady?: boolean; skills?: number | null | "fail" | { skills: number | null; capped: boolean; complete: boolean }; modelsDelay?: number } = {}) {
+function mountHero(opts: { choice?: HomeChoice; models?: typeof LOCAL | "fail"; tools?: (model: string) => { tools: boolean | null; reason: string } | Promise<never>; remote?: string[]; words?: string[]; leanReady?: boolean; skills?: number | null | "fail" | { skills: number | null; capped: boolean; complete: boolean }; modelsDelay?: number; memory?: unknown } = {}) {
   if (opts.choice) localStorage.setItem(HOME_CHOICE_KEY, JSON.stringify(opts.choice));
   const host = document.createElement("div");
   host.setAttribute("data-app-composer-role", "primary");
@@ -167,6 +167,7 @@ function mountHero(opts: { choice?: HomeChoice; models?: typeof LOCAL | "fail"; 
         const skills = opts.skills === undefined ? 0 : opts.skills;
         return { skills, capped: skills === 200, complete: true };
       },
+      ...(opts.memory ? { local_model_state: () => opts.memory } : {}),
       local_model_tools: ({ model }: { model: string }) => (opts.tools ?? ((m: string) => (/deepseek/.test(m) ? { tools: false, reason: "no tools" } : { tools: true, reason: "ok" })))(model),
     } as never,
     sdk: { threads: { spawn }, providers: { models } } as never,
@@ -547,8 +548,22 @@ describe("the hero", () => {
     expect(host.hasAttribute("data-nav-session-hidden")).toBe(false);
   });
 
-  it("community edition: no Lean switch even with a lean folder, and Local stays in opencode unless Claude Code is ticked", async () => {
+  it("community edition: Claude Code is the harness chosen first for a capable Local model when Local chats on Claude Code are not picked either way (on by default)", async () => {
     const community = { ...fixtureProfile(), edition: "community" as const, features: { preset: "custom" as const, picks: { "EXTRA-AH": true } } };
+    setProfileState({ profile: community, source: "file", errors: [], path: "fixture", stamp: "d1" });
+    mountHero({ choice: { where: "local", online: "full", localModel: "ollama/qwen", localHarness: "claude" } });
+    await waitFor(() => expect(document.querySelector('[data-nav-part="session-composer"]')?.getAttribute("data-harness")).toBe("claude"));
+    expect(document.querySelector('[data-nav-part="local-claude-off"]')).toBeNull();
+    // opencode stays one click away, and a remembered opencode choice wins.
+    expect(screen.getByRole("button", { name: "opencode" })).toBeTruthy();
+    cleanup();
+    localStorage.clear();
+    mountHero({ choice: { where: "local", online: "full", localModel: "ollama/qwen", localHarness: "opencode" } });
+    await waitFor(() => expect(document.querySelector('[data-nav-part="session-composer"]')?.getAttribute("data-harness")).toBe("opencode"));
+  });
+
+  it("community edition: no Lean switch even with a lean folder, and Local stays in opencode when Claude Code is unticked", async () => {
+    const community = { ...fixtureProfile(), edition: "community" as const, features: { preset: "custom" as const, picks: { "EXTRA-AH": true, "EXTRA-AM": false } } };
     setProfileState({ profile: community, source: "file", errors: [], path: "fixture", stamp: "c1" });
     const { spawn } = mountHero({ choice: { where: "local", online: "lean", localModel: "ollama/qwen", localHarness: "claude" } });
     const box = await screen.findByTestId("embedded-composer");
@@ -559,6 +574,8 @@ describe("the hero", () => {
     expect(document.querySelector('[data-nav-part="local-mode-note"]')).toBeNull();
     expect(composer.props).not.toHaveProperty("defaultPermissionMode");
     expect(box.dataset.provider).toBe("acp-opencode");
+    // Off by a saved pick: the orb says so in one plain line, with a way to Setup; nothing switches it on.
+    expect(document.querySelector('[data-nav-part="local-claude-off"]')?.textContent).toBe("Local chats on Claude Code are off in Setup. Open Setup");
     await act(async () => { await composer.props!.onSubmit(request({ providerId: "acp-opencode", model: "ollama/qwen" })); });
     expect(spawn.mock.calls[0][0]).toMatchObject({ providerId: "acp-opencode", model: "ollama/qwen", pluginMetadata: { sessionProfile: { profile: "local", model: "ollama/qwen", v: 1 } } });
     cleanup();
@@ -616,16 +633,16 @@ describe("the skill-list note on the Local orb", () => {
 
   it("says nothing up to 25,000 tokens (90 skills), warns of a slow reply above it, and names the 200-skill test above 40,000 (188 skills)", () => {
     for (const c of [null, undefined, full(0), full(10), full(90), { skills: null, capped: false, complete: false }, { skills: Number.NaN, capped: false, complete: true }]) expect(skillsNote(c)).toBeNull();
-    expect(skillsNote(full(91))).toBe(`opencode sends your whole skill list to the model: 91 skills, about 25,000 tokens or more before your first word. Expect a slow first reply. ${ADVICE}`);
-    expect(skillsNote(full(95))).toBe(`opencode sends your whole skill list to the model: 95 skills, about 25,000 tokens or more before your first word. Expect a slow first reply. ${ADVICE}`);
-    expect(skillsNote(full(150))).toBe(`opencode sends your whole skill list to the model: 150 skills, about 34,000 tokens or more before your first word. Expect a slow first reply. ${ADVICE}`);
-    expect(skillsNote(full(187))).toMatch(/187 skills, about 39,000 tokens or more before your first word\. Expect a slow first reply\./);
-    expect(skillsNote(full(188))).toBe(`opencode sends your whole skill list to the model: 188 skills, about 40,000 tokens or more before your first word. ${STALL} ${ADVICE}`);
-    expect(skillsNote(full(190))).toBe(`opencode sends your whole skill list to the model: 190 skills, about 40,000 tokens or more before your first word. ${STALL} ${ADVICE}`);
+    expect(skillsNote(full(91))).toBe(`opencode sends your whole skill list to the model: 91 skills, about 25,000 tokens before your first word. Expect a slow first reply. ${ADVICE}`);
+    expect(skillsNote(full(95))).toBe(`opencode sends your whole skill list to the model: 95 skills, about 25,000 tokens before your first word. Expect a slow first reply. ${ADVICE}`);
+    expect(skillsNote(full(150))).toBe(`opencode sends your whole skill list to the model: 150 skills, about 34,000 tokens before your first word. Expect a slow first reply. ${ADVICE}`);
+    expect(skillsNote(full(187))).toMatch(/187 skills, about 39,000 tokens before your first word\. Expect a slow first reply\./);
+    expect(skillsNote(full(188))).toBe(`opencode sends your whole skill list to the model: 188 skills, about 40,000 tokens before your first word. ${STALL} ${ADVICE}`);
+    expect(skillsNote(full(190))).toBe(`opencode sends your whole skill list to the model: 190 skills, about 40,000 tokens before your first word. ${STALL} ${ADVICE}`);
   });
 
   it("at opencode's limit says so and not 'your whole skill list'; a count that stopped early says 'at least'", () => {
-    expect(skillsNote({ skills: 200, capped: true, complete: true })).toBe(`opencode sends your skills to the model: 200 skills, opencode's limit, about 42,000 tokens or more before your first word. ${STALL} ${ADVICE}`);
+    expect(skillsNote({ skills: 200, capped: true, complete: true })).toBe(`opencode sends your skills to the model: 200 skills, opencode's limit, about 42,000 tokens before your first word. ${STALL} ${ADVICE}`);
     expect(skillsNote({ skills: 200, capped: true, complete: true })).not.toMatch(/whole skill list/);
     expect(skillsNote({ skills: 120, capped: false, complete: false })).toBe(`opencode sends your whole skill list to the model: at least 120 skills, about 29,000 tokens or more before your first word. Expect a slow first reply. ${ADVICE}`);
     // An early stop below the threshold is still too small to say anything.
@@ -670,7 +687,7 @@ describe("the skill-list note on the Local orb", () => {
   });
 
   it("community edition without Claude Code for Local chats: the note shows with the same words", async () => {
-    const community = { ...fixtureProfile(), edition: "community" as const, features: { preset: "custom" as const, picks: { "EXTRA-AH": true } } };
+    const community = { ...fixtureProfile(), edition: "community" as const, features: { preset: "custom" as const, picks: { "EXTRA-AH": true, "EXTRA-AM": false } } };
     setProfileState({ profile: community, source: "file", errors: [], path: "fixture", stamp: "skills-c1" });
     mountHero({ choice: ON_CLAUDE, skills: { skills: 130, capped: false, complete: false } });
     await waitFor(() => expect(skillsNoteEl()).not.toBeNull());
@@ -686,7 +703,7 @@ describe("the skill-list note on the Local orb", () => {
     });
     observer.observe(document.body, { childList: true, subtree: true });
     try {
-      const community = { ...fixtureProfile(), edition: "community" as const, features: { preset: "custom" as const, picks: { "EXTRA-AH": true } } };
+      const community = { ...fixtureProfile(), edition: "community" as const, features: { preset: "custom" as const, picks: { "EXTRA-AH": true, "EXTRA-AM": false } } };
       setProfileState({ profile: community, source: "file", errors: [], path: "fixture", stamp: "skills-c2" });
       mountHero({ choice: ON_CLAUDE, skills: full(150), modelsDelay: 50 });
       await screen.findByTestId("embedded-composer");
@@ -708,6 +725,32 @@ describe("the skill-list note on the Local orb", () => {
       cleanup();
       localStorage.clear();
       forgetSkillCount();
+    }
+  });
+});
+
+describe("the memory row for an LM Studio model", () => {
+  const LM = "lmstudio/qwen/qwen3.8-27b";
+  const models = [...LOCAL, { id: LM, model: LM, displayName: "Qwen3.8 27B", isDefault: false }];
+  const memory = (slots?: number) => ({ reachable: false, lmStudio: { reachable: true }, loaded: [{ model: LM, bytes: 17_742_039_110, until: null, ...(slots ? { slots } : {}) }], loading: [], failed: [] });
+  const slotsEl = () => document.querySelector<HTMLElement>('[data-nav-part="local-memory-slots"]');
+  it("says when LM Studio holds the model with several slots, and how to fix it, without reloading it", async () => {
+    const { models: list } = mountHero({ choice: { where: "local", online: "full", localModel: LM, localHarness: "claude" }, models, memory: memory(4) });
+    await waitFor(() => expect(slotsEl()).not.toBeNull());
+    expect(slotsEl()!.textContent).toBe(slotsNote(4));
+    expect(slotsNote(4)).toMatch(/4 slots.*Unload, then Load \(Load asks for one slot\)/);
+    expect(document.querySelector('[data-nav-part="local-memory"]')!.textContent).toContain("In memory · 18 GB · 4 slots");
+    expect(list).toHaveBeenCalled();
+  });
+  it("says nothing more for one slot, or when LM Studio does not say", async () => {
+    for (const slots of [1, undefined]) {
+      mountHero({ choice: { where: "local", online: "full", localModel: LM, localHarness: "claude" }, models, memory: memory(slots) });
+      await waitFor(() => expect(document.querySelector('[data-nav-part="local-memory"]')?.getAttribute("data-memory")).toBe("loaded"));
+      expect(slotsEl()).toBeNull();
+      expect(document.querySelector('[data-nav-part="local-memory"]')!.textContent).not.toContain("slots");
+      cleanup();
+      localStorage.clear();
+      forgetLocalModels();
     }
   });
 });

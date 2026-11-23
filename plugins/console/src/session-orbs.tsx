@@ -6,11 +6,13 @@
 //                     Lean is a Claude chat that starts with that folder.
 //   Local             a chat on a model that runs on this Mac (opencode through
 //                     Ollama or LM Studio, or Claude Code where that is switched
-//                     on). A model the owner listed as unlocked opens the
-//                     padlock, the orb glows and sparks rise; with no list there
-//                     is no padlock at all. Where opencode will run the chat,
-//                     a note warns when the skill list it sends makes the
-//                     first prompt large (an estimate from the skill count).
+//                     on). A model named with an unlocked word (by default
+//                     abliterated or uncensored) or listed as unlocked opens the
+//                     padlock, the orb glows and sparks rise; with an empty word
+//                     list and no models listed there is no padlock at all.
+//                     Where opencode will run the chat, a note warns when the
+//                     skill list it sends makes the first prompt large (an
+//                     estimate from the skill count).
 //
 // Online + Full changes nothing: bb's own typing box stays and the chat is
 // created exactly as before, with no mark and no environment. Any other
@@ -30,6 +32,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { rpcContract } from "../server";
 import { Boundary } from "./boundary";
+import { LoadoutDialog, LoadoutLine, useLoadout, type LoadoutState } from "./local-loadout-panel";
 import { rememberSessionProfile } from "./session-profile-marks";
 import { Segmented, prefersReducedMotion } from "./home-kit";
 import { ORB_CENTRE_Y, ORB_RADIUS, mountOrb, toRgb, lightness, type OrbHandle, type Rgb } from "./usage-orb-engine";
@@ -232,7 +235,8 @@ export function skillsNote(count: SkillCount | null | undefined): string | null 
   const tokens = opencodeFirstPromptTokens(skills);
   if (tokens <= SKILLS_SLOW_TOKENS) return null;
   const n = (v: number) => v.toLocaleString("en-GB");
-  const about = `about ${n(Math.floor(tokens / 1000) * 1000)} tokens or more before your first word.`;
+  // "or more" only when the count stopped early (then the skills are "at least" this many).
+  const about = `about ${n(Math.floor(tokens / 1000) * 1000)} tokens${count!.complete ? "" : " or more"} before your first word.`;
   const size = count!.capped
     ? `opencode sends your skills to the model: ${n(skills)} skills, opencode's limit, ${about}`
     : `opencode sends your whole skill list to the model: ${count!.complete ? "" : "at least "}${n(skills)} skills, ${about}`;
@@ -606,7 +610,7 @@ function ChoiceOrb({ kind, liquid, palette, selected, unlocked = false, lock = f
 type Memory = {
   reachable: boolean;
   lmStudio?: { reachable: boolean; reason?: string };
-  loaded: Array<{ model: string; bytes: number; until: string | null }>;
+  loaded: Array<{ model: string; bytes: number; until: string | null; slots?: number }>;
   loading: string[];
   failed: Array<{ model: string; reason: string }>;
 };
@@ -624,6 +628,9 @@ export function memoryStatus(memory: Memory | null, id: string): MemoryStatus {
 export function offlineText(memory: Memory | null, id: string): string {
   return id.startsWith("lmstudio/") ? (memory?.lmStudio?.reason ?? "LM Studio is not running") : "Ollama is not running";
 }
+/** Under the memory row, for an LM Studio model loaded with several slots. */
+export const slotsNote = (slots: number) =>
+  `LM Studio holds this model with ${slots} slots, so a request sent again can be read again from the start, which takes minutes. To fix it: Unload, then Load (Load asks for one slot).`;
 const gigabytes = (bytes: number) => `${(bytes / 1e9).toFixed(bytes >= 1e10 ? 0 : 1)} GB`;
 
 /** What Ollama holds in memory, asked while the Local orb is chosen: often during a load, seldom otherwise. */
@@ -670,6 +677,8 @@ function ModelMemory({ model, local, mem }: { model: LocalModel; local: LocalMod
   const mine = mem.memory?.loaded.find((m) => m.model === model.id);
   const others = (mem.memory?.loaded ?? []).filter((m) => m.model !== model.id).slice(0, 2);
   const failure = mem.memory?.failed.find((m) => m.model === model.id);
+  // LM Studio loaded it (in LM Studio itself, or before this version) to serve several requests at once.
+  const manySlots = status === "loaded" && (mine?.slots ?? 1) > 1;
   const nameOf = (id: string) => local.find((m) => m.id === id)?.name ?? id.replace(/^ollama\//, "");
   return (
     <div data-nav-part="local-memory" data-memory={status} className="nav-so-mem">
@@ -677,7 +686,7 @@ function ModelMemory({ model, local, mem }: { model: LocalModel; local: LocalMod
         <i className="nav-so-mem-dot" data-on={status === "loaded" ? "1" : status === "loading" ? "wait" : "0"} />
         <span className="nav-so-mem-text" title={status === "offline" ? offlineText(mem.memory, model.id) : failure?.reason}>
           {status === "loaded"
-            ? `In memory${mine?.bytes ? ` · ${gigabytes(mine.bytes)}` : ""}`
+            ? `In memory${mine?.bytes ? ` · ${gigabytes(mine.bytes)}` : ""}${manySlots ? ` · ${mine!.slots} slots` : ""}`
             : status === "loading"
               ? "Loading into memory"
               : status === "offline"
@@ -702,6 +711,11 @@ function ModelMemory({ model, local, mem }: { model: LocalModel; local: LocalMod
           </button>
         ) : null}
       </div>
+      {manySlots ? (
+        <p data-nav-part="local-memory-slots" className="px-2 text-left text-[11px] leading-snug text-muted-foreground">
+          {slotsNote(mine!.slots!)}
+        </p>
+      ) : null}
       {others.map((o) => (
         <div key={o.model} className="nav-so-mem-row nav-so-mem-other">
           <i className="nav-so-mem-dot" data-on="1" />
@@ -729,11 +743,20 @@ export type SessionOrbsProps = {
   leanOn?: boolean;
   /** Whether Local chats may run on the Claude Code harness (the feature is ticked). */
   claudeOn?: boolean;
-  /** Whether the owner listed any unlocked model; without a list there is no padlock. */
+  /** Whether any unlocked word or model is set (the default words are); with none there is no padlock. */
   lock?: boolean;
   /** How many skills opencode would list in the first prompt; null when not known. */
   skills?: SkillCount | null;
+  /** The Local loadout, for the line under the orb on the Claude Code harness (asked only while that line shows). */
+  loadout?: { state: LoadoutState | null; failed: boolean };
+  /** Opens the Local loadout panel. */
+  onLoadout?: () => void;
+  /** Local chats on Claude Code are off by a pick saved in Setup: the orb says so, with a way to Setup. */
+  claudeOffInSetup?: boolean;
 };
+
+/** Under the Local orb when Local chats on Claude Code are off by a saved pick. */
+export const CLAUDE_OFF_NOTE = "Local chats on Claude Code are off in Setup.";
 
 const CHECKING: ToolCheck = { state: "checking" };
 
@@ -765,7 +788,7 @@ export function useToolCheck(modelId: string | null | undefined): ToolCheck {
               model: modelId,
               tries: tries + 1,
               result: {
-                state: r.tools === true ? "yes" : r.why === "window" ? "small" : r.why === "remote" ? "remote" : r.tools === false ? "no" : "unknown",
+                state: r.tools === true ? "yes" : r.why === "family" ? "family" : r.why === "window" ? "small" : r.why === "remote" ? "remote" : r.tools === false ? "no" : "unknown",
                 reason: r.reason,
                 window: r.window ?? null,
                 need: r.need,
@@ -785,6 +808,10 @@ export function useToolCheck(modelId: string | null | undefined): ToolCheck {
   return check?.model === modelId ? check.result : CHECKING;
 }
 
+/** Under the Local orb when no local model is found: the two models we test with, and where the steps are. */
+export const LOCAL_EMPTY_NOTE =
+  "The two models we test with are Qwen3.8 27B abliterated (we run it in Claude Code) and DeepSeek R1 14B abliterated (chat in opencode), both on Ollama. How to get them: Main models in the install guide.";
+
 /** The model a Local chat would start on: the remembered one while it is still on this Mac, else the first. */
 export function chosenLocalModel(choice: HomeChoice, local: LocalModels): LocalModel | null {
   if (local.state !== "ready") return null;
@@ -800,7 +827,8 @@ export function localModeNote(mode: LocalStartMode): string {
   return `The box below starts in ${label}. Approve for me picked here starts as ${label}: it would check each step with this model, which takes minutes. Changing the mode later in the chat is up to you.`;
 }
 
-export function SessionOrbs({ choice, onChoice, local, tools = CHECKING, leanOn = false, claudeOn = false, lock = false, skills = null }: SessionOrbsProps) {
+export function SessionOrbs({ choice, onChoice, local, tools = CHECKING, leanOn = false, claudeOn = false, lock = false, skills = null, loadout, onLoadout, claudeOffInSetup = false }: SessionOrbsProps) {
+  const nav = useBbNavigate();
   ensureSessionOrbsStyle();
   const startMode = consoleSection(useProfile()).localPermissionMode;
   const [palette, probe] = useTokenRgb();
@@ -859,6 +887,11 @@ export function SessionOrbs({ choice, onChoice, local, tools = CHECKING, leanOn 
         caption={localCaption}
         onClick={() => onChoice({ ...choice, where: "local", localModel: model?.id ?? choice.localModel })}
       >
+        {local.state === "none" ? (
+          <p data-nav-part="local-empty-note" className="mt-1.5 max-w-[200px] text-[11px] leading-snug text-muted-foreground">
+            {LOCAL_EMPTY_NOTE}
+          </p>
+        ) : null}
         {localOn && local.state === "ready" ? (
           <select
             aria-label="Local model"
@@ -879,7 +912,9 @@ export function SessionOrbs({ choice, onChoice, local, tools = CHECKING, leanOn 
           <p data-nav-part="local-harness-note" data-tools={tools.state} className="mt-1.5 max-w-[200px] text-[11px] leading-snug text-muted-foreground" title={tools.reason}>
             {tools.state === "checking"
               ? "Checking whether this model can use tools"
-              : tools.state === "no"
+              : tools.state === "family"
+                ? "Claude Code is not offered for DeepSeek R1 models: two 14B versions did not use tools dependably in our tests, and other versions were not tried. This one runs as a chat model in opencode."
+                : tools.state === "no"
                 ? "Chat only, in opencode: this model cannot use tools, so Claude Code is not offered"
                 : tools.state === "small"
                   ? `Chat only, in opencode: this model's window is ${(tools.window ?? 0).toLocaleString("en-GB")} tokens and Claude Code needs ${(tools.need ?? 65536).toLocaleString("en-GB")}`
@@ -903,22 +938,25 @@ export function SessionOrbs({ choice, onChoice, local, tools = CHECKING, leanOn 
               value={harness}
               onChange={(localHarness) => onChoice({ ...choice, where: "local", localHarness })}
               options={[
-                { value: "claude", label: "Claude Code", title: "Experimental: Claude Code itself, with the model on this Mac" },
+                { value: "claude", label: "Claude Code", title: "Claude Code itself, with the model on this Mac and your Local loadout" },
                 { value: "opencode", label: "opencode", title: "The opencode harness, as before" },
               ]}
             />
-            {/* The mode note keeps its space for opencode. The skill note (opencode only) shares that cell; it is not
-                drawn for Claude Code, so it leaves no gap there, and being longer it adds its extra lines on opencode. */}
+            {/* The Claude Code notes (the loadout line, whose height is kept while it loads, and the mode note) keep
+                their space for opencode. The skill note (opencode only) shares that cell; it is not drawn for Claude
+                Code, so it leaves no gap there, and being longer it adds its extra lines on opencode. */}
             <div className="mt-1.5 grid">
-              <p
-                data-nav-part="local-mode-note"
-                data-mode={startMode}
-                aria-hidden={harness !== "claude"}
-                style={{ gridArea: "1 / 1" }}
-                className={cn("max-w-[200px] text-[11px] leading-snug text-muted-foreground", harness !== "claude" && "invisible")}
-              >
-                {localModeNote(startMode)}
-              </p>
+              <div style={{ gridArea: "1 / 1" }} className="flex flex-col gap-1.5">
+                <LoadoutLine state={loadout?.state ?? null} failed={loadout?.failed ?? false} onChange={() => onLoadout?.()} hidden={harness !== "claude"} />
+                <p
+                  data-nav-part="local-mode-note"
+                  data-mode={startMode}
+                  aria-hidden={harness !== "claude"}
+                  className={cn("max-w-[200px] text-[11px] leading-snug text-muted-foreground", harness !== "claude" && "invisible")}
+                >
+                  {localModeNote(startMode)}
+                </p>
+              </div>
               {skillsText ? (
                 <p
                   data-nav-part="local-skills-note"
@@ -931,6 +969,14 @@ export function SessionOrbs({ choice, onChoice, local, tools = CHECKING, leanOn 
               ) : null}
             </div>
           </div>
+        ) : null}
+        {claudeOffInSetup && !claudeOn && localOn && model && local.state === "ready" ? (
+          <p data-nav-part="local-claude-off" className="mt-1.5 max-w-[200px] text-[11px] leading-snug text-muted-foreground">
+            {CLAUDE_OFF_NOTE}{" "}
+            <button type="button" onClick={() => nav.toPluginPanel("setup")} className="font-medium text-foreground underline underline-offset-2 outline-none hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring rounded-sm">
+              Open Setup
+            </button>
+          </p>
         ) : null}
         {holdable && model && local.state === "ready" ? <ModelMemory model={model} local={local.models} mem={mem} /> : null}
       </ChoiceOrb>
@@ -953,7 +999,7 @@ function projectFromPath(): string | undefined {
  * bb's own new-chat box, seeded for the choice, that creates the chat with
  * the profile mark. Shown only while the choice is not Online + Full.
  */
-export function SessionComposer({ choice, local, unlockedList = NO_UNLOCKED, tools = CHECKING, claudeOn = false }: { choice: HomeChoice; local: LocalModels; unlockedList?: UnlockedList; tools?: ToolCheck; claudeOn?: boolean }) {
+export function SessionComposer({ choice, local, unlockedList = NO_UNLOCKED, tools = CHECKING, claudeOn = false, thinkLess = false }: { choice: HomeChoice; local: LocalModels; unlockedList?: UnlockedList; tools?: ToolCheck; claudeOn?: boolean; thinkLess?: boolean }) {
   const sdk = useSdk();
   const navigate = useBbNavigate();
   const model = chosenLocalModel(choice, local);
@@ -996,13 +1042,15 @@ export function SessionComposer({ choice, local, unlockedList = NO_UNLOCKED, too
       className="w-full text-left"
     >
       <NewThreadComposer
-        key={isLocal ? harness : "lean"}
+        key={isLocal ? `${harness}${onClaudeHarness && thinkLess ? "-low" : ""}` : "lean"}
         draftKey={DRAFT_KEY}
         defaultProjectId={projectFromPath()}
         defaultProviderId={isLocal && !onClaudeHarness ? LOCAL_PROVIDER : LEAN_PROVIDER}
         defaultModel={isLocal && !onClaudeHarness ? model?.id : undefined}
         // Only a Local chat on Claude Code: its picker shows the mode it will run in, never auto.
         {...(onClaudeHarness ? { defaultPermissionMode: startMode } : {})}
+        // "Think less" in the Local loadout: bb's own effort picker starts at low, shown and changeable there (never an override).
+        {...(onClaudeHarness && thinkLess ? { defaultReasoningLevel: "low" } : {})}
         placeholder={
           isLocal
             ? `Ask ${model?.name ?? "the local model"}, on this Mac${onClaudeHarness ? ", in Claude Code" : ""}`
@@ -1030,6 +1078,9 @@ export function SessionChoice({ hostComposer, layout }: { hostComposer: HTMLElem
   // Lean is offered only where it is switched on and its settings folder is ready; Claude Code for Local chats only where it is ticked.
   const leanOn = useSettledFeature(LEAN_FEATURE) && config.leanReady;
   const claudeOn = useSettledFeature(LOCAL_CLAUDE_FEATURE);
+  // Off by a pick saved in Setup (not by a requirement): the orb says so. A saved pick is never switched on here.
+  const profileState = useProfileState();
+  const claudeOffInSetup = (profileState.loaded || profileState.source !== "defaults") && profileState.profile.features.picks[LOCAL_CLAUDE_FEATURE] === false;
   const tools = useToolCheck(claudeOn && choice.where === "local" ? chosenLocalModel(choice, local)?.id : null);
   // Asked when the screen opens, so the note is there when Local first shows.
   const skills = useSkillCount();
@@ -1045,7 +1096,25 @@ export function SessionChoice({ hostComposer, layout }: { hostComposer: HTMLElem
     return () => hostComposer.removeAttribute("data-nav-session-hidden");
   }, [hostComposer, swap]);
 
-  const orbs = <SessionOrbs choice={effective} onChoice={setChoice} local={local} tools={tools} leanOn={leanOn} claudeOn={claudeOn} lock={hasUnlockedList(unlockedList)} skills={skills} />;
+  // The loadout is asked for only while its line shows: a Local choice that will run on Claude Code.
+  const onClaude = effective.where === "local" && local.state === "ready" && harnessFor(effective, chosenLocalModel(effective, local)?.id, tools, claudeOn) === "claude";
+  const loadout = useLoadout(onClaude);
+  const [loadoutOpen, setLoadoutOpen] = useState(false);
+  const orbs = (
+    <SessionOrbs
+      choice={effective}
+      onChoice={setChoice}
+      local={local}
+      tools={tools}
+      leanOn={leanOn}
+      claudeOn={claudeOn}
+      lock={hasUnlockedList(unlockedList)}
+      skills={skills}
+      loadout={loadout}
+      onLoadout={() => setLoadoutOpen(true)}
+      claudeOffInSetup={claudeOffInSetup}
+    />
+  );
   return (
     <>
       {layout(orbs)}
@@ -1053,13 +1122,14 @@ export function SessionChoice({ hostComposer, layout }: { hostComposer: HTMLElem
         <p role="status" className="mt-2 text-center text-[12px] text-muted-foreground">This bb cannot show the new-chat box here, so chats start as Online.</p>
       ) : null}
       {broken ? <p role="status" className="mt-2 text-center text-[12px] text-muted-foreground">The Lean and Local box hit an error, so chats start as Online.</p> : null}
+      {loadoutOpen ? <LoadoutDialog open={loadoutOpen} onOpenChange={setLoadoutOpen} onSaved={(next) => loadout.adopt(next)} /> : null}
       {swap ? (
         <div className="mt-4 w-full">
           {effective.where === "local" && local.state === "loading" ? (
             <p role="status" className="py-6 text-center text-[13px] text-muted-foreground">Looking for the models on this Mac</p>
           ) : (
             <Boundary label="Lean and Local chat box" compact onFailure={() => setBroken(true)}>
-              <SessionComposer choice={effective} local={local} unlockedList={unlockedList} tools={tools} claudeOn={claudeOn} />
+              <SessionComposer choice={effective} local={local} unlockedList={unlockedList} tools={tools} claudeOn={claudeOn} thinkLess={loadout.state?.choice.thinkLess === true} />
             </Boundary>
           )}
         </div>

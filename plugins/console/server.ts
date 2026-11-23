@@ -56,8 +56,10 @@ import { createUsageLinkAction, createUsageLinks } from "./server-usage-links";
 import { createUsageTrend, threadAccountsSchema, trendSchema } from "./server-usage-trend";
 import { createSessionProfiles, refuseLocalCopy, refuseLocalMove, sessionProfileConfigOutput, sessionProfilesInput, sessionProfilesOutput } from "./server-session-profile";
 import { LOCAL_CLAUDE_FEATURE } from "./src/session-profile";
-import { createLocalModels, createSkillCount, localModelActionOutput, localModelInput, localModelStateOutput, localModelToolsOutput, localModelsRemoteOutput, localSkillsCountOutput } from "./server-local-models";
-import { LOCAL_ROUTE, LOCAL_SERVER_PATH, blockedPath, createLocalClaudeRoute, createLocalClaudeSetup, ensureLocalClaude, localConfigPath } from "./server-local-claude";
+import { createLocalModels, createSkillCount, homeFromEnv, localModelActionOutput, localModelInput, localModelStateOutput, localModelToolsOutput, localModelsRemoteOutput, localSkillsCountOutput } from "./server-local-models";
+import { LOCAL_ROUTE, LOCAL_SERVER_PATH, blockedPath, createLocalClaudeRoute, createLocalClaudeSetup, ensureLocalClaude, localConfigPath, localDir, readStoredSecret } from "./server-local-claude";
+import { createLocalLoadout, firstPromptFile, loadoutFile, loadoutSaveInput, loadoutSaveOutput, loadoutStateOutput, readLoadout, recordFirstPrompt } from "./server-local-loadout";
+import { SKILL_USE_DAYS, createSkillUse, skillUseFile, skillUseOutput } from "./server-skill-use";
 import { createNativeSessions, nativeSessionIndexSchema, nativeSessionStateSchema, nativeSessionArmInput, nativeSessionThreadInput, nativeSessionSelectInput, nativeSessionAdoptInput } from "./server-native-sessions";
 
 // ---- Rail state: tags, "come back later" marks, section order (synced via bb) ----
@@ -208,6 +210,11 @@ export const rpcContract = defineRpcContract({
   local_models_remote: { input: z.null(), output: localModelsRemoteOutput },
   // How many skills opencode would list in a Local chat's first prompt (numbers only), for the Local orb's note.
   local_skills_count: { input: z.null(), output: localSkillsCountOutput },
+  // The Local loadout (skills and agents a Local chat on Claude Code gets): names and sizes only, and saving a choice.
+  local_loadout: { input: z.null(), output: loadoutStateOutput },
+  local_loadout_save: { input: loadoutSaveInput, output: loadoutSaveOutput },
+  // How often each listed skill was used in Claude Code chats on this Mac in the last 30 days (names and numbers only).
+  local_loadout_use: { input: z.null(), output: skillUseOutput },
   group_create: {
     input: z.object({ name: z.string().trim().min(1).max(48), parentId: z.string().nullable(), members: z.array(sectionId).max(50).optional() }),
     output: groupSchema,
@@ -391,30 +398,91 @@ export default async function plugin(bb: BbPluginApi) {
   const nativeSessions = createNativeSessions(bb, { localOf: (id) => sessionProfiles.localOf(id) });
   // Lean chats: CLAUDE_CONFIG_DIR for chats marked lean on this Mac, nothing for any other chat.
   // Local chats on the Claude Code harness: the launcher and the route to Ollama or LM Studio (server-local-claude.ts).
-  // Set up only while that feature is on (it writes the launcher and guard into ~/.claude-local), so a
-  // community install with it off writes nothing and its route answers 401 to everyone. While it is on,
-  // it is set up ahead of time (at load, and when the Local orb checks a model), so the first Local chat
-  // does not pay for it inside bb's time limit for a chat's environment; a failure is kept for a minute.
-  const localClaudeSetup = createLocalClaudeSetup({ on: () => serverFeatureOn(LOCAL_CLAUDE_FEATURE), ensure: () => ensureLocalClaude(), warn: (m) => bb.log.warn(m) });
-  try {
-    localClaudeSetup();
-  } catch (e) {
-    bb.log.warn(`local claude: setup at load failed (${String(e)})`);
-  }
-  const localRoute = createLocalClaudeRoute({
-    secret: () => {
-      const setup = localClaudeSetup();
-      return setup.ok ? setup.secret : null;
+  // Set up only on first real use of a Local model on Claude Code, never at load: when the Local orb checks a
+  // model for that harness, when a Local chat on it starts, or when a loadout is saved. Someone who never uses
+  // Local gets nothing in ~/.claude-local, with the feature on or off, and the route answers 401 to everyone
+  // until then. The setup is file writes only (no shell), so a first chat's start pays milliseconds for it.
+  // A failure is kept for a minute.
+  // The loadout's options (every tool, skill descriptions) are read from its file at each setup and written by
+  // ensureLocalClaude, the one writer of the Local settings file.
+  const localLoadoutFile = loadoutFile();
+  // bb's measured share: written only by the route, for a Local chat's first request; read only by the panel and the orb line.
+  const localFirstPrompts = firstPromptFile();
+  const loadoutOptions = () => {
+    const c = readLoadout(localLoadoutFile).choice;
+    return { allTools: c?.allTools === true, descriptions: c?.descriptions === true };
+  };
+  const localClaudeSetup = createLocalClaudeSetup({ on: () => serverFeatureOn(LOCAL_CLAUDE_FEATURE), ensure: () => ensureLocalClaude(undefined, undefined, loadoutOptions()), warn: (m) => bb.log.warn(m) });
+  const localLoadout = createLocalLoadout({
+    home: () => homeFromEnv(),
+    config: localConfigPath(),
+    localRoot: localDir(),
+    file: localLoadoutFile,
+    firstPrompts: localFirstPrompts,
+    on: () => serverFeatureOn(LOCAL_CLAUDE_FEATURE),
+    setup: localClaudeSetup,
+    warn: (m) => bb.log.warn(m),
+  });
+  // "Most used": counted only when the Local loadout panel asks (never at load), kept an hour.
+  const skillUse = createSkillUse({
+    home: () => homeFromEnv(),
+    file: skillUseFile(),
+    listed: async () => {
+      const got = await localLoadout.listing();
+      return got ? new Set(got.skills.map((x) => x.name)) : null;
     },
+    warn: (m) => bb.log.warn(m),
+  });
+  // The links follow the first good setup of this run, in the background: never inside a chat's start.
+  // Done once it has worked; a failed or skipped attempt is tried again at the next chance (a model picked on the orb).
+  let loadoutApplied = false;
+  let loadoutApplying = false;
+  const applyLoadoutOnce = () => {
+    if (loadoutApplied || loadoutApplying || !localClaudeSetup().ok) return;
+    loadoutApplying = true;
+    void localLoadout
+      .applyStored()
+      .then((r) => {
+        loadoutApplied = r?.ok === true;
+      })
+      .catch((e) => bb.log.warn(`local loadout: ${String(e)}`))
+      .finally(() => {
+        loadoutApplying = false;
+      });
+  };
+  const localRoute = createLocalClaudeRoute({
+    // Only a setup already made in this run, or the secret a launcher already on disk holds (after a plugin
+    // reload): a request to the route never sets anything up or writes anything.
+    secret: () => (serverFeatureOn(LOCAL_CLAUDE_FEATURE) ? (localClaudeSetup.current()?.secret ?? readStoredSecret()) : null),
     log: (m) => bb.log.info(m),
+    // A Local chat's first request: the loadout's part is taken as it is sent, and the reading kept once the
+    // runner has said what it read (numbers and a time only).
+    firstPrompt: (seen) => {
+      const part = localLoadout.part().catch(() => null);
+      return (input) =>
+        void part.then((loadout) => {
+          if (loadout === null) return;
+          const share = recordFirstPrompt(localFirstPrompts, { at: Date.now(), input, tools: seen.tools, trimmed: seen.trimmed, loadout, user: seen.user });
+          bb.log.info(`local claude: first request read ${input} tokens with ${seen.tools} tools; bb's share ${share === null ? "not kept (not believable)" : `about ${share}`}`);
+        });
+    },
   });
   // auth "none": the route checks its own secret, which only the launcher on this Mac holds.
   bb.http.route("POST", `${LOCAL_ROUTE}/v1/messages`, (c) => localRoute.messages(c.req.raw), { auth: "none" });
   bb.http.route("POST", `${LOCAL_ROUTE}/v1/messages/count_tokens`, (c) => localRoute.countTokens(c.req.raw), { auth: "none" });
   const sessionProfiles = createSessionProfiles(bb, {
+    // A Local chat on Claude Code starting: real use, so the setup is made (the links follow in the background).
     localSetup: () => {
       const setup = localClaudeSetup();
+      if (setup.ok) applyLoadoutOnce();
       return setup.ok ? { launcher: setup.launcher, guard: setup.guard } : { launcher: null, guard: null };
+    },
+    // The guard for a chat whose mark cannot be read: only where Local chats on Claude Code were used before
+    // (the Local folder exists), so a read failure never makes the plugin write for someone who never used them.
+    localGuard: () => {
+      if (!fs.existsSync(localDir())) return null;
+      const setup = localClaudeSetup();
+      return setup.ok ? setup.guard : null;
     },
     localServerPath: LOCAL_SERVER_PATH,
     localConfigDir: localConfigPath(),
@@ -774,13 +842,24 @@ export default async function plugin(bb: BbPluginApi) {
     local_model_state: () => localModels.state(),
     local_model_load: ({ model }) => localModels.load(model),
     local_model_unload: ({ model }) => localModels.unload(model),
-    local_model_tools: ({ model }) => {
-      // The Local orb asks this when a model is picked: a good moment to set up the launcher (no-op when ready or off).
-      localClaudeSetup();
-      return localModels.tools(model);
+    local_model_tools: async ({ model }) => {
+      // The Local orb asks this when a model is picked. Only a model offered Claude Code (tools === true) is
+      // first use of a Local model on that harness: then the launcher and the loadout's links are set up (a
+      // no-op when ready or off). Any other answer ("not offered", "unknown") writes nothing.
+      const r = await localModels.tools(model);
+      if (r.tools === true) applyLoadoutOnce();
+      return r;
     },
     local_models_remote: () => localModels.remote(),
     local_skills_count: () => skillCount.count(),
+    local_loadout: () => localLoadout.state(),
+    local_loadout_save: (choice) => localLoadout.save(choice),
+    local_loadout_use: async () => {
+      if (!serverFeatureOn(LOCAL_CLAUDE_FEATURE)) return { known: false, counts: {}, partial: false, days: SKILL_USE_DAYS };
+      // Only the names of the user's listed skills are kept and returned (filtered before the count is stored).
+      const got = await skillUse.get();
+      return { known: true, counts: got.counts, partial: got.partial, days: SKILL_USE_DAYS };
+    },
     thread_exec: async ({ ids: threadIds }) => {
       const out: Record<string, { model: string; reasoningLevel: string } | null> = {};
       let next = 0;

@@ -53,6 +53,10 @@ describe("profile plumbing", () => {
     expect(handoffOn(COMMUNITY_DEFAULTS)).toBe(false);
     expect(nasPair(COMMUNITY_DEFAULTS, "/Users/pat")).toBeNull();
     expect(consoleSection(COMMUNITY_DEFAULTS).nasProject).toBeNull();
+    // The padlock's words by default; an explicit empty list in a profile means no padlock at all.
+    expect(consoleSection(COMMUNITY_DEFAULTS).unlockedWords).toEqual(["abliterated", "uncensored"]);
+    const none = { ...COMMUNITY_DEFAULTS, plugins: { ...COMMUNITY_DEFAULTS.plugins, console: { unlockedWords: [] } } };
+    expect(consoleSection(none).unlockedWords).toEqual([]);
     expect(m1PathFor("/Users/pat/code/x", COMMUNITY_DEFAULTS, "/Users/pat")).toBe("/Users/pat/code/x");
     expect(localPathFor("/Users/other/x", COMMUNITY_DEFAULTS, "/Users/pat")).toBe("/Users/other/x");
     expect(isShared("/Volumes/Anything", COMMUNITY_DEFAULTS, "/Users/pat")).toBe(false);

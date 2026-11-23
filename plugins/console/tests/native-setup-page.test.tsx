@@ -265,6 +265,34 @@ describe("the setup page on the second Mac and in the private edition", () => {
   });
 });
 
+describe("the Local loadout from Setup", () => {
+  it("offers the panel on the Local loadout's row while Local chats on Claude Code are ticked, opens it, and asks for nothing until then", async () => {
+    const profile = { ...COMMUNITY_DEFAULTS, edition: "private" as const };
+    seed(profile);
+    const loadout = vi.fn(() => ({ known: true, listing: { skills: [{ name: "draft-notes", descChars: 10, bodyChars: 100 }], agents: [], complete: true, others: { skills: 0, agents: 0 } }, choice: { skills: ["draft-notes"], agents: [], descriptions: false, allTools: false, thinkLess: false }, saved: false, on: true, linked: { skills: ["draft-notes"], agents: [] }, problem: null }));
+    renderSlot({ component: SetupPage }, {}, { rpc: { setup_hint: () => ({ preset: null, hostname: null }), local_loadout: loadout } as never });
+    fireEvent.change(await screen.findByLabelText("Your name"), { target: { value: "Sam" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.change(screen.getByLabelText("This Mac"), { target: { value: "Desk" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    const entry = await waitFor(() => {
+      const el = document.querySelector('[data-feature="EXTRA-AO"] [data-nav-part="setup-local-loadout"]');
+      expect(el).not.toBeNull();
+      return el as HTMLElement;
+    });
+    expect(entry.textContent).toContain("It has its own Save, separate from this page.");
+    expect(loadout).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Local loadout" }));
+    await screen.findByRole("dialog", { name: "Local loadout" });
+    await waitFor(() => expect(loadout).toHaveBeenCalledTimes(1));
+    // Unticked: the entry goes.
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    fireEvent.click(document.querySelector('[data-feature="EXTRA-AM"] input') as HTMLInputElement);
+    expect(document.querySelector('[data-nav-part="setup-local-loadout"]')).toBeNull();
+  });
+});
+
 describe("gates draw nothing, or an off note, while a feature is off", () => {
   const Probe = gated("EXTRA-I", () => <p>inbox body</p>);
   const Page = pageGate("EXTRA-J", () => <p>calendar body</p>);

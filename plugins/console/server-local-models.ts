@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { z } from "zod";
 import { isRemoteModel } from "./src/session-profile";
+import { LOCAL_WINDOW_TOKENS as WINDOW_TOKENS } from "./src/local-loadout";
 
 /**
  * Where Ollama answers on this Mac, from OLLAMA_HOST as Ollama itself reads it ("host", "host:port" or a
@@ -46,7 +47,8 @@ export const localModelStateOutput = z.object({
   reachable: z.boolean(),
   /** Whether LM Studio answers on this Mac, and why not when it does not. */
   lmStudio: z.object({ reachable: z.boolean(), reason: z.string().optional() }),
-  loaded: z.array(z.object({ model: z.string(), bytes: z.number(), until: z.string().nullable() })),
+  /** slots: how many requests LM Studio serves at once for that model (its "parallel"); absent for Ollama. */
+  loaded: z.array(z.object({ model: z.string(), bytes: z.number(), until: z.string().nullable(), slots: z.number().int().positive().optional() })),
   loading: z.array(z.string()),
   /** The last load that failed, cleared by the next load of that model. */
   failed: z.array(z.object({ model: z.string(), reason: z.string() })),
@@ -60,7 +62,7 @@ export const localModelToolsOutput = z.object({
   tools: z.boolean().nullable(),
   reason: z.string(),
   /** Why Claude Code is not offered: no tool use, too small a window, a cloud model, or not known. */
-  why: z.enum(["tools", "window", "remote", "unknown"]).optional(),
+  why: z.enum(["tools", "window", "remote", "unknown", "family"]).optional(),
   /** The window the model really runs with, when Ollama says. */
   window: z.number().nullable().optional(),
   /** The window Claude Code plans for (LOCAL_WINDOW_TOKENS). */
@@ -89,11 +91,32 @@ export function toolSupportFromShow(show: { capabilities?: unknown; template?: u
 
 const bare = (model: string) => model.replace(/^ollama\//, "");
 
+/**
+ * Model families that pass the tool check (their template shows them the tools) but did not use tools
+ * dependably in our own tests, so Claude Code is not offered for them on the strength of the check alone.
+ * Matched on the family in the name, after the runner's prefix, so every size and variant counts.
+ */
+export const TOOLS_FAILED_FAMILIES: ReadonlyArray<{ family: string; match: RegExp; measured: string }> = [
+  {
+    family: "deepseek-r1",
+    match: /(^|[/:_.-])deepseek-r1([/:_.-]|$)/i,
+    // Two 14B variants whose templates render the tools, through the Local route on Claude Code 2.1.330,
+    // 22 Nov 2026: naming a file it had read, 1 of 3 each; counting files and summing a list, 0 of 3 and
+    // 1 of 3, that one with a wrong sum (104 for 100). The others described commands in prose.
+    measured: "DeepSeek R1 14B: 1 of 3 tool tasks at best, with a wrong sum (22 Nov 2026)",
+  },
+];
+export const TOOLS_FAILED_REASON = "Claude Code is not offered for DeepSeek R1 models: two 14B versions did not use tools dependably in our tests, and other versions were not tried. This one runs as a chat model in opencode.";
+/** The family on TOOLS_FAILED_FAMILIES a model belongs to, or null. */
+export const failedToolFamily = (model: string): string | null => TOOLS_FAILED_FAMILIES.find((f) => f.match.test(model.replace(/^(ollama|lmstudio)\//i, "")))?.family ?? null;
+
 /** LM Studio's server on this Mac (its default port). */
 export const LMSTUDIO = "http://127.0.0.1:1234";
 export const LMSTUDIO_PREFIX = "lmstudio/";
+/** The slots (requests served at once) Load asks LM Studio for: one, see lmStudioLoad. */
+export const LMSTUDIO_SLOTS = 1;
 export const isLmStudio = (model: string) => model.startsWith(LMSTUDIO_PREFIX);
-type LmEntry = { key?: string; type?: string; size_bytes?: number; capabilities?: { trained_for_tool_use?: boolean }; loaded_instances?: Array<{ id?: string; config?: { context_length?: number } }> };
+type LmEntry = { key?: string; type?: string; size_bytes?: number; capabilities?: { trained_for_tool_use?: boolean }; loaded_instances?: Array<{ id?: string; config?: { context_length?: number; parallel?: number } }> };
 /**
  * LM Studio is running but its server has "Require Authentication" on, so it answers 401 (or 403)
  * without a token. Local chats do not send one, so this is a setting to change in LM Studio, not an outage.
@@ -142,7 +165,7 @@ export { isRemoteModel };
  * The lean prompt is about 31,000 tokens on its first turn and Claude Code compacts at this less
  * 13,000 and the 8,192 output cap, so a model must really run with at least this many.
  */
-export const LOCAL_WINDOW_TOKENS = 65_536;
+export const LOCAL_WINDOW_TOKENS = WINDOW_TOKENS;
 
 /**
  * The least total memory on which Load asks LM Studio for a LOCAL_WINDOW_TOKENS window. Measured: a
@@ -215,18 +238,29 @@ export function createLocalModels(deps: { fetch?: Fetch; warn?: (m: string) => v
   const lmStudioLoaded = async (): Promise<{ status: LocalModelState["lmStudio"]; loaded: LocalModelState["loaded"] }> => {
     try {
       const models = await lmStudioList(f, 2000);
-      const loaded = models.filter((m) => (m.loaded_instances ?? []).length > 0).map((m) => ({ model: `${LMSTUDIO_PREFIX}${m.key}`, bytes: Number(m.size_bytes ?? 0), until: null }));
+      const loaded = models
+        .filter((m) => (m.loaded_instances ?? []).length > 0)
+        .map((m) => {
+          const slots = m.loaded_instances?.[0]?.config?.parallel;
+          return { model: `${LMSTUDIO_PREFIX}${m.key}`, bytes: Number(m.size_bytes ?? 0), until: null, ...(typeof slots === "number" && Number.isInteger(slots) && slots > 0 ? { slots } : {}) };
+        });
       return { status: { reachable: true }, loaded };
     } catch (e) {
       return { status: { reachable: false, reason: e instanceof LmStudioTokenError ? LMSTUDIO_TOKEN_REASON : "LM Studio is not running" }, loaded: [] };
     }
   };
-  /** LM Studio loads a model with a 4,096-token window unless told; a Local Claude chat needs LOCAL_WINDOW_TOKENS. */
+  /**
+   * LM Studio loads a model with a 4,096-token window unless told; a Local Claude chat needs LOCAL_WINDOW_TOKENS.
+   * It also loads it with 4 slots (requests served at once) unless told. One chat on this Mac needs one: with
+   * one slot a request sent again reuses what the model already read (18,684 of 18,688 tokens, 0.26 s to the
+   * first event, measured 22 Nov 2026), and with 4 the same request often landed on another slot and was read
+   * again from zero (minutes on a 27B model).
+   */
   const lmStudioLoad = async (key: string): Promise<void> => {
     const res = await f(`${LMSTUDIO}/api/v1/models/load`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ model: key, context_length: LOCAL_WINDOW_TOKENS }),
+      body: JSON.stringify({ model: key, context_length: LOCAL_WINDOW_TOKENS, parallel: LMSTUDIO_SLOTS }),
       signal: AbortSignal.timeout(15 * 60_000),
     });
     if (res.status === 401 || res.status === 403) throw new LmStudioTokenError();
@@ -259,6 +293,8 @@ export function createLocalModels(deps: { fetch?: Fetch; warn?: (m: string) => v
   return {
     /** Whether a model can call tools on the Claude Code harness (see toolSupportFromShow). */
     async tools(model: string): Promise<LocalModelTools> {
+      // A family that failed our own tests is not offered Claude Code, whatever its template says.
+      if (failedToolFamily(model)) return { tools: false, why: "family", reason: TOOLS_FAILED_REASON };
       if (isLmStudio(model)) {
         // LM Studio says whether a model was trained for tool use, and the window it is loaded with.
         const key = model.slice(LMSTUDIO_PREFIX.length);
@@ -520,11 +556,12 @@ export function createSkillCount(deps: { home?: () => string | null; now?: () =>
       let job: Promise<LocalSkillsCount>;
       try {
         const home = (deps.home ?? (() => homeFromEnv()))();
-        counting = true;
         job = count(home, { maxMs, maxEntries: deps.maxEntries, now }).catch(() => SKILLS_UNKNOWN);
       } catch {
         return Promise.resolve(SKILLS_UNKNOWN);
       }
+      // Set only once the count has started: a count that could not start must not block every later ask.
+      counting = true;
       void job
         .then((value) => {
           cached = { at: now(), value };

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# NavAIgate Console 1.13.1, from NavAIgate (the project was called BB Overlay before 2 November 2026 and now lives at skyremote/navaigate-console).
+# NavAIgate Console 1.14.0, from NavAIgate (the project was called BB Overlay before 2 November 2026 and now lives at skyremote/navaigate-console).
 # A fresh install gets the Console: one sidebar and Home page, with a setup screen
 # where you tick the features you want. --edition simple|pro only picks which
 # starting preset the setup screen offers (default simple); Pro also installs
@@ -136,7 +136,7 @@ main() {
     return 1
   }
   if version_lt "$BB_VERSION" "$MIN_BB"; then
-    die "NavAIgate Console 1.13 needs bb $MIN_BB or later. Update bb first, then run this again."
+    die "NavAIgate Console 1.14 needs bb $MIN_BB or later. Update bb first, then run this again."
   fi
 
   PLUGIN_LIST="$(bb plugin list 2>/dev/null)" || die "bb is installed but not answering. Open the bb app, wait for it to load, then run this again."

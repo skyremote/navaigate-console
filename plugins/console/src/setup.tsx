@@ -14,6 +14,8 @@ import {
   type MachineDraft, type SetupDraft, type SetupProblems, type SetupRole, type WorkloadDraft,
 } from "./setup-model";
 import { adoptProfile, useProfileState } from "./use-profile";
+import { LoadoutDialog } from "./local-loadout-panel";
+import { LOCAL_CLAUDE_FEATURE, LOCAL_LOADOUT_FEATURE } from "./session-profile";
 import type { rpcContract } from "../server";
 
 const CSS = `
@@ -178,6 +180,7 @@ function StepAddresses({ draft, set, problems }: { draft: SetupDraft; set: (d: S
 function StepFeatures({ draft, set, preview }: { draft: SetupDraft; set: (d: SetupDraft) => void; preview: ReturnType<typeof buildProfile> }) {
   const probes = usePassedProbes();
   const features = useMemo(() => pickerFeatures(), []);
+  const [loadoutOpen, setLoadoutOpen] = useState(false);
   return (
     <div className="nav-su-card">
       <h2>Features</h2>
@@ -213,12 +216,19 @@ function StepFeatures({ draft, set, preview }: { draft: SetupDraft; set: (d: Set
                   <input id={id} type="checkbox" checked={checked} disabled={s.kind === "locked" || s.kind === "greyed"} onChange={(e) => set(setPick(draft, f.id, e.target.checked))} aria-describedby={`${id}-d`} />
                   <label htmlFor={id}>{f.name}</label>
                   <p className="nav-su-hint" id={`${id}-d`}>{s.kind === "greyed" ? `${f.description} Needs: ${s.reason.replace(/^needs /, "")}.` : s.kind === "locked" ? `${f.description} Always on.` : f.description}</p>
+                  {f.id === LOCAL_LOADOUT_FEATURE && checked && ["on", "locked"].includes(featureState(preview, LOCAL_CLAUDE_FEATURE, probes).kind) ? (
+                    <div className="nav-su-hint" data-nav-part="setup-local-loadout" style={{ gridColumn: 2, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 4 }}>
+                      <button type="button" onClick={() => setLoadoutOpen(true)}>Local loadout</button>
+                      <span>The skills and agents these chats get. It has its own Save, separate from this page.</span>
+                    </div>
+                  ) : null}
                 </div>
               );
             })}
           </section>
         );
       })}
+      {loadoutOpen ? <LoadoutDialog open={loadoutOpen} onOpenChange={setLoadoutOpen} /> : null}
     </div>
   );
 }

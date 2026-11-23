@@ -525,5 +525,8 @@
   },
   "EXTRA-AN": {
     "kind": "compose"
+  },
+  "EXTRA-AO": {
+    "kind": "compose"
   }
 }

@@ -63,7 +63,7 @@ export function localEnvFor(input: {
   launcher: string | null;
   serverPath: string;
   blocked: (why: string) => string;
-  /** False when Local chats on Claude Code are switched off: a chat marked Local is then blocked, never started on an online account. */
+  /** False when Local chats on Claude Code are off in Setup: a chat marked Local is then blocked, never started on an online account. */
   allowed?: boolean;
   /** The Local settings folder (CLAUDE_CONFIG_DIR for the chat); left out when not known. */
   configDir?: string | null;
@@ -76,14 +76,22 @@ export function localEnvFor(input: {
   const config: EnvEntry[] = input.configDir ? [{ name: "CLAUDE_CONFIG_DIR", value: input.configDir, reason: `${who}: the Local settings folder, where its history is kept` }] : [];
   // bb shows the blocked path in its error, so the words say why; a chat made from a Local chat says that first.
   const prefix = input.line === "fork" ? "a-fork-of-a-local-chat-stays-on-this-mac--" : input.line === "child" ? "a-chat-started-by-a-local-chat-stays-on-this-mac--" : "";
-  const block = (why: string, reason: string): EnvEntry[] => [{ name: "BB_CLAUDE_CODE_EXECUTABLE", value: input.blocked(prefix + why), reason: `${who} blocked: ${reason}` }, ...config];
-  if (input.allowed === false) return block("local-chats-on-claude-code-are-switched-off", "Local chats on Claude Code are switched off in Setup");
-  if (!input.primaryHostId) return block("bb-could-not-tell-which-mac-runs-local-models", "the bb server's own Mac is not known yet");
-  if (input.hostId !== input.primaryHostId) return block("local-chats-run-only-on-the-bb-server-mac", "this chat would run on another machine");
-  if (!input.launcher) return block("local-chat-setup-failed-see-plugin-log", "the launcher could not be set up");
+  // NAV_LOCAL_BLOCKED carries the same reason in words for the launcher: when bb starts a chat it ran
+  // before through the launcher it used then, not the blocked path (seen on standard bb 0.49 when a
+  // Local chat was continued after the feature was switched off), the launcher prints it and stops.
+  const block = (why: string, reason: string, words: string): EnvEntry[] => [
+    { name: "BB_CLAUDE_CODE_EXECUTABLE", value: input.blocked(prefix + why), reason: `${who} blocked: ${reason}` },
+    { name: "NAV_LOCAL_BLOCKED", value: `${who === "Local chat" ? "This Local chat" : `This ${who.charAt(0).toLowerCase()}${who.slice(1)}`} does not start: ${words}`, reason: `${who} blocked: the reason the launcher shows` },
+    ...config,
+  ];
+  if (input.allowed === false)
+    return block("local-chats-on-claude-code-are-off-in-setup", "Local chats on Claude Code are off in Setup", "Local chats on Claude Code are off in Setup. Switch them on in Setup to continue it here.");
+  if (!input.primaryHostId) return block("bb-could-not-tell-which-mac-runs-local-models", "the bb server's own Mac is not known yet", "bb could not yet tell which Mac runs local models. Send again in a moment.");
+  if (input.hostId !== input.primaryHostId) return block("local-chats-run-only-on-the-bb-server-mac", "this chat would run on another machine", "Local chats run only on the Mac that runs bb's server, and this chat would run on another machine.");
+  if (!input.launcher) return block("local-chat-setup-failed-see-plugin-log", "the launcher could not be set up", "the Local chat setup on this Mac failed. The plugin log says why.");
   // Ollama's own name for an Ollama model; an LM Studio model keeps "lmstudio/" so the route knows where it runs.
   const model = (input.mark.model ?? "").replace(/^ollama\//, "");
-  if (!model) return block("local-chat-has-no-model", "the chat's mark names no model");
+  if (!model) return block("local-chat-has-no-model", "the chat's mark names no model", "its Local mark names no model.");
   return [
     { name: "BB_CLAUDE_CODE_EXECUTABLE", value: input.launcher, reason: `${who}: Claude Code starts through the launcher that points it at the model on this Mac` },
     { name: "NAV_LOCAL_BASE_URL", value: { serverPath: input.serverPath }, reason: `${who}: the route on this bb server that forwards to Ollama or LM Studio on this Mac` },
@@ -193,6 +201,8 @@ type Deps = {
    * Code are switched on). When given, it replaces `launcher` and `guard`.
    */
   localSetup?: () => { launcher: string | null; guard: string | null };
+  /** The guard for a chat whose mark cannot be read, without setting anything up where Local was never used; replaces localSetup's guard. */
+  localGuard?: () => string | null;
   localServerPath?: string;
   blocked?: (why: string) => string;
   /** Where the chats known to be Local are kept (default: this plugin's data folder). */
@@ -209,8 +219,35 @@ type Deps = {
   profileUnlocked?: () => { models: string[]; words: string[] };
   /** The Local settings folder (~/.claude-local/config), given to Local chats and to chats made from them as CLAUDE_CONFIG_DIR. */
   localConfigDir?: string;
+  /** The wait before a failed read is tried again (RETRY_PAUSE_MS); tests set 0. */
+  retryPauseMs?: number;
+  /** The time allowed for one chat's mark and line reads together (LINE_DEADLINE_MS); tests set less. */
+  lineDeadlineMs?: number;
+  /** The time allowed for localOf (LOCAL_OF_DEADLINE_MS); tests set less. */
+  localOfDeadlineMs?: number;
 };
 
+/** The wait before a failed read of a chat's mark or line is tried the second time. */
+export const RETRY_PAUSE_MS = 250;
+/**
+ * The time allowed for one chat's mark and its whole line (every read and pause together). Past it the
+ * read counts as failed, as a failed read does: stock bb drops a plugin's whole contribution after 5 s,
+ * so this keeps the plugin's answer, a block included, inside that limit.
+ */
+export const LINE_DEADLINE_MS = 3_000;
+/**
+ * The time allowed for localOf, an RPC behind actions a person asked for (not under bb's 5-second limit
+ * for a chat's start): long enough for a slow bb to read a line four chats deep.
+ */
+export const LOCAL_OF_DEADLINE_MS = 20_000;
+/** How many reads of a chat's line are kept, so a later try goes on from where the last one stopped. */
+export const LINE_CACHE_MAX = 5_000;
+/** A read that did not finish before its chat's LINE_DEADLINE_MS. */
+export class LineDeadlineError extends Error {
+  constructor() {
+    super("the reads of where this chat came from took longer than allowed");
+  }
+}
 /** How far up a chat's line (fork source, then parent) the plugin looks for a Local chat. */
 export const LINEAGE_DEPTH = 4;
 type ThreadLine = { sourceThreadId: string | null; parentThreadId: string | null };
@@ -265,33 +302,86 @@ export function createSessionProfiles(bb: BbPluginApi, deps: Deps = {}) {
     return x?.status === 404 || x?.statusCode === 404 || x?.code === "thread_not_found" || x?.body?.code === "thread_not_found" || /thread[_ ]not[_ ]found/i.test(String(x?.message ?? ""));
   };
   const isLocalKind = (mark: SessionProfileMark | null | undefined): mark is SessionProfileMark => mark?.profile === "local" || mark?.profile === "local-unlocked";
-  const twice = async <T>(read: () => Promise<T>): Promise<T> => {
+  const pause = deps.retryPauseMs ?? RETRY_PAUSE_MS;
+  const lineDeadline = deps.lineDeadlineMs ?? LINE_DEADLINE_MS;
+  const localOfDeadline = deps.localOfDeadlineMs ?? LOCAL_OF_DEADLINE_MS;
+  /** One read, stopped (as a failure) at the chat's deadline `until` (Date.now() time). */
+  const beforeDeadline = <T>(read: () => Promise<T>, until: number): Promise<T> => {
+    const left = until - Date.now();
+    if (left <= 0) return Promise.reject(new LineDeadlineError());
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const late = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new LineDeadlineError()), left);
+    });
+    return Promise.race([read(), late]).finally(() => clearTimeout(timer));
+  };
+  /** The primary host, read under the start's deadline: past it, unknown (a Local chat is then blocked, never let through). */
+  const primaryBefore = (until: number): Promise<string | null> =>
+    beforeDeadline(() => shared("primary", primaryHostId), until).catch(() => null);
+  const twice = async <T>(read: () => Promise<T>, until: number): Promise<T> => {
     try {
-      return await read();
+      return await beforeDeadline(read, until);
     } catch (e) {
-      if (gone(e)) throw e; // a deleted thread stays deleted
-      return await read(); // one more try; a second failure goes to the caller
+      if (gone(e) || e instanceof LineDeadlineError) throw e; // a deleted thread stays deleted; no time is left
+      // A short wait first: a read that failed because bb was busy is more likely to work a moment later.
+      if (pause > 0) {
+        if (Date.now() + pause >= until) throw new LineDeadlineError();
+        await new Promise((r) => setTimeout(r, pause));
+      }
+      return await beforeDeadline(read, until); // one more try; a second failure goes to the caller
     }
   };
-  const readMark = async (threadId: string): Promise<SessionProfileMark | null> =>
-    readSessionProfile(await bb.sdk.threads.getPluginMetadata({ threadId, pluginId: bb.pluginId }));
-  const markOf = async (threadId: string): Promise<KnownLocal | null> => {
+  // A read still running is joined, not started again, and its answer is kept when it arrives, even after
+  // the deadline of the start that asked for it: so on a slow bb each try goes on from where the last stopped.
+  // A read that never answers is joined for at most LOCAL_OF_DEADLINE_MS; after that a new one is started.
+  const inflight = new Map<string, { p: Promise<unknown>; at: number }>();
+  const shared = <T>(key: string, start: () => Promise<T>): Promise<T> => {
+    const have = inflight.get(key);
+    if (have && Date.now() - have.at < localOfDeadline) return have.p as Promise<T>;
+    const p = start().finally(() => {
+      if (inflight.get(key)?.p === p) inflight.delete(key);
+    });
+    p.catch(() => undefined);
+    inflight.set(key, { p, at: Date.now() });
+    return p;
+  };
+  const keepMark = (threadId: string, mark: SessionProfileMark | null) => {
+    if (mark?.profile === "lean") knownLean.add(threadId);
+    else if (isLocalKind(mark)) knownLocal.add(threadId, mark);
+    else if (!mark) remember(noMark, threadId);
+  };
+  const readMark = (threadId: string): Promise<SessionProfileMark | null> =>
+    shared(`mark:${threadId}`, async () => {
+      const mark = readSessionProfile(await bb.sdk.threads.getPluginMetadata({ threadId, pluginId: bb.pluginId }));
+      keepMark(threadId, mark);
+      return mark;
+    });
+  const markOf = async (threadId: string, until: number): Promise<KnownLocal | null> => {
     if (knownLean.has(threadId)) return { profile: "lean", v: 1 };
     const local = knownLocal.get(threadId);
     if (local) return local;
     if (noMark.has(threadId) || knownOnline.has(threadId)) return null;
-    const mark = await twice(() => readMark(threadId));
-    if (mark?.profile === "lean") knownLean.add(threadId);
-    else if (isLocalKind(mark)) knownLocal.add(threadId, mark);
-    else if (!mark) remember(noMark, threadId);
-    return mark;
+    return twice(() => readMark(threadId), until);
   };
+  // A chat's line as read, kept to a fixed size (the oldest goes first).
+  const lines = new Map<string, ThreadLine>();
   /** Where a chat came from: the chat it was forked from and the chat that started it (bb's own thread row). */
-  const lineOf = async (threadId: string): Promise<ThreadLine> => {
-    const got = (await twice(() => bb.sdk.threads.get({ threadId }))) as unknown as Partial<ThreadLine> & { thread?: Partial<ThreadLine> };
-    const t = got.thread ?? got;
-    const id = (v: unknown) => (typeof v === "string" && v.length > 0 && v !== threadId ? v : null);
-    return { sourceThreadId: id(t.sourceThreadId), parentThreadId: id(t.parentThreadId) };
+  const lineOf = async (threadId: string, until: number): Promise<ThreadLine> => {
+    const have = lines.get(threadId);
+    if (have) return have;
+    return twice(
+      () =>
+        shared(`line:${threadId}`, async () => {
+          const got = (await bb.sdk.threads.get({ threadId })) as unknown as Partial<ThreadLine> & { thread?: Partial<ThreadLine> };
+          const t = got.thread ?? got;
+          const id = (v: unknown) => (typeof v === "string" && v.length > 0 && v !== threadId ? v : null);
+          const line = { sourceThreadId: id(t.sourceThreadId), parentThreadId: id(t.parentThreadId) };
+          if (lines.size >= LINE_CACHE_MAX) lines.delete(lines.keys().next().value as string);
+          lines.set(threadId, line);
+          return line;
+        }),
+      until,
+    );
   };
   /**
    * The Local chat a chat with no mark was made from, if any: its fork source first, then the chat that
@@ -302,15 +392,18 @@ export function createSessionProfiles(bb: BbPluginApi, deps: Deps = {}) {
    * Throws when a read fails twice for any other reason, so the caller can decide.
    */
   type Found = { mark: SessionProfileMark; line: LocalLine } | null;
-  const localAncestor = async (line: ThreadLine, depth: number): Promise<{ found: Found; cut: boolean }> => {
+  const localAncestor = async (line: ThreadLine, depth: number, until: number): Promise<{ found: Found; cut: boolean }> => {
     const steps: Array<[string, LocalLine]> = [];
     if (line.sourceThreadId) steps.push([line.sourceThreadId, "fork"]);
     if (line.parentThreadId && line.parentThreadId !== line.sourceThreadId) steps.push([line.parentThreadId, "child"]);
     let cut = false;
     for (const [id, how] of steps) {
+      // Its line is asked for beside its mark, so a level costs one wait, not two.
+      const ahead = depth + 1 < LINEAGE_DEPTH && !knownLocal.get(id) && !knownOnline.has(id) && !knownLean.has(id) ? lineOf(id, until) : null;
+      ahead?.catch(() => undefined);
       let mark: KnownLocal | null;
       try {
-        mark = await markOf(id);
+        mark = await markOf(id, until);
       } catch (e) {
         if (!gone(e)) throw e;
         remember(knownOnline, id);
@@ -324,13 +417,13 @@ export function createSessionProfiles(bb: BbPluginApi, deps: Deps = {}) {
       }
       let upLine: ThreadLine;
       try {
-        upLine = await lineOf(id);
+        upLine = await (ahead ?? lineOf(id, until));
       } catch (e) {
         if (!gone(e)) throw e;
         remember(knownOnline, id);
         continue;
       }
-      const up = await localAncestor(upLine, depth + 1);
+      const up = await localAncestor(upLine, depth + 1, until);
       if (up.found) return { found: { mark: up.found.mark, line: how }, cut: false };
       // Its whole line was read and holds no Local chat: an ordinary chat, kept so a sibling does not read it again.
       if (!up.cut) remember(knownOnline, id);
@@ -346,8 +439,8 @@ export function createSessionProfiles(bb: BbPluginApi, deps: Deps = {}) {
    * most. The caller keeps a found mark (the environment rule on disk, a refusal in memory). A failed
    * read throws and is kept nowhere, so it is asked again.
    */
-  const derivedMark = async (threadId: string, line: Promise<ThreadLine>): Promise<KnownLocal | null> => {
-    const { found } = await localAncestor(await line, 0);
+  const derivedMark = async (threadId: string, line: Promise<ThreadLine>, until: number): Promise<KnownLocal | null> => {
+    const { found } = await localAncestor(await line, 0, until);
     if (!found) {
       // Also when the line was longer than LINEAGE_DEPTH: the chat is treated as ordinary from then on.
       remember(knownOnline, threadId);
@@ -362,14 +455,19 @@ export function createSessionProfiles(bb: BbPluginApi, deps: Deps = {}) {
       // A chat this plugin has not placed yet needs its own row (where it came from) as well as its mark:
       // both are read at once, so the line costs no extra wait. A known chat costs no read at all.
       const unplaced = !knownLean.has(threadId) && !knownLocal.get(threadId) && !knownOnline.has(threadId);
-      const line = unplaced ? lineOf(threadId) : null;
+      // One deadline for this chat's mark and its whole line (LINE_DEADLINE_MS).
+      const until = Date.now() + lineDeadline;
+      const line = unplaced ? lineOf(threadId, until) : null;
       line?.catch(() => undefined); // its failure is handled where it is awaited
       try {
-        let mark: KnownLocal | null = await markOf(threadId);
+        // A chat stored as blocked (made from a Local chat while the feature was off, say) is answered from
+        // its stored entry with no read, and stays blocked: the plugin cannot tell a chat moved under a Local
+        // chat from one a Local chat started (bb's row has only sourceThreadId and parentThreadId).
+        let mark: KnownLocal | null = await markOf(threadId, until);
         if (!mark) {
           if (!line || knownOnline.has(threadId)) return [];
           try {
-            mark = await derivedMark(threadId, line);
+            mark = await derivedMark(threadId, line, until);
           } catch (e) {
             // The chat has no mark, and where it came from could not be read (twice). Nothing is
             // remembered: the next start reads again. While the plugin knows no Local chat on this Mac
@@ -381,11 +479,14 @@ export function createSessionProfiles(bb: BbPluginApi, deps: Deps = {}) {
               return [];
             }
             bb.log.warn(`session profile: could not read where ${threadId} came from (${String(e)}); this start is blocked`);
-            return [{ name: "BB_CLAUDE_CODE_EXECUTABLE", value: blocked("could-not-check-whether-a-local-chat-started-this-chat--send-again"), reason: "Could not check whether a Local chat started this chat: send again" }];
+            return [
+              { name: "BB_CLAUDE_CODE_EXECUTABLE", value: blocked("could-not-check-whether-a-local-chat-started-this-chat--send-again"), reason: "Could not check whether a Local chat started this chat: send again" },
+              { name: "NAV_LOCAL_BLOCKED", value: "This chat does not start: bb could not check whether a Local chat started it. Send again.", reason: "Could not check whether a Local chat started this chat: the reason the launcher shows" },
+            ];
           }
           if (!mark) return [];
         }
-        if (mark.profile === "lean") return leanEnvFor({ threadId, hostId, primaryHostId: await primaryHostId(), mark, dir, dirReady: leanDirReady(dir) });
+        if (mark.profile === "lean") return leanEnvFor({ threadId, hostId, primaryHostId: await primaryBefore(until), mark, dir, dirReady: leanDirReady(dir) });
         // Only Claude chats reach this contributor, so a local mark here is a Local chat on the Claude Code
         // harness, or a chat made from a Local chat (line set). Each one gets the launcher or a block.
         const allowed = deps.localClaudeOn ? deps.localClaudeOn() : true;
@@ -393,7 +494,7 @@ export function createSessionProfiles(bb: BbPluginApi, deps: Deps = {}) {
         const entries = localEnvFor({
           threadId,
           hostId,
-          primaryHostId: await primaryHostId(),
+          primaryHostId: await primaryBefore(until),
           mark,
           launcher,
           serverPath: deps.localServerPath ?? "",
@@ -418,9 +519,9 @@ export function createSessionProfiles(bb: BbPluginApi, deps: Deps = {}) {
         bb.log.warn(`session profile: could not read the mark of ${threadId} (${String(e)})`);
         if (!deps.localServerPath) return [];
         if (deps.localClaudeOn && !deps.localClaudeOn()) return [];
-        const guard = deps.localSetup ? deps.localSetup().guard : (deps.guard ?? null);
+        const guard = deps.localGuard ? deps.localGuard() : deps.localSetup ? deps.localSetup().guard : (deps.guard ?? null);
         if (!guard) return [];
-        const primary = await primaryHostId();
+        const primary = await primaryBefore(until);
         if (!primary || hostId !== primary || !exists(guard)) return [];
         return [{ name: "BB_CLAUDE_CODE_EXECUTABLE", value: guard, reason: "Could not check whether this chat is Local: it starts only on a Claude model" }];
       }
@@ -451,12 +552,13 @@ export function createSessionProfiles(bb: BbPluginApi, deps: Deps = {}) {
      * its conversation elsewhere (moving it to another machine). Throws when that cannot be read.
      */
     async localOf(threadId: string): Promise<SessionProfileMark | null> {
-      const mark = await markOf(threadId);
+      const until = Date.now() + localOfDeadline;
+      const mark = await markOf(threadId, until);
       if (mark) return isLocalKind(mark) ? mark : null;
       if (knownOnline.has(threadId)) return null;
       const made = madeFromLocal.get(threadId);
       if (made) return made;
-      const found = await derivedMark(threadId, lineOf(threadId));
+      const found = await derivedMark(threadId, lineOf(threadId, until), until);
       if (found) madeFromLocal.set(threadId, found); // memory only, never shown as Local
       return found;
     },

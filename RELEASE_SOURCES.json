@@ -1,13 +1,13 @@
 {
   "about": "Where each release plugin folder was copied from. Written by scripts/sync-release.sh; do not edit by hand.",
-  "release": "1.13.1",
+  "release": "1.14.0",
   "plugins": [
     {
       "folder": "plugins/console",
       "pluginId": "navaigate-skin",
       "sourceRepo": "navaigate-console-plugin",
-      "branch": "navaigate/community-release-1.13.0",
-      "commit": "90b5d333a2e40953232b35b1fce9c649b83d5810"
+      "branch": "navaigate/community-release-1.14.0",
+      "commit": "a44d7ff6b52e33612d1532d83bcbcad796fbb4cc"
     },
     {
       "folder": "plugins/fleet",
