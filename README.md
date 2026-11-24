@@ -23,6 +23,7 @@
 - **Smaller additions in 1.13:** a colour for any chat in the sidebar, dropping a chat onto a folder of another project, and `/mcp` opening the MCP Manager plugin's page (off until ticked, because it needs that plugin).
 - **Simple and Pro are starting presets**, not separate products. Simple ticks a smaller set of features; Pro ticks nearly all of them. You can change any box afterwards, and a box that needs something you have not added yet (a second Mac, a public address, a brain) says what it needs.
 - **Helper Desk, Cache Clock, Reflect, Screen Share and the Markdown plugin** (`helper-desk`, `cache-clock`, `reflect`, `screen-share`, `navmotion-skin`) come with both presets.
+- **Google Antigravity (optional):** a small script in `extras/antigravity` adds the Antigravity command line to bb as one more agent, next to the custom agents you already have, so Google's models can run in a bb chat. Which models you get depends on your Google plan, and the Console's own screens don't offer it yet. How to set it up: [INSTALL.md, Google Antigravity](INSTALL.md#google-antigravity-optional).
 - **Pro also installs** Fleet (`fleet`), Prompt Stack (`prompt-stack`), Kanban, Finder Links and the optional third-party Projects & Sections, Agent Board and Tasks.
 - **Fleet** (`plugins/fleet`): one board for every Mac that runs bb, with a box to start work on any of them. It needs a second Mac running bb and a brain (a small database the Macs share); on a single Mac it stays hidden.
 - **Prompt Stack** (`plugins/prompt-stack`): tick boxes in a thread's side panel that choose which prompt-stack skills that thread uses. A small Claude Code hook injects the chosen skill cards beside each prompt. The hook is a separate opt-in step (below). It ships Ray Amjad's create, maintain and audit prove-it skills, MIT licensed, with their licence and source notes.
@@ -230,6 +231,12 @@ If a companion is missing, the rest still works. Its feature shows greyed out wi
 - **Going back.** The old core is still installed. Turn it on with `bb plugin enable navaigate-simple` (or `navaigate-workspace`) and choose its thread list and theme in **Settings, Appearance**; the saved values above show what you had.
 - **Your own `navaigate-skin`.** If you installed a `navaigate-skin` from another source, it is left alone, with or without `--console`.
 - **Fleet and Prompt Stack** are new plugins. An existing Pro install does not gain them by itself; add them with `bb plugin install` (see Install by hand), or run the installer with `--edition pro` (together with `--console` if you are moving over). Moving to the Console with `--console` alone installs the Console and the helpers, and adds none of the plugins you left out of 1.11.
+
+## What's new in 1.14.1
+
+- Google Antigravity can be added to bb as an agent with one script, `extras/antigravity/add-to-bb.sh`, and that's how Gemini 4 Neon runs in a bb chat. It keeps the custom agents you already have, and on our Mac bb didn't need a restart.
+- Nothing in the Console or the other plugins changed. The Console's own screens don't offer Antigravity yet, and the command line is the only way we've tested starting a chat on it.
+- How to set it up: [INSTALL.md, Google Antigravity](INSTALL.md#google-antigravity-optional). Full notes: `docs/releases/1.14.1.md`.
 
 ## What's new in 1.14.0
 

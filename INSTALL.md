@@ -130,6 +130,53 @@ In opencode there's no tick list, and opencode sends every skill in the first pr
 - If you saved Setup on Console 1.13 with Local chats on the Claude Code harness unticked, as a fresh 1.13 install or a preset chosen there did, they stay off; tick them in Setup to use them. The Local orb says "Local chats on Claude Code are off in Setup." with a link to Setup.
 - bb's plugin list still shows version 0.35.0 for the Console (`navaigate-skin`), because bb updates it by commit. The release number is in `RELEASE_SOURCES.json` and in the release notes.
 
+## Google Antigravity (optional)
+
+bb can run Google Antigravity as one more agent, next to Claude Code, Codex and Cursor, and that's how we get Google's models, Gemini 4 Neon included, into a bb chat. Nothing in the installer does this for you, so there's a small script for it in `extras/antigravity`.
+
+### What you need
+
+- **The Antigravity command line (`agy`)**, on the same machine as your bb. Get it from [antigravity.google](https://antigravity.google/product/antigravity-cli), or with Homebrew on a Mac: `brew install --cask antigravity-cli`.
+- **A Google sign-in for Antigravity.** If you've signed in to the Antigravity app on that machine, the command line uses the same sign-in. If you haven't, run `agy acp --login` once.
+- **bb 0.49 or later** is what we tested on.
+
+### Add it to bb
+
+From a copy of this repository:
+
+```sh
+bash extras/antigravity/add-to-bb.sh --dry-run   # shows the entry it would add and stops
+bash extras/antigravity/add-to-bb.sh
+```
+
+The script adds one entry called Google Antigravity to bb's **Custom agents** setting (it belongs to bb's ACP providers plugin), and it keeps every custom agent you already have, which matters because setting that list by hand replaces all of it. On our Mac bb listed the models straight after, with no restart. The dry run shows the Antigravity entry and how many other agents you have, and never what's inside them, because an agent's entry can hold keys. If the entry is already there with the same `agy` and arguments that start with `acp`, the script changes nothing. Otherwise it points the entry at the `agy` it finds, puts the arguments back to `acp` if they don't start with it, and leaves the rest of the entry as you had it. It never installs anything or signs you in.
+
+Then it lists the models bb can see, and you can ask again any time:
+
+```sh
+bb provider models acp-antigravity
+```
+
+Which models are in that list depends on your Google plan, so we can't promise Gemini 4 Neon on every account.
+
+### Start a chat on it
+
+bb now lists it with its other agents (`bb provider list` shows `acp-antigravity`), and this is the command we tested a chat with:
+
+```sh
+bb thread spawn --provider acp-antigravity --model gemini-4-neon --prompt "Say hello and tell me which model you are."
+```
+
+### What we tested, and what isn't there yet
+
+On one Apple silicon Mac with bb 0.49.0 and the Antigravity command line 1.5.16, the script added the entry to a bb that had no custom agents, bb listed Gemini 4 Neon without a restart, and a test chat started with the command above answered from it. Keeping other custom agents is covered by the script's own tests against a stand-in bb, and we haven't run it on a real bb that already had other agents. We haven't tested Linux or Windows.
+
+The Console's own screens don't offer Antigravity yet. Home still asks Claude, Codex or Cursor and the Online and Local orbs don't list it, and the command line is the only way we've tested starting a chat on it.
+
+### Take it out again
+
+Remove the `antigravity` entry from the **Custom agents** setting in the ACP providers plugin's settings. The Antigravity command line and your sign-in aren't touched.
+
 ## Appearance and optional tools
 
 A fresh install selects **Navigation: Rail**, **Thread list: NavAIgate rail** and the NavAIgate theme. These are separate settings under **Settings, Appearance**. An existing installation keeps its saved values.
