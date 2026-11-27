@@ -58,6 +58,10 @@
     {
       "name": "prompt-stack",
       "source": "./plugins/prompt-stack"
+    },
+    {
+      "name": "artifacts",
+      "source": "./plugins/artifacts"
     }
   ]
 }
