@@ -73,6 +73,20 @@ Five small plugins that change how bb looks and behaves while you work. Each is 
 - **Screen Share** (`screen-share`): type `/screenshare` before you share your screen or record, and every name, email, phone number and amount in bb turns into a grey bar, on every screen at once, your phone included. The agent still sees the real text.
 - **Finder Links** (`finder-links`): click any file or folder path an agent writes in a reply and Finder opens with it selected. Only paths that really exist get the dotted underline, and bb's own file links that point at the wrong folder are repaired so the preview opens the real file. macOS.
 
+### Optional: Artifacts
+
+**Artifacts** (`artifacts`) brings the Claude app's Artifacts page into bb. One page in the left rail shows your claude.ai artifacts next to every HTML and Markdown page your chats have saved in their `artifacts` folders, with previews, tabs and search.
+
+- **Share** publishes a bb page to your claude.ai artifacts (private until you share it), copies the link and opens it in the Claude app, where Claude's own Share menu sets who can open it. Share a changed page again and the same artifact updates, so the link stays the same. bb never overwrites a version changed on claude.ai.
+- **Install as app** opens the artifact in the Claude app, ready for Claude's own Install as app: its own window and icon, Claude and your connectors, updates when the artifact changes. Claude only installs from a click in its own window, so you finish there with Share, Install as app.
+- Agents can publish too, with `bb artifacts publish <file>`.
+
+It uses your own Claude Code, signed in to claude.ai on a Pro, Max, Ultra, Team or Enterprise plan; the page has a sign-in button if it isn't. Install as app needs the Claude desktop app for Mac or Windows (6.28899 or later), and Google Chrome draws the previews. Needs bb 0.49 or later. The installer leaves it out, so install it by hand:
+
+```sh
+bb plugin install git:https://github.com/skyremote/navaigate-console.git@main --plugin artifacts
+```
+
 ### Optional: NavMotion Studio
 
 **NavMotion Studio** (`navmotion`) is the dashboard for NavAIgate's navmotion skill, which makes motion films, Shorts, long-form inserts and deck graphics drawn frame by frame in JavaScript canvas. Each project shows its stages, storyboard stills, layout check, live render progress, covers and finished video, and **Approve** or **Request changes** goes straight to the agent working on it. A **New** page starts a project from a brief, and a **Guide** explains how to judge the work.
